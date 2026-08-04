@@ -1405,6 +1405,31 @@ Surfaced by the 19-file design-parity sweep, 3 August 2026, then **re-verified b
 - **`legacyPayload` in `/api/ceo/dashboard` — CLOSED, PR #288.** Built a full extra response object (`mrr, arr, netNew30d, monthlyChurnRate, ...`) that nothing in `page.tsx` read — confirmed by a fresh full grep of the only reachable caller before removing — yet drove 7 real extra Supabase queries every 30-second poll, plus unused `from`/`to` range-param parsing that only fed them. Removed; the route now returns exactly `CeoDashboardData`, the type it already claimed to satisfy.
 - **The sales-lead form hardcodes `governorate: 'cairo'`** with no field to change it — every lead entered through the CEO dashboard is tagged Cairo regardless of where the center actually is. Needs a real governorate selector, not a one-line fix.
 
+## F35 · The schema-drift gate cannot verify a REVOKE at all, and goes green on the exact class of change it exists to catch
+
+- **What:** `.github/workflows/schema-drift.yml` runs `scripts/schema/rebuild.sh` — apply `test-shim.sql`, then every `supabase/migrations/*.sql` in lexical order against an **empty** database — and diffs the introspected result against the committed `db/schema.snapshot`. **Neither side is production.** The gate proves *migrations produce snapshot*. It proves nothing about the live catalog, and for grant changes it cannot even prove that much.
+- **Why a REVOKE specifically is invisible.** Supabase issues default `EXECUTE` privileges to `anon` and `authenticated` on functions in `public`. **Those grants do not exist in a local rebuild** — nothing creates them. So a migration whose entire purpose is `REVOKE ... FROM anon` removes something that was never there, produces **zero** diff, and the gate reports success. The statement is a no-op locally and load-bearing in production, and the gate reads the no-op.
+- **This is not hypothetical — it is how the defect below shipped.** `20260804120000` (applied as `20260804094631`) contained `REVOKE ALL ON FUNCTION public.sessions_derive_center_id() FROM PUBLIC` under a comment claiming it satisfied the standing *revoke anonymous EXECUTE on SECURITY DEFINER helpers* rule. `REVOKE ... FROM PUBLIC` removes only the implicit `PUBLIC` grant; the explicit `anon` and `authenticated` entries are separate ACL rows and survived it. Live `proacl` after that migration ran: `{postgres=X/postgres, anon=X/postgres, authenticated=X/postgres, service_role=X/postgres}`. **schema-drift was green throughout.** It could not have been anything else.
+- **The asymmetry that makes this worse than a plain blind spot.** A `GRANT` *does* show up — it creates a `ROUTINE_GRANT` line in the rebuild, so the gate fails if the snapshot is stale. A `REVOKE` of a Supabase default does not. **So the gate is green when a privilege is wrongly retained, and red when one is correctly added.** It fails in the safe direction and passes in the dangerous one. Confirmed on 4 August by rebuilding the follow-up migration three times on a clean Postgres 17.10: the revoke-only draft produced a byte-identical snapshot (6242 objects); the archive-idiom version, which adds `GRANT EXECUTE ... TO authenticated, service_role`, produced exactly two added lines (6244) and turned the gate red until the snapshot was regenerated.
+- **`schema-drift-live.yml` is the workflow that would catch it, and it has never run.** It compares the LIVE catalog against the snapshot. It has failed on every scheduled run from 28 July through 4 August — eight consecutive days, zero successes — every one on its own missing-secret guard: `SCHEMA_DRIFT_DATABASE_URL is not set, so the live schema-drift gate CANNOT run`. That guard is correct behaviour (it was deliberately built to fail loudly rather than skip green), but the consequence is that **production has not been machine-compared to the snapshot on any day in this window.**
+
+### The rule, which is the point of this entry
+
+> **A grant or revoke change is not verified by CI. `schema-drift` green is not evidence for it.**
+> Any migration containing `GRANT`, `REVOKE`, `ALTER DEFAULT PRIVILEGES`, or an `OWNER TO` change must be confirmed by querying the **live** catalog after applying — `pg_proc.proacl`, `aclexplode()`, `information_schema.role_routine_grants`, `pg_class.relacl` — and the result recorded. Not inferred from the statement succeeding, and not inferred from a green gate.
+
+The same applies to any post-apply verification query written into a migration: the §6 block in `20260804120000` checked `grantee='PUBLIC'` and returned a reassuring `0` while the real gap sat one grantee over. **A verification query that only checks the thing you already believed is not a verification query.**
+
+### What would actually close it
+
+1. Wire `SCHEMA_DRIFT_DATABASE_URL` (a read-only prod DSN — `USAGE` + `SELECT` on catalogs is enough) so `schema-drift-live.yml` runs. This is the single highest-value fix and needs no code.
+2. Extend `scripts/schema/test-shim.sql` to create the `anon` / `authenticated` / `service_role` roles **and** Supabase's default `EXECUTE` grants, so a local rebuild has something for a `REVOKE` to remove and the diff becomes meaningful. Without this, item 1 is the only real defence.
+3. Treat a grant-touching migration as requiring a recorded live-catalog check before its PR merges, the same way rule 5 already treats the apply itself.
+
+- **Found:** 4 August 2026, while correcting the `sessions_derive_center_id` grant. Found by querying the live catalog, not by any gate — which is the entry's own evidence for itself.
+- **Related:** F26 (code reading columns that do not exist — same root cause, CI has no live database), and the `20260804210000` follow-up migration, whose header carries a short form of this note.
+- **Blocked by:** nothing technical for items 2 and 3. Item 1 needs Eyad to add the repo secret.
+
 ---
 
 # Appendix · Tenant-isolation route audit, 29 July 2026
