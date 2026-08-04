@@ -43,6 +43,7 @@ import {
 } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import { formatCurrency, formatNumber, formatPercent } from '@/lib/formatNumber';
+import { revenueMixSharePct } from '@/lib/adminPlatformDisplay';
 
 export interface CustomerSegmentView {
   accounts: number;
@@ -64,6 +65,15 @@ export interface RevenueMixView {
   key: 'subscriptions' | 'addons' | 'whatsapp_packs' | 'other';
   amount: number;
 }
+
+/** The design gives each revenue source its own bar colour. */
+const MIX_BAR_TONE: Record<RevenueMixView['key'], string> = {
+  subscriptions: 'bg-[var(--color-brand-500)]',
+  addons: 'bg-[var(--color-brass)]',
+  whatsapp_packs: 'bg-blue-600',
+  other: 'bg-[var(--color-navy-500)]',
+};
+
 
 interface Props {
   split: CustomerSplitView | null;
@@ -89,6 +99,11 @@ export default function PlatformOverviewHeader({
   const Chevron = isRtl ? ChevronLeft : ChevronRight;
 
   if (!split) return null;
+
+  const revenueMixTotal = (revenueMix ?? []).reduce(
+    (sum, row) => sum + (Number(row.amount) || 0),
+    0,
+  );
 
   const customerRows: { key: string; icon: LucideIcon; label: string; seg: CustomerSegmentView }[] = [
     { key: 'centers', icon: Building2, label: t('centers'), seg: split.centers },
@@ -199,18 +214,31 @@ export default function PlatformOverviewHeader({
           <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
             {t('revenueMixHeading')}
           </h3>
+          {/*
+            The design draws each source as a label, a filled bar and an
+            amount. The bar is a SHARE OF THE MONTH'S TOTAL — unlike §02's
+            by-plan bars, these three sources do sum to a meaningful whole
+            (everything paid this month), so a share bar is the honest reading
+            and matches what the design's widths imply.
+          */}
           <div className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)]">
             {revenueMix.map((row, i) => (
               <div
                 key={row.key}
-                className={`flex items-center justify-between gap-3 px-4 py-3 ${
-                  i > 0 ? 'border-t border-[var(--color-border)]' : ''
-                }`}
+                className={`px-4 py-3 ${i > 0 ? 'border-t border-[var(--color-border)]' : ''}`}
               >
-                <span className="text-sm text-[var(--color-text-primary)]">{t(`mix_${row.key}`)}</span>
-                <span className="text-sm font-semibold text-[var(--color-text-primary)]">
-                  {formatCurrency(row.amount, locale)}
-                </span>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm text-[var(--color-text-primary)]">{t(`mix_${row.key}`)}</span>
+                  <span className="text-sm font-semibold text-[var(--color-text-primary)]">
+                    {formatCurrency(row.amount, locale)}
+                  </span>
+                </div>
+                <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-[var(--color-surface-2)]">
+                  <div
+                    className={`h-full rounded-full ${MIX_BAR_TONE[row.key] ?? 'bg-[var(--color-brand-500)]'}`}
+                    style={{ inlineSize: `${revenueMixSharePct(row.amount, revenueMixTotal)}%` }}
+                  />
+                </div>
               </div>
             ))}
           </div>

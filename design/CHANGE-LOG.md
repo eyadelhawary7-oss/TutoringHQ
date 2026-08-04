@@ -105,6 +105,7 @@ If a row ever names one, that row is a mistake.
 | [#296](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/296) | `4c5e29b` | 2026-08-01 | `Center-Home §01` — Schedule section empty-state (balance card confirmed still blocked, not built); merged by Eyad directly, held for review per this file's history | `/{locale}/dashboard` | v42 |
 | [#297](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/297) | `aa8115d4` | 2026-08-01 | none — doc only (logged #296, closed out the Center-Home §01 investigation episode) | none | v42 |
 | [#298](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/298) | `(on merge)` | 2026-08-01 | `Center-Groups` — full re-survey + waitlist-integrity fix (stale entries never cleared, position-assignment race) | `/{locale}/groups` | v42 |
+| [#338](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/338) | `(on merge)` | 2026-08-04 | `Admin-Platform §01`, `§02`, `§03`, `§06` — build the unblocked structure the 31 July survey logged but did not build | `/{locale}/admin`, `/admin/centers`, `/admin/analytics`, `/admin/platform-config`, `/api/admin/integration-health` (**new**) | v45 → **v46** |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, `#214`'s by that
@@ -1658,3 +1659,96 @@ description:**
 description in each entry). `design/FILE-COMPLETION-TABLE.md` row 11 updated: ~3.1/5 → ~3.0/5, §04's
 sub-estimate corrected down, blocked-by list gains D31/D32, D2 marked closed (confirmed already-resolved
 by `#248`, never formally closed in this table before now).
+
+**Admin-Platform · build the unblocked gaps (4 August 2026)** — the 31 July re-verification pass was
+told to LOG gaps rather than build them, and did exactly that: it re-confirmed six omissions and moved
+only §02's student count. This pass reverses that instruction. Every section whose backing columns
+physically exist was built; a section is omitted here only where the named column is genuinely absent.
+
+**Structure coverage 4.6/6 → 5.15/6.** Independently re-surveyed first, against the merged file and a
+fresh read of every live route, not against the recorded number.
+
+| § | before (31 Jul) | after | what moved |
+|---|---|---|---|
+| §01 Admin Overview | 0.85/1 | **0.90/1** | REVENUE MIX gains the design's proportional bars; centre rows gain the design's location sub-line |
+| §02 Admin Analytics | 0.85/1 | **0.95/1** | the "Revenue, last 6 months" chart the design draws and this screen never rendered; BY PLAN gains its track bars |
+| §03 Admin Platform | 0.65/1 | **0.85/1** | INTEGRATIONS + per-service detail, over `status_checks` |
+| §04 Admin WhatsApp Pack | 0.5/1 | 0.5/1, unchanged | still **D5**; nothing new was buildable — see below |
+| §05 Admin Promo Codes | 0.7/1 | 0.7/1, unchanged | every remaining gap needs a column that does not exist |
+| §06 Admin Privacy Requests | 0.75/1 | **0.95/1** | type tags, the countdown pill, and the request-detail block |
+| **Overall** | **4.6/6** | **5.15/6** | |
+
+**§02's chart was never a data gap — it was an unread field.** `/api/admin/overview` has always
+returned `monthlyRevenue`, six `{ month, revenue }` buckets, and `/admin` has always charted it.
+`/admin/analytics` fetches the same endpoint and simply never read the field. It is labelled *revenue
+collected*, not MRR: it sits directly under an MRR hero and the two are different measures. The
+All/Centers/Teachers segment deliberately does **not** filter it — the buckets carry no centre/teacher
+split, so re-labelling the total under a segment would attribute a figure the data does not break down.
+
+**§03 INTEGRATIONS is real, and it is not `vendors`.** The previous pass concluded "no integrations or
+vendor-health table exists". `vendors` is indeed card-printing suppliers only (`name`,
+`whatsapp_number`, `pickup_address`, `city`, `is_active` — re-verified live). But `status_checks`
+does exist: `id, service, status, response_time_ms, checked_at`, written every five minutes by
+`/api/cron/status-ping`, **9,179 rows for each of `api`, `payments` and `scanner`**, latest row
+`2026-08-04 22:25:11+00`. That backs the design's row shape and three of the four PAYMOB DETAIL
+fields. New read-only `GET /api/admin/integration-health`, gated exactly like platform-config's GET.
+
+Refusals inside that panel, each named in the code:
+
+- **Valify** is not drawn. V1 — nothing pings it, no credential exists. The design's
+  "Valify · Connected" green dot is a design-side fabrication.
+- **SMS gateway** is not drawn — no pinger, no `service` row.
+- **WhatsApp** is not drawn as a health row. `/admin/health` reports a live/test *mode*, a config
+  flag, not a reachability check; showing it as "Connected" conflates the two.
+- **Merchant ID** is an environment credential, not a column.
+- The three services are named for what is measured, not relabelled onto the design's vendor names:
+  `payments` pings the app's own `/api/health`, never Paymob, so calling that row "Paymob" would
+  report Paymob's health from a probe that never touches Paymob.
+- **A null 24h success rate renders as an em dash, never 0%.** "Not measured" and "failed every
+  time" are opposite facts.
+
+It is built on `/admin/platform-config`, not `/admin/vendors`: putting a service-health list beside a
+card-print-supplier form would merge two unrelated meanings of "vendor" under one heading.
+
+**§06's "nothing to join the counts to" was too strong.** `privacy_requests` still has no centre or
+account foreign key — that part stands. But this screen's own deletion flow already resolves a
+requester to real student rows by phone (`GET /api/admin/privacy-requests/anonymize?phone=`), and that
+match is exactly what "WILL BE DELETED · Student records N" counts. The detail block now carries
+Requested by (`relationship`), Due by, and that matched count — labelled as a phone match, and drawn
+from the same set the anonymize button acts on, so the number and the button can never disagree.
+Still omitted: **Identity · Verified** (V1, no identity check exists) and the **Approve/Reject**
+buttons (a write, and a legally consequential one).
+
+**§01's centre location line uses columns that exist but are empty.** `centers.district` and
+`centers.city` are both real (`information_schema.columns`, verified 4 August) and `/api/admin/centers`
+already selects `*`. Zero live rows have either set — both centres in production are `is_test = true`
+— so the sub-line renders nothing today rather than a placeholder. District wins over city;
+`delivery_address` is deliberately not consulted, being a shipping destination rather than a location.
+
+**Omitted, each with the exact missing column re-queried live this pass, not carried over:**
+
+| omitted | the column that does not exist |
+|---|---|
+| §01 Unverified filter chip | **V1** — no verification column anywhere; the chip is already drawn disabled with its cause |
+| §01 `/admin/teachers` frame | **R7-CLOSED** — Eyad's explicit call, one teacher console not two |
+| §01 per-centre MRR on the list row | not a missing column — a new money figure on a new surface, so it comes to Eyad |
+| §02 "Platform fees" / "Total revenue" | `invoices.metadata.processing_fee` is a jsonb key. No column, no aggregate. Summing it *defines* platform fees, which is a pricing call |
+| §03 Referrals · Attendance scanner · App version · Force update | re-queried `platform_config` live: none of `referrals`, `attendance_scanner`, `app_version` or `force_update` exists as a key |
+| §03 Card orders (global switch) | still per-centre `centers.card_orders_enabled`, not a platform key |
+| §04 credit liability, per-category Sent / Cost to send / Sold at | **D5**, and worse than blocked: `whatsapp_usage` is **empty (0 rows)**, so the `message_type` vocabulary the design's three-way Notifications/Promotions/Collect-flow split needs cannot even be established. Building the split would invent the taxonomy, not just the price |
+| §04 connection header "Connected" | the sender's display number is not a column; asserting Connected without a probe is fabrication |
+| §04 per-template On/Off, funding grouping | `wa_meta_templates` re-verified live as exactly `id, template_name, category, status, variables_count, created_at, updated_at` — no `enabled`, no funding column |
+| §05 Fixed EGP · Free month · applies-to · Scheduled | `promo_codes` re-verified live as exactly `id, code, discount_pct, max_uses_total, uses_count, expires_at, is_active, created_at, created_by` — no `discount_type`, no `target_type`, no `starts_at` |
+| §06 Identity · Verified | **V1** |
+| §06 Approve / Reject | a write on a legally consequential record |
+
+**Live counts behind every claim above, queried this pass:** 2 centres (both `is_test`), 1 promo code,
+0 promo-code redemptions, 0 privacy requests, 0 vendors, 0 `whatsapp_usage` rows, 45 `wa_meta_templates`,
+0 status incidents, `mrr_snapshots` spanning 2026-04-04 → 2026-08-04. Several of the built sections
+therefore render empty today — which is the point of guarding every divide-by-zero rather than letting
+an empty platform paint full bars.
+
+**33 new unit tests** (`tests/unit/adminPlatformSections.test.ts`) covering the four pure display
+helpers and the health fold. Gates: `typecheck` clean, `lint` 0 errors (145 warnings, identical to
+master's baseline), `test:unit` 202 files / 1954 tests passed, `verify:stabilization` all three green.
+SW_VERSION v45 → v46.
