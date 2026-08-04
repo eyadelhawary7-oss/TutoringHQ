@@ -9566,7 +9566,7 @@
         "criterion": "Sending a way to pay",
         "spreadsheet": "It cannot",
         "paper": "It cannot",
-        "centerhq": "A link with every invoice, card or wallet"
+        "centerhq": "A link with every invoice, paid by card"
       },
       "row4": {
         "criterion": "Center income beside your own",
