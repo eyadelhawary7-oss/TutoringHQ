@@ -419,6 +419,54 @@ resolve — this entry describes a bug that was already fixed before it was logg
 - **Touches:** money.
 - **Blocked by:** D5, the allowance/spend-wiring decision, the pack-model decision, and Meta template
   approval (external) for the messaging half.
+- **Re-verified live, 4 August 2026 (Teacher-WhatsApp parity pass, `claude/parity-teacher-whatsapp-w2`).**
+  Every claim above re-checked against today's production catalog and today's `src/`, not re-stated
+  from the ledger. Nothing has moved since 31 July:
+  - `git log --since=2026-07-31` on `parentPack.ts`, `invoiceTemplates.ts`, `whatsapp-pack/*`,
+    `teacherScheduleNotifications.ts`, `teacherFeeReminder.ts` and the migrations directory shows two
+    unrelated commits (sessions-consolidation migration, Teacher-Students parity) and nothing touching
+    this area.
+  - `information_schema.columns`: `teacher_profiles.blast_credits_subscription` /
+    `blast_credits_purchased` still both `numeric default 0`, still present.
+  - `grep -rn "deduct_blast_credits" src/ supabase/` still returns only the two migration definitions
+    (`baseline.sql`, `migrations_archive/20260612000005_teacher_pro_rpcs.sql`) — zero call sites in
+    application code.
+  - `wa_meta_templates` live rows, checked by name: `chq_fee_reminder` is still `PENDING`.
+    `chq_schedule_changed` / `chq_class_cancelled` / `chq_class_rescheduled` / `chq_class_reminder`
+    still have **no row at all** (query returns nothing for all four, not a status value). Also
+    confirmed while in there: `chq_parent_welcome`, `chq_payment_confirmed` and `chq_payment_failed`
+    are all `APPROVED` at Meta — approval is not what blocks Welcome or the payment pair; see below.
+  - `studentParentPackWelcome.ts` re-read in full: every exported function takes `centerId`, not
+    `teacherId`, and every DB read/write in the file (`sendTemplateMessage`, `syncParentPackActive...`)
+    is keyed off it. A teacher's private (center-less) student has no `centerId` to key this on — the
+    "doesn't exist for teachers" finding holds structurally, not just by absence of a route.
+  - `wa_message_queue` columns re-dumped: `id, center_id, to_phone, template_name, variables, body,
+    status, waba_message_id, error_message, created_at, updated_at` — still no `teacher_id`, still no
+    other FK to attribute a send to a teacher.
+  - Nav check, not in the prior survey: `src/app/[locale]/teacher/TeacherNav.tsx`'s `NAV_ITEMS` /
+    `MOBILE_KEYS` / `MORE_KEYS` have no WhatsApp entry in either the desktop rail, the mobile tab bar,
+    or the "More" sheet. This is not a dead link or a 404 waiting to happen — there is no partial nav
+    wiring to clean up. The screen is absent in the one place a teacher would look for it, cleanly.
+  - **Precise per-template answer, so the decision is answerable without re-deriving it:**
+
+    | Design template | What it needs, precisely | Owner of that need |
+    |---|---|---|
+    | Welcome | A teacher-keyed send path. `studentParentPackWelcome.ts` is `centerId`-shaped end to end; a teacher's private students have no center to key off. This is a code/schema change (a teacher variant of the welcome sender, or a schema path that lets private students route through it), not a config flip. | Eyad — new send path or schema |
+    | Fee reminder | Nothing to build — the cron (`/api/cron/fee-reminders`) already covers teacher-billed private lessons via `transactions.teacher_id`. Blocked purely on `chq_fee_reminder` moving from `PENDING` to `APPROVED` at Meta. Same block a center's fee reminder has today. | Meta (external, platform-wide) |
+    | Session changed | Code is real and already firing sends (`teacherScheduleNotifications.ts` → `chq_schedule_changed`/`chq_class_cancelled`/`chq_class_rescheduled`/`chq_class_reminder`), but none of the four templates were ever submitted to Meta — no row in `wa_meta_templates` at all. Needs submission first, then approval. One step earlier than fee reminder. | Meta (external) + whoever owns template submission |
+    | Payment link ("sent by us") | Does not exist for anyone, center or teacher. The only approved payment-adjacent templates (`chq_payment_confirmed`/`chq_payment_failed`) confirm a center's own subscription payment *to* TutoringHQ, not a parent-facing "your session was paid" link. This is a net-new template plus a net-new send trigger. | Eyad — new feature, platform-wide |
+    | Receipt ("sent by us") | Same gap as Payment link — no parent-facing receipt template or trigger exists anywhere in the codebase today. | Eyad — new feature, platform-wide |
+
+    Two of five (fee reminder, session changed) need nothing from Eyad — they need Meta, and are
+    already platform-wide blocks other files' fee-reminder claims should account for too. Three of
+    five (Welcome, Payment link, Receipt) need a product/engineering decision before Meta submission
+    is even the next step.
+  - **Nothing was built this pass.** The screen has no live route, nothing links to it, and every
+    frame the design draws (balance, templates, pack) sits directly on the unresolved credit-spend
+    and pack-model decisions above. Building any part of it — even a read-only balance display — would
+    mean shipping the same permanently-one-directional number `Teacher-Money`'s `TeacherPlanSection`
+    already shows today, in a second place, which is the exact anti-pattern this pass is told to avoid.
+    `Teacher-Money` itself is one of the six protected files and out of scope for this branch regardless.
 
 ## D7 · Card-order notify-me — a write with no destination
 - **The decision:** where does a notify-me registration go?
