@@ -191,9 +191,22 @@ export default function SplashClient() {
           </div>
           <SummerLine className="mt-3 text-center text-[11px] text-[var(--color-muted)]" />
           {/* s01-8 slot — the design's second undercta line ("Online collection
-              switches on once your ID is verified.") is NOT built: verification
-              state has no live source yet (needs-migration item, out of this
-              build's scope). Add the line here once that lands. */}
+              switches on once your ID is verified.") is still NOT built, and
+              the reason is now stronger than "out of scope".
+
+              This is a PUBLIC page with no session, so there is no verification
+              state to read and the line would be a product claim, not a status.
+              The claim is not true yet: identity verification has no live
+              integration (the Valify credentials are placeholders — see
+              `src/lib/verification/config.ts`, the one config point) and
+              `platform_config.digital_student_fee_collection.enabled` is
+              `false` in production, verified live 4 Aug 2026. Printing it here
+              would promise a visitor something no account can currently do,
+              which is the fabricated-claim class this file was already cleaned
+              of once (56666276).
+
+              Add the line when online collection is genuinely switchable on —
+              not when the columns land. */}
         </div>
       </section>
 
