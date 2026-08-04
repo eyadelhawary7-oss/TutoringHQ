@@ -105,7 +105,7 @@ If a row ever names one, that row is a mistake.
 | [#296](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/296) | `4c5e29b` | 2026-08-01 | `Center-Home §01` — Schedule section empty-state (balance card confirmed still blocked, not built); merged by Eyad directly, held for review per this file's history | `/{locale}/dashboard` | v42 |
 | [#297](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/297) | `aa8115d4` | 2026-08-01 | none — doc only (logged #296, closed out the Center-Home §01 investigation episode) | none | v42 |
 | [#298](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/298) | `(on merge)` | 2026-08-01 | `Center-Groups` — full re-survey + waitlist-integrity fix (stale entries never cleared, position-assignment race) | `/{locale}/groups` | v42 |
-| [#338](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/338) | `(on merge)` | 2026-08-04 | `Teacher-Setup §01` (Verified chip on the Settings header), `§02` (owed hero rebuilt as the design's money hero with a This month / All time footer; page reordered into the design's order; proposal money as the three-cell Student rate / You earn / Center keeps row; counter gains "Their offer" + the offer-history strip) | `/{locale}/teacher/settings`, `/{locale}/teacher/centers` | v45 → **v46** |
+| [#344](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/344) | `(on merge)` | 2026-08-04 | `Teacher-Setup §01` (Verified chip on the Settings header), `§02` (owed hero rebuilt as the design's money hero with a This month / All time footer; page reordered into the design's order; proposal money as the three-cell Student rate / You earn / Center keeps row; counter gains "Their offer" + the offer-history strip) | `/{locale}/teacher/settings`, `/{locale}/teacher/centers` | v45 → **v46** |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, `#214`'s by that
@@ -1660,7 +1660,7 @@ description in each entry). `design/FILE-COMPLETION-TABLE.md` row 11 updated: ~3
 sub-estimate corrected down, blocked-by list gains D31/D32, D2 marked closed (confirmed already-resolved
 by `#248`, never formally closed in this table before now).
 
-**Teacher-Setup structural build (4 August 2026, PR #338)** — the instruction this pass ran under was
+**Teacher-Setup structural build (4 August 2026, PR #344)** — the instruction this pass ran under was
 the reverse of the last one: *build* the gaps rather than log them, and treat "logged a gap I could
 have built" as the failure. Surveyed `Merged-Teacher-Setup.html` section by section against a full
 re-read of the live code and independent `information_schema` queries against `lczmjpnbuhnsislcvzar`
