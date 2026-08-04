@@ -105,6 +105,7 @@ If a row ever names one, that row is a mistake.
 | [#296](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/296) | `4c5e29b` | 2026-08-01 | `Center-Home §01` — Schedule section empty-state (balance card confirmed still blocked, not built); merged by Eyad directly, held for review per this file's history | `/{locale}/dashboard` | v42 |
 | [#297](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/297) | `aa8115d4` | 2026-08-01 | none — doc only (logged #296, closed out the Center-Home §01 investigation episode) | none | v42 |
 | [#298](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/298) | `(on merge)` | 2026-08-01 | `Center-Groups` — full re-survey + waitlist-integrity fix (stale entries never cleared, position-assignment race) | `/{locale}/groups` | v42 |
+| [#TBD](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/TBD) | `(on merge)` | 2026-08-04 | `Design-Patterns §01–§06` — **ALL screens**: primitive adoption pass. `EmptyState` 11→37 adopters, loading states 1→11, `ListRow` 5→6; `globals.css` gains the `prefers-reduced-motion` branch §02 requires; `EmptyState` gains §01's quiet variant, `SheetAction` gains §04's sub-label, `ListRow` gains `href`/`icon` | **ALL routes** — `src/app/globals.css` (reduced motion) and `charts/ChartCard.tsx` (6 screens) are shared; plus `/students`, `/students/pending`, `/rooms`, `/referrals`, `/notifications`, `/settings/team`, `/teacher/*`, `/ceo/teachers`, `/admin/staff`, `/admin/promo-codes`, `/admin/privacy-requests`, `/admin/vendors`, `/admin/whatsapp-pack` | v45 → **v46** |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, `#214`'s by that
@@ -1658,3 +1659,45 @@ description:**
 description in each entry). `design/FILE-COMPLETION-TABLE.md` row 11 updated: ~3.1/5 → ~3.0/5, §04's
 sub-estimate corrected down, blocked-by list gains D31/D32, D2 marked closed (confirmed already-resolved
 by `#248`, never formally closed in this table before now).
+
+---
+
+**Design-Patterns adoption pass (4 August 2026) — the instruction was reversed: build the gaps, do not
+log them.** The 31 July `PATTERN-ADOPTION-LEDGER.md` measured six shipped primitives against the app and
+found a composite 9.8% adoption. This pass moved it to **25.5%** (60 of 235 sites), re-measured live by
+grep, not by reading the ledger. Both numbers are in the ledger's summary table with the greps behind them.
+
+Four things worth reading before the next pass:
+
+- **The ledger's own headline was already stale when this pass opened it, in both directions.**
+  `ActionSheet` / `RecordActionBar` / `ExpandableRow` were listed at 0% but four files had adopted them in
+  the per-file sweeps that ran after 31 July; and `students/page.tsx`, listed as an `EmptyState` adopter
+  "migrated 31 Jul, #292", had **no `EmptyState` import at all**. Both were found by re-running the
+  ledger's own greps. The rule that produced this — verify, do not trust, including our own documents —
+  earned its keep again.
+
+- **§02's reduced-motion rule was being violated app-wide and nobody had checked.** The rules block says
+  "the sweep already switches off under `prefers-reduced-motion` and must stay that way" — phrased as a
+  thing to preserve. It was never true: neither `.chq-skeleton` (`globals.css:1963`) nor `.skeleton`
+  (`globals.css:1130`) nor Tailwind's `animate-pulse` had a reduced-motion branch. A rule written as
+  "keep doing this" is the easiest kind to never verify. It is now a real `@media (prefers-reduced-motion:
+  reduce)` block, and the placeholders go flat rather than freezing mid-sweep, because a stopped gradient
+  reads as a rendering bug.
+
+- **A cross-file design conflict, resolved in favour of the pattern.** `Merged-Center-Students` §01 draws
+  the roster's empty-state tile at 76×76 / radius 24; `Merged-Design-Patterns` §01 specifies 64×64 /
+  radius 16. The pattern file's masthead settles it — "SECTIONS 01 AND 02 ARE PATTERNS, NOT SCREENS …
+  built once in the foundations pass and reused everywhere. Do not reimplement them per screen." The
+  roster now uses the shared component. The inline note it replaced claimed the primitive "cannot produce
+  this shape"; it can — the shape it could not produce was the one the pattern file forbids. Any future
+  per-screen empty-state drawing loses to §01 the same way.
+
+- **Three conversions were refused, and the refusals are the useful part.** The roster bulk bar cannot be
+  a `RecordActionBar` because §05's `onMore` must open the row's sheet and a roster multi-select has one
+  action — inventing bulk actions to fill the sheet would be worse than not converting. The roster row
+  kebab and `admin/centers`' row menu are blocked on **behaviour**: the first carries the paid parent-pack
+  entitlement toggle, the second is suspend / blacklist / change-plan, which is `Lifecycle` wherever it
+  lives. And the 11 route-level `loading.tsx` files, which the ledger called "a fourth ad hoc convention",
+  turned out to be deliberately shaped to match each page's own in-page skeleton — converting them to
+  `ListSkeleton` would re-create the flash they were written to remove. Convention count was the wrong
+  measure for those eleven files.

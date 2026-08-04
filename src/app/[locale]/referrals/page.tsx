@@ -5,7 +5,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { useUser } from '@/contexts/UserContext';
 import { supabase } from '@/lib/supabase';
 import { Gift, Copy, Link2, Wallet, Users, MessageCircle, ChevronRight } from 'lucide-react';
-import { PageHeader } from '@/components/shared';
+import { EmptyState, PageHeader } from '@/components/shared';
 import KpiCard from '@/components/shared/KpiCard';
 import { ReferralWithdrawalPanel } from '@/components/referrals/ReferralWithdrawalPanel';
 import { formatDate, formatNumber, formatPercent } from '@/lib/formatNumber';
@@ -273,7 +273,10 @@ export default function ReferralsPage() {
               </table>
             </div>
           ) : (
-            <div className="p-8 text-center text-[var(--color-text-muted)] text-sm">{t('noReferrals')}</div>
+            /* §01 quiet variant · the share-your-link controls are the card
+               above this table, so the empty state does not offer a second route
+               to them — §01's "one action, never two of equal weight". */
+            <EmptyState icon={Users} title={t('noReferrals')} quiet />
           )}
         </div>
 
@@ -350,7 +353,11 @@ export default function ReferralsPage() {
               </table>
             </div>
           ) : (
-            <div className="p-8 text-center text-[var(--color-text-muted)] text-sm">{t('noCommissions')}</div>
+            /* §01 quiet variant · reward history fills itself as referrals
+               convert; nothing here is waiting on the owner. The copy is left
+               exactly as it was — the referral commission MODEL is an open
+               decision (D14/D16/D22) and this state must not imply one. */
+            <EmptyState icon={Wallet} title={t('noCommissions')} quiet />
           )}
         </div>
 

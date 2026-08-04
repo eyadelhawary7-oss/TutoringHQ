@@ -5,6 +5,8 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { ChevronLeft, Inbox, Loader2, Phone, MessageCircle } from 'lucide-react';
 import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
+import { ListSkeleton } from '@/components/patterns';
+import { EmptyState } from '@/components/shared';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
 import { Modal } from '@/components/ui/Modal';
@@ -320,22 +322,26 @@ export default function PendingEnrollmentsPage() {
         </div>
 
         {list === null ? (
-          <div className="flex items-center justify-center rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] py-16">
-            <Loader2 size={20} className="animate-spin text-[var(--color-text-muted)]" />
-          </div>
+          /* §02 · "Never a spinner in the middle of an empty screen." This is a
+             list of pending signups, so it gets the list skeleton — the rows'
+             shape, at the rows' height. */
+          <ListSkeleton rows={4} />
         ) : list.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-md border border-dashed border-[var(--color-border)] bg-[var(--color-panel)] py-16 text-center">
-            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-surface-2)] text-[var(--color-text-muted)]">
-              <Inbox size={22} />
-            </div>
-            <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">
-              {t('emptyTitle')}
-            </h2>
-            <p className="mt-1 max-w-xs text-xs text-[var(--color-text-secondary)]">
-              {t('emptyDescription')}
-            </p>
+          /* §01 quiet variant · a pending signup arrives from a parent's
+             self-serve link; the owner cannot create one from here, so there is
+             no action and the tile is muted. The tile was a 48px `rounded-full`
+             circle, which is the older `empty-states/EmptyState` shape rather
+             than §01's 64×64 `rounded-lg`. The error line stays OUTSIDE the
+             empty state — an error is not §01's `.es-alt` quiet alternative. */
+          <div className="rounded-md border border-dashed border-[var(--color-border)] bg-[var(--color-panel)] py-6">
+            <EmptyState
+              icon={Inbox}
+              title={t('emptyTitle')}
+              description={t('emptyDescription')}
+              quiet
+            />
             {error ? (
-              <p className="mt-3 text-xs text-[var(--color-danger)]">{error}</p>
+              <p className="px-6 text-center text-xs text-[var(--color-danger)]">{error}</p>
             ) : null}
           </div>
         ) : (
