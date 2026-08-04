@@ -4,14 +4,35 @@
 -- SUPER_ADMIN_PHONES environment variable alone).
 --
 -- ****************************************************************************
--- * NOT APPLIED — Eyad applies this by hand.                                  *
+-- * NOT APPLIED — Eyad applies this by hand, AND APPLIES IT BEFORE MERGE.     *
 -- * CLAUDE.md rule 5: migrations are a manual apply to production. Merging    *
 -- * this file does NOT apply it (tested 15 July 2026: PR #159 merged as       *
--- * 80f82ba and the columns were still absent 8 minutes later).               *
+-- * 80f82ba and the columns were still absent 8 minutes later). See §5.2 for  *
+-- * why "before merge" and not merely "eventually".                           *
 -- * NO CODE READS OR WRITES ANY COLUMN BELOW. Nothing in this PR references   *
 -- * them. Do not add a writer until this has been applied and confirmed       *
 -- * present in information_schema.columns — building first is F26, and F26 is *
 -- * what caused the 8 July student-detail outage.                             *
+-- ****************************************************************************
+--
+-- ****************************************************************************
+-- * THE S10 ORDERING RULE — (a) BEFORE ANY GATE CHANGE. NOT NEGOTIABLE.       *
+-- *                                                                           *
+-- * S10 item (a) — create a real `admin_users` row with role='super_admin'    *
+-- * for EVERY current SUPER_ADMIN_PHONES holder — must happen BEFORE any      *
+-- * change that makes a gate stop accepting the env phone.                    *
+-- *                                                                           *
+-- * THIS BRANCH DOES NOT CHANGE THE GATE, AND MUST NOT. It renames a          *
+-- * misleading function, adds a value check to `npm run check:env`, and       *
+-- * proposes the two columns below. Authority resolution is byte-for-byte     *
+-- * what it was: `adminRow || adminByPhone` still grants, everywhere it       *
+-- * granted yesterday. Nobody gains access and nobody loses it.               *
+-- *                                                                           *
+-- * WHY, in one number, verified live on 4 August 2026: `admin_users` holds   *
+-- * exactly 1 row with role='super_admin'. Tighten the gate before (a) and    *
+-- * the single super-admin is locked out of the very surface needed to create *
+-- * the missing rows. That change is the outage, not the fix. It is           *
+-- * deliberately absent from this file and from this branch.                  *
 -- ****************************************************************************
 --
 -- WHY THIS EXISTS
@@ -251,14 +272,55 @@ COMMIT;
 -- Expect 1,1,1,1,1,57,0.
 --
 -- ============================================================================
--- 5. SCHEMA SNAPSHOT — READ BEFORE MERGING
+-- 5. SCHEMA SNAPSHOT, AND THE ONE THING EYAD MUST DO — READ BEFORE MERGING
 --
--- The Schema Drift Gate (.github/workflows/schema-drift.yml) rebuilds a fresh
--- database from EVERY file in supabase/migrations/ and diffs the result against
--- db/schema.snapshot. This file therefore turns that gate RED until the
--- snapshot is regenerated (`npm run schema:snapshot`, needs a throwaway
--- Postgres 17). The snapshot was deliberately left untouched by the change
--- that added this file — regenerating it is Eyad's to do, alongside the manual
--- apply, so that the snapshot and production move together rather than the
--- snapshot claiming a shape production does not have.
+-- Two different gates read two different things. Conflating them is how the
+-- earlier draft of this section got it backwards, so they are separated here.
+--
+-- 5.1  db/schema.snapshot IS REGENERATED IN THIS BRANCH. Not deferred.
+--
+--      The Schema Drift Gate (.github/workflows/schema-drift.yml) rebuilds a
+--      fresh throwaway database from EVERY file in supabase/migrations/ and
+--      diffs the result against db/schema.snapshot. It never touches
+--      production and never reads it. A migration file added without its
+--      snapshot delta therefore turns that gate RED for as long as the PR is
+--      open, which is not a useful signal — it is a broken gate that reviewers
+--      learn to scroll past.
+--
+--      Regenerating the snapshot is NOT applying a migration. It is an offline
+--      rebuild into a disposable local Postgres 17 (`npm run schema:snapshot`).
+--      The committed delta for this file is exactly five lines:
+--        COLUMN     audit_log.authority_source
+--        COLUMN     withdrawal_requests.processed_by_authority_source
+--        CONSTRAINT audit_log_authority_source_check
+--        CONSTRAINT withdrawal_requests_processed_by_authority_source_check
+--        INDEX      audit_log_env_phone_authority_idx
+--
+--      Repo precedent, checked rather than assumed: PR #307 (commit fb054d4b),
+--      the migration PR immediately before this one, shipped its snapshot
+--      delta in the same commit as its migration file. This branch follows it.
+--
+-- 5.2  THE HARD REQUIREMENT ON EYAD: APPLY TO PRODUCTION BY HAND *BEFORE*
+--      MERGE. This one is not a preference, and it is the reason the ordering
+--      matters at all.
+--
+--      .github/workflows/schema-drift-live.yml runs daily at 06:17 UTC and
+--      compares the COMMITTED SNAPSHOT against the LIVE PRODUCTION catalog.
+--      The moment this branch is on master, that job starts asserting that
+--      production has these two columns, these two constraints and this index.
+--
+--      So merge-before-apply does not merely leave a gate red — it makes the
+--      committed snapshot claim a shape production does not have, and turns
+--      the live drift job into a false alarm that has to be explained away
+--      every morning until the apply happens. A drift alarm nobody believes is
+--      worse than no drift alarm, and it is the same failure shape as CLAUDE.md
+--      rule 5 (PR #159 / 80f82ba: merged, assumed applied, columns absent).
+--
+--      Correct order, and the only correct order:
+--        1. Apply this file by hand to production.
+--        2. Run the §4 post-apply verification. Expect 1,1,1,1,1,57,0.
+--        3. Only then merge the PR.
+--
+--      Nothing in the application reads or writes these columns, so step 3 can
+--      wait indefinitely with no consequence. Step 3 before step 1 has one.
 -- ============================================================================

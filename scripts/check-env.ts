@@ -72,7 +72,11 @@ function checkEnvValues(): EnvIssue[] {
 
   console.log('SUPER_ADMIN_PHONES:');
   if (report.unset) {
-    console.log('  (not present in this environment — nothing to validate)');
+    console.log(
+      report.notConfiguredReason === 'stock_placeholder'
+        ? '  (still the stock .env.example value — not configured, nothing to validate)'
+        : '  (not present in this environment — nothing to validate)',
+    );
   } else {
     for (const e of report.entries) {
       console.log(

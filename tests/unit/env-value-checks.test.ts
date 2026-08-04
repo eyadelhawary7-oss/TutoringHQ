@@ -28,7 +28,50 @@ describe('checkSuperAdminPhones — missing', () => {
     for (const raw of ['', '   ', ',', ' , , ']) {
       const r = checkSuperAdminPhones(raw);
       expect(r.unset, `raw=${JSON.stringify(raw)}`).toBe(true);
+      expect(r.notConfiguredReason, `raw=${JSON.stringify(raw)}`).toBe('absent');
       expect(r.issues.some((i) => i.level === 'error')).toBe(false);
+    }
+  });
+});
+
+describe('checkSuperAdminPhones — the untouched .env.example stock value', () => {
+  // The repo ships SUPER_ADMIN_PHONES=placeholder. Classifying that as an error
+  // meant `export`ing .env.example into a shell exited non-zero on a line
+  // nobody had edited, which trains people to ignore the gate. It is
+  // not-configured, exactly like an unset variable, and warns accordingly.
+  it('treats the stock literal as not configured — a warning, never an error', () => {
+    const r = checkSuperAdminPhones('placeholder');
+    expect(r.unset).toBe(true);
+    expect(r.notConfiguredReason).toBe('stock_placeholder');
+    expect(r.validCount).toBe(0);
+    expect(r.fingerprint).toBeNull();
+    expect(r.issues.map((i) => i.level)).toEqual(['warning']);
+  });
+
+  it('is case-insensitive and tolerates surrounding whitespace', () => {
+    for (const raw of ['PLACEHOLDER', ' Placeholder ', 'placeholder,placeholder']) {
+      const r = checkSuperAdminPhones(raw);
+      expect(r.notConfiguredReason, `raw=${JSON.stringify(raw)}`).toBe('stock_placeholder');
+      expect(r.issues.some((i) => i.level === 'error')).toBe(false);
+    }
+  });
+
+  it('does NOT soften a half-finished edit: a real list containing the literal still errors', () => {
+    const r = checkSuperAdminPhones('placeholder,+201234567890');
+    expect(r.unset).toBe(false);
+    expect(r.notConfiguredReason).toBeNull();
+    expect(r.validCount).toBe(1);
+    expect(r.issues.filter((i) => i.level === 'error')).toHaveLength(1);
+    expect(r.issues[0]!.message).toContain('placeholder');
+  });
+
+  it('grants nobody anything at runtime either — the gate agrees it is not a phone', () => {
+    const PREV = process.env.SUPER_ADMIN_PHONES;
+    try {
+      process.env.SUPER_ADMIN_PHONES = 'placeholder';
+      expect(isSuperAdminPhone('placeholder')).toBe(false);
+    } finally {
+      process.env.SUPER_ADMIN_PHONES = PREV;
     }
   });
 });
@@ -42,10 +85,8 @@ describe('checkSuperAdminPhones — typos', () => {
     expect(r.issues[0]!.message).toContain('notaphone');
   });
 
-  it('errors on the literal .env.example placeholder, which the name check accepts', () => {
-    const r = checkSuperAdminPhones('placeholder');
-    expect(r.issues.some((i) => i.level === 'error')).toBe(true);
-  });
+  // The literal `placeholder` is deliberately NOT here: it is the untouched
+  // stock value, handled as not-configured in its own describe block above.
 
   it('errors on a wrong-length number (one digit short) while accepting its correct form', () => {
     expect(checkSuperAdminPhones('+2012345678').issues.some((i) => i.level === 'error')).toBe(true);

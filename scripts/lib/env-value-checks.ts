@@ -37,8 +37,15 @@ export type SuperAdminPhonesEntry = {
 };
 
 export type SuperAdminPhonesReport = {
-  /** True when the variable is unset, empty, or only separators/whitespace. */
+  /**
+   * True when no grant list is configured here at all — the variable is unset
+   * or empty, OR it still holds the untouched `.env.example` stock literal.
+   * Both mean the same thing operationally (nobody is granted) and neither is
+   * an error. `notConfiguredReason` says which.
+   */
   unset: boolean;
+  /** Why `unset` is true. `null` when a real list is present. */
+  notConfiguredReason: 'absent' | 'stock_placeholder' | null;
   entries: SuperAdminPhonesEntry[];
   /** Count of entries that normalize to a valid Egyptian mobile E.164. */
   validCount: number;
@@ -63,6 +70,25 @@ export function maskPhone(normalized: string): string {
 }
 
 /**
+ * Stock "not configured yet" literals as they are actually written in
+ * `.env.example`. `placeholder` is the dominant one — 20 of the file's keys
+ * carry it, including SUPER_ADMIN_PHONES itself.
+ *
+ * These are whitelisted as NOT CONFIGURED rather than treated as typos. The
+ * alternative was tried and is wrong: without this, `export`ing `.env.example`
+ * into a shell makes `npm run check:env` exit non-zero on an unmodified repo
+ * value, so the first thing a new developer sees is a red gate complaining
+ * about a line nobody touched. That teaches people the gate is noise, which is
+ * the opposite of what an authority-grant check is for. Every other variable
+ * in that file tolerates its own stock value; this one now does too.
+ *
+ * The whitelist is exact-match on a WHOLE entry, so a real list is never
+ * softened by it: `placeholder,+201234567890` is a half-finished edit, and the
+ * `placeholder` entry there still errors on the normal path below.
+ */
+const STOCK_PLACEHOLDERS = new Set(['placeholder']);
+
+/**
  * Validate a raw `SUPER_ADMIN_PHONES` value.
  *
  * Rules, and why each one is where it is:
@@ -70,6 +96,9 @@ export function maskPhone(normalized: string): string {
  *    SAFE state and the direction S10 wants to travel in. It is reported
  *    loudly because it is also what a lost/blanked Vercel variable looks like,
  *    and the two are indistinguishable from here.
+ *  - the untouched `.env.example` stock literal -> WARNING, same reasoning
+ *    plus the whitelist note above. Operationally identical to unset: at
+ *    runtime `isSuperAdminPhone('placeholder')` grants nobody anything.
  *  - an entry that does not normalize to a valid Egyptian mobile E.164 ->
  *    ERROR. This is the typo case, and at runtime `isSuperAdminPhone` matches
  *    it against nobody: the intended human silently has no authority.
@@ -89,7 +118,35 @@ export function checkSuperAdminPhones(raw: string | undefined | null): SuperAdmi
         'That is the safe state, but it is also what a blanked Vercel variable ' +
         'looks like — confirm it is deliberate.',
     });
-    return { unset: true, entries: [], validCount: 0, duplicates: [], fingerprint: null, issues };
+    return {
+      unset: true,
+      notConfiguredReason: 'absent',
+      entries: [],
+      validCount: 0,
+      duplicates: [],
+      fingerprint: null,
+      issues,
+    };
+  }
+
+  if (parts.every((p) => STOCK_PLACEHOLDERS.has(p.toLowerCase()))) {
+    issues.push({
+      level: 'warning',
+      message:
+        'SUPER_ADMIN_PHONES still holds the stock .env.example value ' +
+        `("${parts.join(',')}"). Treated as NOT CONFIGURED, not as a typo: no ` +
+        'env-phone super-admin exists, which is the safe state. If this is a ' +
+        'real environment that is supposed to have one, the value was never set.',
+    });
+    return {
+      unset: true,
+      notConfiguredReason: 'stock_placeholder',
+      entries: [],
+      validCount: 0,
+      duplicates: [],
+      fingerprint: null,
+      issues,
+    };
   }
 
   const entries: SuperAdminPhonesEntry[] = parts.map((p) => {
@@ -136,6 +193,7 @@ export function checkSuperAdminPhones(raw: string | undefined | null): SuperAdmi
 
   return {
     unset: false,
+    notConfiguredReason: null,
     entries,
     validCount: unique.length,
     duplicates,
