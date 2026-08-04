@@ -35,7 +35,7 @@
 // `center_payouts` table, no `ledger_*` table, no `payout_provider_events`.
 //
 // They are PROPOSED, NOT APPLIED, in
-//   supabase/migrations/20260804140000_PROPOSAL_payout_system_1_ledger.sql
+//   supabase/migrations/20260804150000_PROPOSAL_payout_system_1_ledger.sql
 // whose header says "NOT APPLIED — Eyad applies this by hand".
 //
 // So every call below currently fails at the database with "function does not
@@ -101,7 +101,7 @@ export function isNotMigrated(err: { code?: string | null; message?: string | nu
 }
 
 const MIGRATION_FILE =
-  'supabase/migrations/20260804140000_PROPOSAL_payout_system_1_ledger.sql';
+  'supabase/migrations/20260804150000_PROPOSAL_payout_system_1_ledger.sql';
 
 /**
  * Every RPC in the proposal is `RETURNS TABLE (...)`, which is SET-RETURNING —

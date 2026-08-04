@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
         queueSourced: false,
         queueUnavailableReason: 'ledger_not_migrated',
         queueUnavailableDetail:
-          'center_payouts does not exist in the live catalog. It is proposed in supabase/migrations/20260804140000_PROPOSAL_payout_system_1_ledger.sql, which Eyad applies by hand. This empty list means UNKNOWN, not NONE.',
+          'center_payouts does not exist in the live catalog. It is proposed in supabase/migrations/20260804150000_PROPOSAL_payout_system_1_ledger.sql, which Eyad applies by hand. This empty list means UNKNOWN, not NONE.',
       });
     }
     return NextResponse.json({ error: error.message }, { status: 500 });

@@ -56,7 +56,7 @@ tables.
 
 | Deleted | Replaced by | Why |
 |---|---|---|
-| `src/lib/verification/config.ts` | `src/lib/valifyConfig.ts` | Two config points read the same four `VALIFY_*` keys, each declaring itself "THE ONE CONFIG POINT" and naming a different module as the only legal reader. A's placeholder vocabulary is the stricter one — it treats `test` and any value containing `<` as placeholders; B's did not. There is now exactly one `isPlaceholderValue` in the codebase. |
+| `src/lib/verification/config.ts` | `src/lib/valifyConfig.ts` | Two config points read the same four `VALIFY_*` keys, each declaring itself "THE ONE CONFIG POINT" and naming a different module as the only legal reader. A's placeholder vocabulary is the stricter one — it treats `test` and any value containing `<` as placeholders; B's did not. There is now exactly one `isPlaceholderValue` in the codebase, and it lives in neither config point: see §4a. |
 | `src/lib/verification/state.ts` | `src/lib/verificationState.ts` | Two state machines, six statuses beside five states. See §3. |
 | `src/lib/verification/readVerificationState.ts` | `getEffectiveVerification()` in `src/lib/verificationStore.ts` | B's reader queried columns on `centers`/`teacher_profiles` that this branch has decided will never exist. |
 | `GET /api/verification/state` | `GET /api/verification/status` | Two endpoints answered the same question with different shapes. Neither was a tenancy hole; both were an authority, and there must be one. |
@@ -118,6 +118,30 @@ The governing instruction was "ONE clearly named config point". This branch ship
 They cover **disjoint vendors** and **neither module reads the other's keys**. The duplication the
 instruction was written against — two modules reading the *same four* `VALIFY_*` keys with two
 different placeholder vocabularies — is gone, and that was the headline defect.
+
+### 4a. The placeholder vocabulary: one, and in neither config point
+
+An earlier revision of this branch claimed "there is now exactly one `isPlaceholderValue` in the
+codebase" while shipping two, and the claim was also printed in `.env.example`. It was false, and it
+was not cosmetic. The two dialects disagreed on 13 of 15 tokens, and they were **not** confined to
+disjoint key sets as the table above implies: `scripts/check-env.ts` imported the Valify dialect and
+applied it to the `COLLECTION_PAYOUT_RAIL_*` keys, while `collectionPayout/config.ts` applied its own
+to the identical keys. With `COLLECTION_PAYOUT_RAIL_CALLBACK_HMAC_SECRET=test`, `npm run check:env`
+printed **NOT CONFIGURED** — which an operator reads as "the webhook is closed" — while the module
+that actually gates `/api/webhooks/payout-provider` read the secret as **live**, so the webhook would
+have stopped 503-ing and begun accepting callbacks HMAC'd with a guessable secret. That is attack A1
+in `.env.example`, reached through a disagreement about vocabulary rather than a missing check.
+
+Fixed by extracting **`src/lib/placeholderValue.ts`**, imported by both config points and by
+`check-env.ts`. Two config points (§4, still open) is a question; two answers to "is this filled in?"
+is a defect, and it is closed.
+
+The shared vocabulary is the **union** of the two dialects, not either one. Neither was a superset:
+the Valify list caught `test` and any value containing `<`, which the payout list did not; the payout
+list caught `not-configured` and `replace_me`, which the Valify list did not. Adopting either alone
+would have silently widened what counts as a live credential on one of the two rails.
+`tests/unit/placeholderValue.test.ts` pins all four distinguishing tokens and asserts that no second
+implementation has reappeared anywhere under `src/`.
 
 **Option A — keep them separate (what this branch ships).** One module per vendor. Each has its own
 guard, its own named refusal causes, and its own lifecycle: Valify has no contract at all, while

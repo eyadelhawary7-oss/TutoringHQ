@@ -262,11 +262,36 @@ export function isVerified(
   return result.verified === true;
 }
 
-/** The refusal payload a route returns when the gate says no. */
+/**
+ * Causes that are a fault of the DEPLOYMENT, not of the principal. No centre
+ * owner or teacher can change any of these by doing anything; only an engineer
+ * can, by applying the identity migration, setting the Valify credentials, or
+ * fixing a caller that handed the gate a malformed principal.
+ */
+const DEPLOYMENT_FAULT_CAUSES: ReadonlySet<VerificationRefusalCause> = new Set([
+  'verification_state_not_in_schema',
+  'verification_provider_not_configured',
+  'verification_state_unreadable',
+]);
+
+/**
+ * The refusal payload a route returns when the gate says no.
+ *
+ * The top-level `error` reflects WHO IS AT FAULT, and it is derived rather than
+ * hardcoded. It used to be the constant `principal_not_verified` for all six
+ * causes, so any client or log consumer keying on `error` — the coarse field
+ * most of them key on — read a missing migration or an unset credential as "this
+ * user failed their identity check". That is the fake-success failure inverted:
+ * a true refusal wearing a false reason, blaming a person for an engineering
+ * gap they cannot act on. The specific `cause` was always correct and is
+ * unchanged; this only stops the coarse field from contradicting it.
+ */
 export function verificationRefusalBody(result: Refusal) {
   return {
     ok: false as const,
-    error: 'principal_not_verified',
+    error: DEPLOYMENT_FAULT_CAUSES.has(result.cause)
+      ? 'verification_unavailable'
+      : 'principal_not_verified',
     cause: result.cause,
     messageKey: result.messageKey,
     blockedOn: result.blockedOn,

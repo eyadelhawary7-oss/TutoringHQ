@@ -75,50 +75,19 @@
  * treats those as configured. That is precisely the "green checkmark backed by
  * no integration" failure this feature must not have.
  */
-const PLACEHOLDER_EXACT: ReadonlySet<string> = new Set([
-  'placeholder',
-  'your-key-here',
-  'your-key',
-  'changeme',
-  'change-me',
-  'todo',
-  'tbd',
-  'none',
-  'null',
-  'undefined',
-  'xxx',
-  'example',
-  'test',
-  'unset',
-]);
-
-/** Substrings that mark a value as a slot rather than a secret. */
-const PLACEHOLDER_SUBSTRINGS: readonly string[] = [
-  'placeholder',
-  'your-key',
-  'your-api',
-  'your-secret',
-  'changeme',
-  'change-me',
-  'replace-me',
-  'example.com',
-  '<',
-];
-
 /**
  * True when `value` is absent, blank, or one of the repo's placeholder tokens.
- * Exported because the guard and `scripts/check-env.ts` must agree exactly on
- * what "still a placeholder" means; two divergent definitions would let a
- * credential be live to one and dead to the other.
+ *
+ * NOT DEFINED HERE. The vocabulary lives in src/lib/placeholderValue.ts and is
+ * shared with src/lib/collectionPayout/config.ts and scripts/check-env.ts.
+ * This module briefly owned its own copy while the payout rail owned a second,
+ * different one; the two disagreed on 13 of 15 tokens, and because check-env.ts
+ * judged the payout keys with THIS one while the webhook gate judged them with
+ * the other, a secret could read "not configured" to the operator and "live" to
+ * the code. Re-exported rather than removed so existing importers keep working
+ * — but there is exactly one implementation, and it is not in this file.
  */
-export function isPlaceholderValue(value: string | undefined | null): boolean {
-  if (value == null) return true;
-  const t = String(value).trim();
-  if (t.length === 0) return true;
-  const lower = t.toLowerCase();
-  if (PLACEHOLDER_EXACT.has(lower)) return true;
-  return PLACEHOLDER_SUBSTRINGS.some((s) => lower.includes(s));
-}
+export { isPlaceholderValue } from './placeholderValue';
 
 function readTrimmed(name: string): string | undefined {
   const v = process.env[name];

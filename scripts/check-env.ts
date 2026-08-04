@@ -9,12 +9,17 @@
  */
 import fs from 'fs';
 import path from 'path';
-// Imported, not re-implemented. The guard and this script MUST agree exactly on
-// what "still a placeholder" means — two divergent definitions would let a
-// credential count as live to one and dead to the other, which is the confusion
-// this whole report exists to prevent. valifyConfig.ts has no imports of its
-// own, so pulling it into a plain tsx script is safe.
-import { VALIFY_ENV_KEYS, isPlaceholderValue } from '../src/lib/valifyConfig';
+// Imported, not re-implemented, and imported from the SHARED module rather than
+// from either config point. This script and the modules that actually gate the
+// credentials MUST agree exactly on what "still a placeholder" means — two
+// divergent definitions let a credential count as live to one and dead to the
+// other, which is the confusion this whole report exists to prevent. This file
+// previously imported the Valify dialect and applied it to the payout-rail keys
+// while collectionPayout/config.ts applied its own to the same keys, committing
+// verbatim the error this comment warns about. placeholderValue.ts has no
+// imports of its own, so pulling it into a plain tsx script is safe.
+import { isPlaceholderValue } from '../src/lib/placeholderValue';
+import { VALIFY_ENV_KEYS } from '../src/lib/valifyConfig';
 import { ENV_KEYS as COLLECTION_PAYOUT_ENV_KEYS } from '../src/lib/collectionPayout/config';
 
 const SRC_ROOT = path.join(__dirname, '..', 'src');

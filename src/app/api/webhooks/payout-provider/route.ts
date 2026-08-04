@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
         ok: false,
         error: 'payout_provider_events_unavailable',
         detail:
-          'payout_provider_events does not exist in the live catalog. It is proposed in supabase/migrations/20260804140000_PROPOSAL_payout_system_1_ledger.sql, which Eyad applies by hand. The callback was NOT stored.',
+          'payout_provider_events does not exist in the live catalog. It is proposed in supabase/migrations/20260804150000_PROPOSAL_payout_system_1_ledger.sql, which Eyad applies by hand. The callback was NOT stored.',
         dbMessage: error.message,
       },
       { status: 503 },

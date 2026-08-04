@@ -171,7 +171,7 @@ async function readPayoutDestination(
  * The persistence step is deliberately behind gate 3 and is the one part that
  * needs a column that does not exist yet: there is no `collection_enabled`
  * column on `centers` or `teacher_profiles`. It is PROPOSED, not applied, in
- * supabase/migrations/20260804140000_PROPOSAL_payout_system_1_ledger.sql.
+ * supabase/migrations/20260804150000_PROPOSAL_payout_system_1_ledger.sql.
  */
 export async function enableCollection(
   supabaseAdmin: SupabaseClient,
@@ -194,7 +194,7 @@ export async function enableCollection(
         operation: 'collection_enable_for_principal',
         message: error.message,
         migrationProposal:
-          'supabase/migrations/20260804140000_PROPOSAL_payout_system_1_ledger.sql',
+          'supabase/migrations/20260804150000_PROPOSAL_payout_system_1_ledger.sql',
       },
     };
   }

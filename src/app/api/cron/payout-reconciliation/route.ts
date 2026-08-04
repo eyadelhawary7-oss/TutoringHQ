@@ -135,7 +135,7 @@ export async function GET(request: Request) {
           skipped: true,
           reason: 'ledger_not_migrated',
           detail:
-            'center_payouts does not exist in the live catalog. Proposed in supabase/migrations/20260804140000_PROPOSAL_payout_system_1_ledger.sql; Eyad applies it by hand.',
+            'center_payouts does not exist in the live catalog. Proposed in supabase/migrations/20260804150000_PROPOSAL_payout_system_1_ledger.sql; Eyad applies it by hand.',
         });
       }
       throw new Error(error.message);

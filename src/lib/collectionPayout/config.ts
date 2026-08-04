@@ -121,29 +121,22 @@ export const PLATFORM_CONFIG_KEYS = {
 // ── Placeholder detection ───────────────────────────────────────────────────
 
 /**
- * Values that mean "nobody has filled this in". Matched case-insensitively.
- * `.env.example` in this repo already uses `placeholder` and `your-key-here`,
- * so those are included rather than inventing a new convention.
+ * True when `raw` is absent, blank, or one of the recognised placeholders.
+ *
+ * NOT DEFINED HERE — see src/lib/placeholderValue.ts, which is the only
+ * implementation in the codebase. This module used to carry its own, and it was
+ * the PERMISSIVE of the two dialects then in the tree: it did not treat `test`
+ * or a value containing `<` as a placeholder. Since scripts/check-env.ts judged
+ * these same COLLECTION_PAYOUT_RAIL_* keys with the OTHER dialect,
+ * COLLECTION_PAYOUT_RAIL_CALLBACK_HMAC_SECRET=test printed NOT CONFIGURED to the
+ * operator while this module reported it live, and /api/webhooks/payout-provider
+ * would have stopped 503-ing and started accepting callbacks signed with a
+ * guessable secret — attack A1. The shared vocabulary is the UNION of the two,
+ * so the `not-configured` and `replace_me` spellings this module used to catch
+ * are still caught. Re-exported so existing importers keep working.
  */
-const PLACEHOLDER_PATTERNS: RegExp[] = [
-  /^placeholder/i,
-  /placeholder$/i,
-  /^your-key-here$/i,
-  /^changeme$/i,
-  /^todo$/i,
-  /^tbd$/i,
-  /^not[-_ ]?configured$/i,
-  /^replace[-_ ]?me$/i,
-  /^example\.com$/i,
-  /^https?:\/\/example\.com/i,
-];
-
-/** True when `raw` is absent, blank, or one of the recognised placeholders. */
-export function isPlaceholderValue(raw: string | undefined | null): boolean {
-  const v = typeof raw === 'string' ? raw.trim() : '';
-  if (v === '') return true;
-  return PLACEHOLDER_PATTERNS.some((re) => re.test(v));
-}
+export { isPlaceholderValue } from '../placeholderValue';
+import { isPlaceholderValue } from '../placeholderValue';
 
 // ── Result shape ────────────────────────────────────────────────────────────
 
