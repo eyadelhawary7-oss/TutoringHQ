@@ -20,7 +20,24 @@ import type { SupabaseClient } from '@supabase/supabase-js';
  *    exists but records which staff see which branch, not the branches
  *    themselves, so a count from it would be a different number wearing the
  *    design's label.
- *  - **Verified / National ID.** No column on `centers`. Blocked on V1 (Valify).
+ *  - **Verified / National ID.** Still not here, and for two different reasons.
+ *    Verification STATE no longer belongs in this module at all: it is decided
+ *    by `src/lib/verificationState.ts` (the state machine) over
+ *    `src/lib/verificationStore.ts` (the reader), and read by admin screens
+ *    through `/api/admin/verification/availability`, so that exactly one place
+ *    in the codebase decides it. The National ID NUMBER is not here and never
+ *    will be — `design/VERIFICATION-SPEC.md` §9.7 establishes that no verified
+ *    screen needs it, and §7.7/§7.8 flag that rendering it to internal staff
+ *    has no least-privilege control behind it.
+ *
+ *    Re-verified live against project lczmjpnbuhnsislcvzar on 4 Aug 2026:
+ *    `public.centers` has 128 columns and none of `verification_status`,
+ *    `verified_at`, `national_id` or `valify_transaction_id`; and neither
+ *    `verification_records` nor `verification_attempts` exists among the 142
+ *    base tables in `public`. When they do, the number will live in
+ *    `verification_records` behind a column-level REVOKE — not on `centers`,
+ *    where four `select('*')` call sites would pick it up and RLS could not
+ *    withhold it.
  */
 
 export const ATTENDANCE_WINDOW_DAYS = 30;

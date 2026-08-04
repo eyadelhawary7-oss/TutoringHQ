@@ -5,9 +5,10 @@ import { useTranslations, useLocale } from 'next-intl';
 import { useRouter, Link } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, dbUpdate, auditLog } from '@/lib/db-proxy';
+import { formatNumber } from '@/lib/formatNumber';
 import { useUser } from '@/contexts/UserContext';
 import { PageHeader } from '@/components/shared';
-import { Building2, Camera, ChevronRight, Loader2 } from 'lucide-react';
+import { Building2, Camera, ChevronRight, Loader2, Map } from 'lucide-react';
 import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
 
 interface CenterInfo {
@@ -74,6 +75,7 @@ export default function CenterInfoSettingsPage() {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoToast, setLogoToast] = useState<'success' | 'error' | null>(null);
+  const [branchCount, setBranchCount] = useState<number | null>(null);
 
   useEffect(() => {
     if (currentUser && (currentUser.role === 'assistant' || currentUser.role === 'teacher') && !hasPermission('can_view_settings')) {
@@ -114,6 +116,23 @@ export default function CenterInfoSettingsPage() {
         setLogoUrl(c.logo_url ?? null);
         setLogoLoadFailed(false);
       }
+
+      // Real branch count from the same org-scoped source /branches itself
+      // reads - never invented. Single-branch centers (no organization_id)
+      // correctly get { branches: [thisCenter] } back, so the row still
+      // shows a real "1" rather than being silently skipped.
+      try {
+        const branchesRes = await fetch('/api/branches', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (branchesRes.ok) {
+          const branchesData = (await branchesRes.json()) as { branches?: unknown[] };
+          setBranchCount(Array.isArray(branchesData.branches) ? branchesData.branches.length : null);
+        }
+      } catch {
+        setBranchCount(null);
+      }
+
       setIsLoading(false);
     };
     load();
@@ -396,6 +415,24 @@ export default function CenterInfoSettingsPage() {
             </div>
           </div>
         </div>
+
+        {branchCount !== null && (
+          <div className="mt-4 bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow">
+            <Link
+              href="/branches"
+              className="flex items-center gap-4 p-6 hover:bg-[var(--color-surface-0)] transition-colors rounded-xl"
+            >
+              <div className="p-2 bg-teal-100 rounded-xl shrink-0">
+                <Map className="w-4 h-4 text-teal-600" aria-hidden />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-[var(--color-text-primary)]">{t('manageBranches')}</h3>
+              </div>
+              <span className="text-sm text-[var(--color-text-muted)] font-medium">{formatNumber(branchCount, locale)}</span>
+              <DirectionalIcon icon={ChevronRight} className="w-4 h-4 text-[var(--color-text-muted)] shrink-0" />
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );

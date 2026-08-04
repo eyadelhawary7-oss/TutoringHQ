@@ -8,6 +8,7 @@ import {
   type PlanKey,
 } from '@/lib/pricing';
 import { parseBodyWithLimit } from '@/lib/validate';
+import { validateCSRFRequest } from '@/lib/csrf';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +25,11 @@ const PLAN_RANK: Record<string, number> = {
 export async function POST(request: NextRequest) {
   const auth = await requireCenterAuth(request);
   if (!auth.ok) return auth.response;
+  // S8: schedules a plan downgrade for next renewal - no CSRF check existed.
+  // Matches the pattern already used by billing/cancel and billing/withdrawal.
+  if (!validateCSRFRequest(request, auth.userId)) {
+    return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
+  }
   if (auth.role !== 'owner') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }

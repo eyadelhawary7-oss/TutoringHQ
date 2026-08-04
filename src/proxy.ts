@@ -32,6 +32,25 @@ const PUBLIC_WEBHOOK_PREFIXES = [
   '/api/bosta/webhook',
   '/api/whatsapp/webhook',
   '/api/whatsapp/inbound',
+  // Valify identity-verification callback. Public by necessity (Valify has no
+  // session with us) and therefore verifies its own HMAC with a timing-safe
+  // compare, failing closed in every environment. See
+  // src/app/api/webhooks/valify/route.ts.
+  //
+  // NOTE ON THE HMAC SCHEME: Valify's webhook authentication scheme is ASSUMED
+  // to be HMAC-SHA256 over the raw request body, hex-encoded, in an
+  // X-Valify-Signature header. This is NOT confirmed by the vendor. It must be
+  // checked against Valify's integration documentation before go-live; if the
+  // real scheme differs, src/app/api/webhooks/valify/route.ts changes and this
+  // entry stays as-is.
+  '/api/webhooks/valify',
+  // Payout provider (Paymob Payouts) server-to-server callback. Public by
+  // necessity — the provider has no session with us. It verifies its own HMAC
+  // with a timing-safe compare and, while the HMAC secret holds a placeholder,
+  // rejects every callback with a 503 rather than accepting it (attack A1:
+  // an unauthenticated callback lets a centre owner fabricate a "failed" event
+  // for a payout that already settled and get their balance credited back).
+  '/api/webhooks/payout-provider',
 ];
 
 function isPublicWebhookPath(pathname: string): boolean {

@@ -30,6 +30,7 @@ export default function OrderDetailClient({
   const tt = useTranslations('orderTimeline');
   const tr = useTranslations('reorder');
   const tc = useTranslations('cardOrders');
+  const tCommon = useTranslations('common');
 
   const [order, setOrder] = useState<UnknownRecord>(initialOrder);
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -67,7 +68,7 @@ export default function OrderDetailClient({
     return map[status] ?? status.replace(/_/g, ' ');
   }, [status, t]);
 
-  const transitions = (order.transitions as { to_status?: string; created_at?: string }[]) ?? [];
+  const transitions = (order.transitions as { to_status?: string; transitioned_at?: string }[]) ?? [];
   const items = (order.items as UnknownRecord[]) ?? [];
 
   const shipFee = Number(order.delivery_fee ?? 0);
@@ -237,7 +238,7 @@ export default function OrderDetailClient({
           <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{t('title', { ref: shortRef })}</h1>
           <p className="text-xs text-[var(--color-text-secondary)] mt-1">
             {t('orderedAt')}:{' '}
-            {order.created_at ? formatDateTime(String(order.created_at), locale) : ','}
+            {order.created_at ? formatDateTime(String(order.created_at), locale) : tCommon('notAvailable')}
           </p>
         </div>
         <span className={`text-xs font-semibold px-3 py-1 rounded-full capitalize ${statusPillClass(status)}`}>
@@ -260,7 +261,7 @@ export default function OrderDetailClient({
             items.map((it, idx) => {
               const kind = String(it.kind ?? '');
               if (kind === 'student') {
-                const name = String(it.student_name ?? ',');
+                const name = it.student_name != null ? String(it.student_name) : tCommon('notAvailable');
                 const num = it.student_number != null ? String(it.student_number) : '';
                 return (
                   <li key={idx} className="flex justify-between gap-2">
@@ -288,9 +289,9 @@ export default function OrderDetailClient({
 
       <section className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 space-y-2 text-sm">
         <h2 className="text-sm font-bold text-[var(--color-text-primary)] mb-1">{t('sections.delivery')}</h2>
-        <p>{String(order.delivery_governorate ?? ',')}</p>
-        <p className="whitespace-pre-wrap">{String(order.delivery_address ?? '').trim() || ','}</p>
-        <p className="tabular-nums direction-ltr text-end">{String(order.delivery_phone ?? ',')}</p>
+        <p>{order.delivery_governorate != null ? String(order.delivery_governorate) : tCommon('notAvailable')}</p>
+        <p className="whitespace-pre-wrap">{String(order.delivery_address ?? '').trim() || tCommon('notAvailable')}</p>
+        <p className="tabular-nums direction-ltr text-end">{order.delivery_phone != null ? String(order.delivery_phone) : tCommon('notAvailable')}</p>
         {order.notes?.toString().trim() ? (
           <p className="text-[var(--color-text-secondary)] whitespace-pre-wrap">{String(order.notes)}</p>
         ) : null}

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { formatNumber } from '@/lib/formatNumber';
 import { requireCenterAuth } from '@/lib/centerAuth';
-import { requirePermission } from '@/lib/centerPermissions';
+import { requireMoneyRequestPermission } from '@/lib/centerPermissions';
 import { parseBodyWithLimit } from '@/lib/validate';
 import { getProcessingFeeConfig } from '@/lib/pricingConfig';
 import { resolveProcessingFeeAmount } from '@/lib/processingFee';
@@ -17,8 +17,22 @@ export async function POST(request: NextRequest) {
     if (!validateCSRFRequest(request, auth.userId)) {
       return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
     }
-    // Permission gate added May 12 per docs/AUDIT_center_role_gating.md
-    const permErr = requirePermission(auth, 'can_request_referral_payouts');
+    // Permission gate added May 12 per docs/AUDIT_center_role_gating.md.
+    // PAYOUT-SYSTEM-SPEC.md §2.7: was `requirePermission`, which also passed on
+    // `auth.isSuperAdmin` alone and on any role holding the flag. This route
+    // initiates money leaving a centre and its sibling
+    // (POST /api/billing/withdrawal) is owner-only, so the gate is now
+    // owner OR an explicitly-delegated centre staff member — never the flag
+    // alone on a centre-less identity. The pipelines are NOT unified here;
+    // Decision 1 is Eyad's and is still open.
+    // The third argument is the intent, and it is required. This route only ever
+    // CREATES a payout request; nothing here approves, releases or disburses one.
+    // A release path passing 'release' throws on the first call.
+    const permErr = requireMoneyRequestPermission(
+      auth,
+      'can_request_referral_payouts',
+      'request',
+    );
     if (permErr) return permErr;
 
     const body = (await parseBodyWithLimit(request, 65536)) as Record<string, unknown>;

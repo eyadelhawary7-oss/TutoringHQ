@@ -9,9 +9,20 @@
  * is the block the design leads with and the one that had nothing behind it,
  * because `/api/admin/overview` only ever knew about centres.
  *
+ * The **Unverified filter chip** is no longer omitted from the lists this
+ * header links to. `/admin/centers` now draws it DISABLED with its named cause
+ * ("the verification columns are not in the live database"), because a filter
+ * that is simply absent tells an operator nothing and they keep hunting for it.
+ * It is not drawn *here* — this is a header, and the chip belongs on the list.
+ *
+ * `Merged-Admin-Platform` §02 also draws a Vendors row reading
+ * "Valify · Identity verification · **Connected**" with a green dot. That is a
+ * design-side fabrication: nothing is connected, and no Valify credential
+ * exists on any deployment. There is no vendors screen in live code to correct,
+ * so nothing is built for it here — but if one is ever added it must read from
+ * `/api/admin/verification/availability`, never from a hard-coded status.
+ *
  * OMITTED, with the reason:
- *  - **The Unverified filter chip** on the lists this header links to is V1
- *    (Valify). Not drawn here.
  *  - **`/admin/teachers`**, the design's third §01 frame, is R7 — built 28 July
  *    and closed unmerged on Eyad's call, one teacher console not two. The
  *    teachers row here is a figure, not a link, because the destination was

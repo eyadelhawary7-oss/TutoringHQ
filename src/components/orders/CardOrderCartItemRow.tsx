@@ -24,6 +24,7 @@ export function CardOrderCartItemRow({
   initials: (name: string | null | undefined) => string;
 }) {
   const t = useTranslations('cart');
+  const tCommon = useTranslations('common');
   const trackRef = useRef<HTMLDivElement>(null);
   const startX = useRef<number | null>(null);
   const lastX = useRef(0);
@@ -56,7 +57,7 @@ export function CardOrderCartItemRow({
   const closeSwipe = useCallback(() => setOffset(0), []);
 
   const label =
-    `${item.student?.name ?? ','}, ${item.stale ? t('studentRow.removedFromCenter') : item.saved_for_later ? t('savedSection') : t('activeSection')}`;
+    `${item.student?.name ?? tCommon('notAvailable')}, ${item.stale ? t('studentRow.removedFromCenter') : item.saved_for_later ? t('savedSection') : t('activeSection')}`;
 
   return (
     <li className="relative overflow-hidden border-b border-[var(--color-border-subtle)] last:border-0 md:overflow-visible">
@@ -125,7 +126,7 @@ export function CardOrderCartItemRow({
         </div>
         <div className="flex-1 min-w-0">
           <p className={`text-sm font-medium text-[var(--color-text-primary)] ${item.stale ? 'line-through' : ''}`}>
-            {item.student?.name ?? ','}
+            {item.student?.name ?? tCommon('notAvailable')}
           </p>
           <p className="text-xs text-[var(--color-text-tertiary)] font-mono" dir="ltr">
             <bdi>{formatStudentNumberForDisplay(item.student?.student_number ?? '')}</bdi>

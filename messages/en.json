@@ -1,18 +1,7 @@
 {
   "legal": {
-    "terms": {
-      "title": "Terms of Service",
-      "placeholderBody": "These Terms of Service are interim documentation while legal review is completed. Final terms pending review by Adsero · interim copy applies until 9 May 2026.\n\nBy using TutoringHQ you agree to operate in good faith and comply with applicable laws and our acceptable use expectations.\n\nWe may update these terms and will publish changes here with an updated \"Last updated\" date.",
-      "processingFeeHeading": "Processing fee",
-      "processingFeeBody": "A flat processing fee of {amount} is added to each Paymob-charged subscription invoice and shown at checkout and on every invoice. VAT is included in the displayed totals.",
-      "processingFeePlaceholderNote": "[Placeholder — final processing-fee wording pending Adsero legal review.]",
-      "lastUpdated": "Last updated: 9 May 2026"
-    },
-    "privacy": {
-      "title": "Privacy Policy",
-      "placeholderBody": "This Privacy Policy is interim documentation while legal review is completed. Final policy pending review by Adsero · interim copy applies until 9 May 2026.\n\nWe process personal data to deliver TutoringHQ services and improve reliability and security.\n\nWe may update this policy and will publish changes here with an updated \"Last updated\" date.",
-      "lastUpdated": "Last updated: 9 May 2026"
-    }
+    "terms": { "title": "Terms and Conditions" },
+    "privacy": { "title": "Privacy Policy" }
   },
   "plan": {
     "solo": "Solo",
@@ -2669,6 +2658,7 @@
       "mohandiseen": "Mohandiseen",
       "other": "Other"
     },
+    "manageBranches": "Manage branches",
     "manageReferrals": "Manage Referrals",
     "totalReferrals": "Total Referrals",
     "totalEarned": "Earned",
@@ -5213,7 +5203,7 @@
       "filter_all": "All",
       "filter_access": "Access",
       "filter_deletion": "Deletion",
-      "filter_export": "Export",
+      "filter_portability": "Export",
       "slaNote": "PDPL requires a response within {days} days of a verified request. Due soon flags anything under 5 days, including anything already past its date."
     },
     "platformConfigGroupFeatures": "Features",
@@ -9961,6 +9951,7 @@
     "privacy": "Privacy Policy",
     "terms": "Terms and Conditions",
     "cookies": "Cookie Policy",
+    "legal": "All legal documents",
     "talkHeading": "Talk to us",
     "whatsappHours": "WhatsApp, 10am to 6pm",
     "legalLine": "<b>TutoringHQ</b> is operated by <b>EHG Intelligence Egypt</b>, a registered Egyptian company.",
@@ -10132,5 +10123,118 @@
     "bannerSub": "Start today. First invoice {firstCharge}, nothing to pay now.",
     "codeLabel": "Code",
     "startFree": "Start free"
+  },
+  "verification": {
+    "badge": {
+      "verified": "Verified",
+      "unverified": "Not verified",
+      "pending": "Verification in progress",
+      "rejected": "Verification did not pass",
+      "unavailable": "Verification unavailable"
+    },
+    "outcome": {
+      "failed": "Your last check did not pass.",
+      "abandoned": "Your last check was not finished.",
+      "expired": "Your last verification link expired before it was used. Starting again is all it takes.",
+      "providerError": "Our verification provider had a problem on your last attempt. Nothing has changed on your account and nothing was recorded against it."
+    },
+    "cta": {
+      "verifyMyId": "Verify my ID",
+      "verifyToSwitchOn": "Verify to switch on",
+      "whatYoullNeed": "About 2 minutes · commercial registration or National ID · secured by Valify",
+      "reason": {
+        "unavailable": "Identity verification is not switched on yet, so this cannot be started. Nothing is wrong with your account. We will tell you the moment it is available.",
+        "pending": "Your check is still running. We will update this as soon as the result arrives — you do not need to start again."
+      }
+    },
+    "collection": {
+      "reason": {
+        "unavailable": "Online collection is not switched on yet. Keep recording payments by hand — nothing about how you get paid has changed.",
+        "pending": "Online collection switches on once your check finishes.",
+        "unverified": "Online collection switches on once your ID is verified."
+      }
+    },
+    "collectForYou": {
+      "title": "Let us collect for you",
+      "body": "Verify your ID and TutoringHQ collects every student payment through the app, then pays you automatically. No more chasing parents.",
+      "subline": "Hassle-free · paid straight to you · we handle the tax receipt"
+    },
+    "settingsRow": {
+      "title": "Collect payments for me",
+      "subtitleUnverified": "Verify your ID to turn this on",
+      "subtitleUnavailable": "Not available yet. Parents keep paying you directly.",
+      "subtitleOn": "On. We invoice parents and process your payout every Thursday."
+    },
+    "admin": {
+      "status": {
+        "notConfigured": "Not configured"
+      },
+      "cause": {
+        "valifyNotConfigured": "The Valify credentials on this deployment are absent or still the example placeholders, so no identity check can run and no verification state exists to show.",
+        "verificationSchemaNotApplied": "The verification_records and verification_attempts tables are not in the live database. The migration proposal is written but has not been applied by hand."
+      },
+      "filterUnverifiedDisabled": "The Unverified filter needs verification state, which this database does not store yet."
+    }
+  },
+  "collectionPayout": {
+    "cause": {
+      "collection_payout_not_configured": "Online collection and payouts are not switched on yet. Nothing has been charged and nothing has been sent.",
+      "rail_credentials_placeholder": "The payout provider is not connected yet, so money cannot be sent.",
+      "rail_callback_hmac_placeholder": "The payout provider's security key is not set, so we cannot trust anything it tells us.",
+      "collection_switch_off": "Online collection is switched off across the platform.",
+      "rate_card_unset": "The collection fee rates have not been set, so we cannot quote a price.",
+      "delegate_cap_unset": "The approval limit has not been set, so only the CEO can approve a payout.",
+      "releases_halted": "Payout releases are paused.",
+      "config_unreadable": "We could not read the payout settings, so nothing will be sent.",
+      "ledger_not_migrated": "The payout ledger has not been set up on the database yet.",
+      "approver_refused": "You are not allowed to approve this payout.",
+      "cap_refused": "This payout is above your approval limit.",
+      "payout_not_found": "That payout could not be found.",
+      "illegal_transition": "That change is not allowed from the payout's current state.",
+      "rail_cannot_release": "This payout cannot be sent: the payout provider is not connected.",
+      "step_up_auth_required": "Confirm your PIN to approve this payout.",
+      "engine_error": "Something went wrong and nothing was changed."
+    },
+    "verification": {
+      "stateNotInSchema": "Identity verification is not available yet. Online collection stays off until it is, and nothing about your account has changed.",
+      "providerNotConfigured": "Identity verification is not switched on yet, so online collection cannot be turned on. Nothing about your account has changed.",
+      "unreadable": "We could not check your verification just now, so nothing was switched on. Nothing about your account has changed.",
+      "notVerified": "Verify your ID to switch on online collection.",
+      "pending": "Your identity check is still running. Online collection switches on as soon as it finishes — you do not need to start again."
+    },
+    "approver": {
+      "envPhoneRefused": "Payout approval needs a real admin account, not a phone number on a list.",
+      "noAdminRow": "You do not have an admin account, so you cannot approve payouts.",
+      "notAnApprover": "You have not been granted payout approval.",
+      "stepUpFailed": "That PIN was not correct. Nothing was approved."
+    },
+    "cap": {
+      "notAnApprover": "You have not been granted payout approval. Only the CEO can approve this.",
+      "resendRequiresCeo": "Only the CEO can re-send a payout, at any amount.",
+      "overPerPayout": "This payout is at or above the approval limit, so only the CEO can approve it.",
+      "overRollingWindow": "This centre has reached its 7-day approval limit, so only the CEO can approve it."
+    },
+    "payout": {
+      "awaitingApproval": "Waiting for approval. Nothing has been sent yet.",
+      "noFallbackApprover": "Only the CEO can approve this. There is no stand-in, and the request will not expire while it waits.",
+      "illegalTransition": "That change is not allowed from the payout's current state."
+    },
+    "balance": {
+      "notSourced": "We cannot show a balance yet, so this reads zero. It means unknown, not empty."
+    },
+    "enable": {
+      "ownerOnly": "Only the owner can switch on online collection. This cannot be delegated.",
+      "payoutDestinationMissing": "Add the account we should pay you into before switching on online collection."
+    },
+    "request": {
+      "ownerOnly": "Only the owner can request a payout. This cannot be delegated.",
+      "amountInvalid": "Enter a whole amount above zero to request a payout. Nothing has been requested.",
+      "sourceInvalid": "We could not tell which balance you want to cash out, so nothing has been requested.",
+      "principalInvalid": "This account cannot request a payout. Nothing has been requested.",
+      "payoutDestinationMissing": "Add the account we should pay you into before requesting a payout.",
+      "insufficientAvailable": "That is more than you have available right now. Nothing has been requested.",
+      "stepUpRequired": "Confirm your PIN to request a payout. Nothing has been requested yet.",
+      "stepUpFailed": "That PIN was not correct. Nothing has been requested."
+    }
   }
 }
