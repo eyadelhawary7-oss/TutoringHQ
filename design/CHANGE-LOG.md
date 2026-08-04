@@ -105,7 +105,7 @@ If a row ever names one, that row is a mistake.
 | [#296](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/296) | `4c5e29b` | 2026-08-01 | `Center-Home §01` — Schedule section empty-state (balance card confirmed still blocked, not built); merged by Eyad directly, held for review per this file's history | `/{locale}/dashboard` | v42 |
 | [#297](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/297) | `aa8115d4` | 2026-08-01 | none — doc only (logged #296, closed out the Center-Home §01 investigation episode) | none | v42 |
 | [#298](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/298) | `(on merge)` | 2026-08-01 | `Center-Groups` — full re-survey + waitlist-integrity fix (stale entries never cleared, position-assignment race) | `/{locale}/groups` | v42 |
-| [#338](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/338) | `(on merge)` | 2026-08-04 | `Admin-Accounts §01` — the MANAGE **Branches** row, previously mislogged as schema-blocked; `Admin-Accounts §02` — the member sheet's recency line | `/{locale}/admin/centers/[id]`, `/{locale}/admin/internal-team` | v45 → **v46** |
+| [#339](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/339) | `(on merge)` | 2026-08-04 | `Admin-Accounts §01` — the MANAGE **Branches** row, previously mislogged as schema-blocked; `Admin-Accounts §02` — the member sheet's recency line | `/{locale}/admin/centers/[id]`, `/{locale}/admin/internal-team` | v45 → **v46** |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, `#214`'s by that
@@ -1662,7 +1662,7 @@ by `#248`, never formally closed in this table before now).
 
 ---
 
-**Admin-Accounts, build pass (4 August 2026, PR #338) — one recorded blocker was not a blocker, and
+**Admin-Accounts, build pass (4 August 2026, PR #339) — one recorded blocker was not a blocker, and
 the reason it looked like one is the useful part.** Asked to take the file as close to 100% as is
 honestly reachable, and told explicitly that the previous pass's instruction to *log* rather than
 *build* was withdrawn. Re-surveyed all four sections against the live routes and against
@@ -1723,7 +1723,7 @@ pass, not carried over from the previous entry.**
 | Link type (Visiting/Permanent) | §03 | `teacher_center_requests` is `id, teacher_id, center_id, status, message, created_at, updated_at, responded_at, responded_by, initiated_by` — **no link-type column**. Needs a migration → stops here per the standing rule. |
 | SIGNUP REWARD block | §04 | Re-checked properly rather than accepted: `centers.referral_reward_status`/`referral_reward_amount` **do** exist and **are** written (admin centre-management §10) — but they are the **referrer's** reward, not the design's credit applied to the **referred** account. No program-level signup-credit config and no code path applies one. Genuinely absent; the near-miss columns are a different concept wearing a similar name. |
 
-| § | before (31 Jul) | after (#338) | what moved |
+| § | before (31 Jul) | after (#339) | what moved |
 |---|---|---|---|
 | §01 Admin Account Detail — centre half | 0.8/1 (16/20) | **0.85/1 (17/20)** | Branches row built off `centers.organization_id` |
 | §01 Admin Account Detail — teacher half | 0/1 | 0/1, unchanged | R7-CLOSED, Eyad's decision |
