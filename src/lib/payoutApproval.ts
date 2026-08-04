@@ -34,7 +34,17 @@ export const PAYOUT_TRANSITION_RPC = 'transition_payout_request';
 export const PAYOUT_APPROVAL_MIGRATION_FILE =
   'supabase/migrations/20260804170000_payout_requests_approval_path.sql';
 
-/** Longest rejection reason we store. Trimmed, never truncated silently. */
+/**
+ * Longest rejection reason we store.
+ *
+ * Over-length is REFUSED with 400. It is never truncated. A rejection reason is
+ * the only free-text record of why a money request was denied, and the RPC
+ * writes it into `audit_log.details.reason` in the same transaction as the
+ * state change. Silently keeping the first 500 characters would put a sentence
+ * that stops mid-clause into the permanent record while reporting success to
+ * the operator who wrote it — the audit trail would be wrong and nobody would
+ * know. Making the operator shorten it themselves is the cheaper failure.
+ */
 export const PAYOUT_REJECTION_REASON_MAX = 500;
 
 export function isPayoutRequestStatus(value: unknown): value is PayoutRequestStatus {
@@ -106,11 +116,30 @@ export function planPayoutTransition(
   return { outcome: 'conflict', status };
 }
 
-export function normalizeRejectionReason(value: unknown): string | null {
-  if (typeof value !== 'string') return null;
+export type RejectionReasonResult =
+  /** Usable as-is. `reason` is null when nothing meaningful was supplied. */
+  | { ok: true; reason: string | null }
+  /** Longer than we will store. The caller must 400; see the constant above. */
+  | { ok: false; code: 'reason_too_long'; length: number; max: number };
+
+/**
+ * Trim, treat blank as absent, and refuse anything still longer than
+ * `PAYOUT_REJECTION_REASON_MAX`. Length is measured on the trimmed string,
+ * because that is the string that would be stored.
+ */
+export function normalizeRejectionReason(value: unknown): RejectionReasonResult {
+  if (typeof value !== 'string') return { ok: true, reason: null };
   const trimmed = value.trim();
-  if (!trimmed) return null;
-  return trimmed.slice(0, PAYOUT_REJECTION_REASON_MAX);
+  if (!trimmed) return { ok: true, reason: null };
+  if (trimmed.length > PAYOUT_REJECTION_REASON_MAX) {
+    return {
+      ok: false,
+      code: 'reason_too_long',
+      length: trimmed.length,
+      max: PAYOUT_REJECTION_REASON_MAX,
+    };
+  }
+  return { ok: true, reason: trimmed };
 }
 
 type PostgrestLikeError = {
@@ -128,30 +157,66 @@ type PostgrestLikeError = {
  * runtime and say so, rather than surfacing a generic 500 that reads like a
  * transient outage — or, worse, falling back to a non-atomic UPDATE.
  *
- * Recognised:
- *   PGRST202 — PostgREST: function not found in the schema cache (the usual one)
- *   42883    — Postgres: undefined_function
- *   42703    — Postgres: undefined_column (a partially applied migration)
- *   PGRST204 — PostgREST: column not found in the schema cache
- * plus the message forms PostgREST uses when it does not set a code.
+ * THIS PREDICATE IS DELIBERATELY NARROW, and the narrowing matters more than
+ * the recognition. Once the migration IS applied, `transition_payout_request`
+ * has a body that reads five tables. Unrelated schema drift inside that body —
+ * a renamed `referral_reward_records.reward_amount`, say — also raises bare
+ * 42703. An earlier version returned true on the SQLSTATE alone, so that fault
+ * would have surfaced as a 503 telling the operator to apply a migration
+ * already sitting in the catalog. They would have applied it (a no-op),
+ * retried, got the same 503, and never seen the real breakage — in a path that
+ * releases money. A wrong 500 is noisy; a wrong 503 is a false explanation.
+ *
+ * The rule:
+ *   PGRST202 alone is enough. It means PostgREST looked for the function we
+ *     named and did not find it in its schema cache. It cannot be raised from
+ *     inside a function body, because at that point there is no body.
+ *   42883 / 42703 / PGRST204 and the no-code message form all require
+ *     corroboration: ONE field of the error must both name
+ *     `transition_payout_request` and say that it, specifically, is absent.
+ *     Per-field matters. Concatenating message + details + hint first would
+ *     let the name in a PL/pgSQL CONTEXT line corroborate a "does not exist"
+ *     that was actually about a column, which is precisely the fault we are
+ *     trying not to mislabel.
+ *   A PL/pgSQL CONTEXT line naming the RPC is a hard VETO: it proves the
+ *     function exists and was executing. Whatever broke, it is not this.
+ *   Everything else is somebody else's problem, and the route returns 500.
+ *
+ * Note on partial applies: the migration is one BEGIN/COMMIT, so it either
+ * lands whole or not at all. "Function present, decision column missing" is
+ * not a state it can leave behind, which is why dropping bare 42703 costs
+ * nothing real.
  */
+const RPC_NAME_LOWER = PAYOUT_TRANSITION_RPC.toLowerCase();
+/** "Could not find the function public.transition_payout_request(...)". */
+const RPC_NOT_FOUND_RE = new RegExp(`could not find[^\\n]{0,120}${RPC_NAME_LOWER}`);
+/** "function public.transition_payout_request(uuid, …) does not exist". */
+const RPC_ABSENT_RE = new RegExp(`${RPC_NAME_LOWER}[^\\n]{0,120}(does not exist|not found)`);
+/** The PL/pgSQL CONTEXT line, which proves the function is present and ran. */
+const RPC_CONTEXT_RE = new RegExp(`pl/pgsql function[^\\n]{0,40}${RPC_NAME_LOWER}`);
+
 export function isPayoutApprovalMigrationMissing(error: unknown): boolean {
   if (!error || typeof error !== 'object') return false;
   const e = error as PostgrestLikeError;
   const code = typeof e.code === 'string' ? e.code.toUpperCase() : '';
-  if (code === 'PGRST202' || code === 'PGRST204' || code === '42883' || code === '42703') {
-    return true;
-  }
-  const haystack = `${e.message ?? ''} ${e.details ?? ''} ${e.hint ?? ''}`.toLowerCase();
-  if (!haystack.trim()) return false;
-  if (haystack.includes(PAYOUT_TRANSITION_RPC.toLowerCase())) {
-    return (
-      haystack.includes('could not find') ||
-      haystack.includes('does not exist') ||
-      haystack.includes('not found')
-    );
-  }
-  return false;
+
+  const fields = [e.message, e.details, e.hint]
+    .map((f) => (typeof f === 'string' ? f.toLowerCase() : ''))
+    .filter((f) => f.trim() !== '');
+
+  // Veto first: if the function was running, it is not missing.
+  if (fields.some((f) => RPC_CONTEXT_RE.test(f))) return false;
+
+  if (code === 'PGRST202') return true;
+
+  // One field must say that THIS function is absent — not merely mention it
+  // somewhere while a different clause says something else does not exist.
+  const saysThisRpcIsAbsent = fields.some(
+    (f) => RPC_NOT_FOUND_RE.test(f) || RPC_ABSENT_RE.test(f),
+  );
+  if (!saysThisRpcIsAbsent) return false;
+
+  return code === '' || code === 'PGRST204' || code === '42883' || code === '42703';
 }
 
 export type PayoutTransitionRpcResult = {
@@ -193,7 +258,11 @@ export function httpStatusForPayoutRefusal(code: string | undefined): number {
       return 403;
     case 'invalid_transition':
     case 'conflict':
-    case 'center_has_open_approval':
+    // The centre is already committed, across its 'approved' AND 'paid'
+    // requests, for at least as much as its available referral rewards. 409:
+    // the request is well-formed and the actor is authorised — the state of
+    // the world refuses it.
+    case 'insufficient_reward_coverage':
       return 409;
     default:
       return 500;

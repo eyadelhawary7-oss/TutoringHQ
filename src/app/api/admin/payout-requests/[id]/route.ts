@@ -77,7 +77,26 @@ export async function PATCH(
       { status: 400 },
     );
   }
-  const reason = normalizeRejectionReason(body.reason);
+  /*
+   * Over-length reasons are REFUSED, not truncated. The reason is written into
+   * `audit_log.details.reason` inside the transition transaction and is the
+   * only record of why a payout was denied; storing a half sentence while
+   * telling the operator it saved is a corrupted audit trail nobody would
+   * notice. See PAYOUT_REJECTION_REASON_MAX.
+   */
+  const reasonResult = normalizeRejectionReason(body.reason);
+  if (!reasonResult.ok) {
+    return NextResponse.json(
+      {
+        error: `Rejection reason is ${reasonResult.length} characters; the maximum is ${reasonResult.max}. Shorten it and retry — it is not truncated, because it is the permanent audit record of this refusal.`,
+        code: reasonResult.code,
+        length: reasonResult.length,
+        max: reasonResult.max,
+      },
+      { status: 400 },
+    );
+  }
+  const reason = reasonResult.reason;
 
   /*
    * §7.5 / S10: release authority requires a REAL `admin_users` row. Appending a

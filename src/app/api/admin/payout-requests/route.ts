@@ -102,11 +102,22 @@ export async function GET(request: NextRequest) {
    *
    * `/api/referrals/payout` checks the requested amount against the sum of
    * `referral_reward_records` in status 'available' but does NOT consume those
-   * rows, so a centre can hold two requests drawn on the same balance. That is
-   * request-side (§2.7 / A3) and is not fixed here — but an approver must not
-   * be asked to release money without being able to see it. Both figures are
-   * read-only and advisory; the blocking rule lives in the RPC, which refuses a
-   * second concurrent 'approved' request for the same centre.
+   * rows, so a centre can hold several requests drawn on the same balance. That
+   * is request-side (§2.7 / A3) and is not fixed here — but an approver must
+   * not be asked to release money without being able to see that.
+   *
+   * These two figures MIRROR THE RPC'S COVERAGE GUARD EXACTLY, on purpose:
+   *   available_rewards   = SUM(reward_amount) WHERE status = 'available'
+   *   committed_elsewhere = SUM(amount_requested) over the centre's OTHER
+   *                         requests in status 'approved' OR 'paid'
+   * so the screen predicts the approve button's outcome rather than telling a
+   * different story from it. 'paid' is in the committed sum because a paid
+   * request has permanently consumed that coverage — leaving it out is the
+   * sequential double-draw the RPC guard now blocks.
+   *
+   * They stay read-only and advisory. The binding decision is the RPC's, taken
+   * under the per-centre advisory lock; this is a stale read by the time the
+   * approver clicks, and it is meant to inform the click, not authorise it.
    */
   const availableByCenter = new Map<string, number>();
   const committedByCenter = new Map<string, number>();
@@ -145,6 +156,20 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  /**
+   * "Elsewhere" has to mean elsewhere. On the approved and paid tabs the row
+   * being displayed is itself inside its centre's committed total, so a naive
+   * per-centre lookup would show a request as competing with itself. Subtract
+   * it back out, which is the same `id <> p_payout_id` the RPC guard applies.
+   */
+  const committedElsewhereFor = (row: Row): number => {
+    const total = committedByCenter.get(row.center_id) ?? 0;
+    const own = (row.status ?? '') === 'approved' || (row.status ?? '') === 'paid'
+      ? (numberOrNull(row.amount_requested) ?? 0)
+      : 0;
+    return Math.max(0, total - own);
+  };
+
   const payoutRequests = rows.map((r) => {
     const details = (r.payment_details ?? {}) as Record<string, unknown>;
     return {
@@ -165,7 +190,7 @@ export async function GET(request: NextRequest) {
       withdrawal_fee: numberOrNull(details.withdrawal_fee),
       net_amount: numberOrNull(details.net_amount),
       available_rewards: availableByCenter.get(r.center_id) ?? 0,
-      committed_elsewhere: committedByCenter.get(r.center_id) ?? 0,
+      committed_elsewhere: committedElsewhereFor(r),
     };
   });
 

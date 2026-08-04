@@ -158,9 +158,26 @@ export default function AdminPayoutRequestsPage() {
     }
   };
 
-  const pendingCount = tab === 'pending' ? rows.length : 0;
-  const pendingSum =
-    tab === 'pending' ? rows.reduce((s, r) => s + (r.net_amount ?? r.amount_requested), 0) : 0;
+  /*
+   * The pending summary is labelled "net", so it must contain only net figures.
+   *
+   * `net_amount` is read out of `payout_requests.payment_details`, which is a
+   * nullable jsonb column with no shape constraint. Rows written before
+   * /api/referrals/payout started snapshotting the breakdown — or by anything
+   * that ever inserts directly — have no `net_amount` at all. The previous
+   * version fell back to `amount_requested`, i.e. the GROSS, folding a figure
+   * that still includes the 20 EGP processing fee and the 5% withdrawal fee
+   * into a total presented to the CEO as net. It overstates what leaves the
+   * bank, silently, and only for the rows least likely to be looked at.
+   *
+   * Rows without a stored net are therefore EXCLUDED from the total and
+   * counted separately, so the number stays true and the gap stays visible.
+   */
+  const pendingRows = tab === 'pending' ? rows : [];
+  const pendingCount = pendingRows.length;
+  const netRows = pendingRows.filter((r) => r.net_amount !== null);
+  const pendingNetSum = netRows.reduce((s, r) => s + (r.net_amount ?? 0), 0);
+  const missingNetCount = pendingCount - netRows.length;
 
   return (
     <div className="flex flex-1 min-h-0 min-h-screen flex-col">
@@ -227,9 +244,16 @@ export default function AdminPayoutRequestsPage() {
               <p className="text-sm font-medium text-[var(--color-text-primary)]">
                 {t('summary', {
                   count: formatNumber(pendingCount, locale),
-                  sum: formatCurrency(pendingSum, locale),
+                  sum: formatCurrency(pendingNetSum, locale),
                 })}
               </p>
+              {missingNetCount > 0 ? (
+                <p className="mt-1 text-xs text-amber-300">
+                  {t('summaryMissingNet', {
+                    count: formatNumber(missingNetCount, locale),
+                  })}
+                </p>
+              ) : null}
             </div>
           ) : null}
 
@@ -269,7 +293,26 @@ export default function AdminPayoutRequestsPage() {
                     const isApproved = st === 'approved';
                     const busy = actionId === r.id;
                     const fees = (r.processing_fee ?? 0) + (r.withdrawal_fee ?? 0);
-                    const uncovered = r.available_rewards < r.amount_requested;
+                    /*
+                     * Coverage must be read NET OF COMMITMENTS, and the
+                     * approver has to be able to see the commitment.
+                     *
+                     * `available_rewards` alone does not fall when a payout is
+                     * approved or paid — the reward records are not consumed by
+                     * either. So a request that is entirely a re-draw of money
+                     * the centre has already been paid renders identically to a
+                     * first, fully-covered request: same green number, same
+                     * enabled Approve button. The approver's own screen was the
+                     * thing hiding it.
+                     *
+                     * Subtracting `committed_elsewhere` — the centre's other
+                     * requests in status 'approved' OR 'paid' — is the same
+                     * arithmetic the RPC guard performs, so the badge here
+                     * predicts the refusal there instead of contradicting it.
+                     */
+                    const netAvailable = r.available_rewards - r.committed_elsewhere;
+                    const uncovered = netAvailable < r.amount_requested;
+                    const hasCommitments = r.committed_elsewhere > 0;
                     return (
                       <tr key={r.id} className="border-b border-[var(--color-border-subtle)]">
                         <td className="px-3 py-2 text-[var(--color-text-primary)]">
@@ -290,8 +333,24 @@ export default function AdminPayoutRequestsPage() {
                             uncovered ? 'text-red-400' : 'text-[var(--color-text-secondary)]'
                           }`}
                         >
-                          {formatNumber(r.available_rewards, locale)}
-                          {uncovered ? ` · ${t('uncovered')}` : ''}
+                          <div>{formatNumber(r.available_rewards, locale)}</div>
+                          {hasCommitments ? (
+                            <>
+                              <div className="text-xs text-[var(--color-text-muted)]">
+                                {t('committedElsewhere', {
+                                  amount: formatNumber(r.committed_elsewhere, locale),
+                                })}
+                              </div>
+                              <div className="text-xs font-semibold">
+                                {t('netAvailable', {
+                                  amount: formatNumber(netAvailable, locale),
+                                })}
+                              </div>
+                            </>
+                          ) : null}
+                          {uncovered ? (
+                            <div className="text-xs font-semibold">{t('uncovered')}</div>
+                          ) : null}
                         </td>
                         <td className="px-3 py-2 font-mono text-[var(--color-text-secondary)]" dir="ltr">
                           {r.instapay_number ?? '-'}

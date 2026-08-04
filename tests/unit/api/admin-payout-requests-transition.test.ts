@@ -117,6 +117,22 @@ describe('input validation', () => {
     expect(status).toBe(400);
     expect(mockRpc).not.toHaveBeenCalled();
   });
+
+  it('refuses an over-length rejection reason instead of silently truncating it', async () => {
+    // The reason lands in audit_log.details.reason inside the transition
+    // transaction. Storing half of it while returning success would leave a
+    // sentence that stops mid-clause as the permanent record of why a payout
+    // was denied, with nothing anywhere saying so.
+    const { status, json } = await callPatch({
+      action: 'reject',
+      reason: 'x'.repeat(501),
+    });
+    expect(status).toBe(400);
+    expect(json.code).toBe('reason_too_long');
+    expect(json.max).toBe(500);
+    expect(json.length).toBe(501);
+    expect(mockRpc).not.toHaveBeenCalled();
+  });
 });
 
 describe('the RPC is the sole writer', () => {
@@ -172,13 +188,21 @@ describe('the RPC is the sole writer', () => {
     expect(json.code).toBe('invalid_transition');
   });
 
-  it('maps a second open approval for the same centre to 409', async () => {
+  it('maps an uncovered approval to 409 and passes the figures through', async () => {
     mockRpc.mockResolvedValue({
-      data: { ok: false, code: 'center_has_open_approval', status: 'pending' },
+      data: {
+        ok: false,
+        code: 'insufficient_reward_coverage',
+        status: 'pending',
+        requested: 1000,
+        committed: 1500,
+        available: 2000,
+      },
       error: null,
     });
-    const { status } = await callPatch({ action: 'approve' });
+    const { status, json } = await callPatch({ action: 'approve' });
     expect(status).toBe(409);
+    expect(json.code).toBe('insufficient_reward_coverage');
   });
 
   it('reports an idempotent re-call as success without inventing a state', async () => {

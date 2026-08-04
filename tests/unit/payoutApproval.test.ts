@@ -139,15 +139,36 @@ describe('planPayoutTransition — the legal transition table', () => {
 
 describe('normalizeRejectionReason', () => {
   it('trims and drops empties', () => {
-    expect(normalizeRejectionReason('  duplicate request  ')).toBe('duplicate request');
-    expect(normalizeRejectionReason('   ')).toBeNull();
-    expect(normalizeRejectionReason(null)).toBeNull();
-    expect(normalizeRejectionReason(42)).toBeNull();
+    expect(normalizeRejectionReason('  duplicate request  ')).toEqual({
+      ok: true,
+      reason: 'duplicate request',
+    });
+    expect(normalizeRejectionReason('   ')).toEqual({ ok: true, reason: null });
+    expect(normalizeRejectionReason(null)).toEqual({ ok: true, reason: null });
+    expect(normalizeRejectionReason(42)).toEqual({ ok: true, reason: null });
   });
 
-  it('caps the stored length', () => {
+  it('accepts a reason of exactly the maximum length', () => {
+    const exact = 'x'.repeat(PAYOUT_REJECTION_REASON_MAX);
+    expect(normalizeRejectionReason(exact)).toEqual({ ok: true, reason: exact });
+  });
+
+  it('REFUSES an over-length reason instead of truncating it', () => {
+    // Silently storing the first 500 characters would write a half sentence
+    // into audit_log.details.reason while reporting success. The reason is the
+    // only record of why a payout was denied; a wrong one is worse than none.
     const long = 'x'.repeat(PAYOUT_REJECTION_REASON_MAX + 50);
-    expect(normalizeRejectionReason(long)?.length).toBe(PAYOUT_REJECTION_REASON_MAX);
+    expect(normalizeRejectionReason(long)).toEqual({
+      ok: false,
+      code: 'reason_too_long',
+      length: PAYOUT_REJECTION_REASON_MAX + 50,
+      max: PAYOUT_REJECTION_REASON_MAX,
+    });
+  });
+
+  it('measures length after trimming, so surrounding whitespace cannot trip it', () => {
+    const padded = `   ${'x'.repeat(PAYOUT_REJECTION_REASON_MAX)}   `;
+    expect(normalizeRejectionReason(padded).ok).toBe(true);
   });
 });
 
@@ -161,9 +182,13 @@ describe('isPayoutApprovalMigrationMissing', () => {
     ).toBe(true);
   });
 
-  it('recognises the Postgres undefined_function and undefined_column codes', () => {
-    expect(isPayoutApprovalMigrationMissing({ code: '42883', message: 'x' })).toBe(true);
-    expect(isPayoutApprovalMigrationMissing({ code: '42703', message: 'x' })).toBe(true);
+  it('recognises 42883 only when the error also names the RPC and says it is absent', () => {
+    expect(
+      isPayoutApprovalMigrationMissing({
+        code: '42883',
+        message: `function public.${PAYOUT_TRANSITION_RPC}(uuid, text, uuid, text) does not exist`,
+      }),
+    ).toBe(true);
   });
 
   it('recognises the message form when no code is set', () => {
@@ -172,6 +197,41 @@ describe('isPayoutApprovalMigrationMissing', () => {
         message: `function public.${PAYOUT_TRANSITION_RPC}(uuid, text, uuid, text) does not exist`,
       }),
     ).toBe(true);
+  });
+
+  /*
+   * The narrowing that matters. Once the migration IS applied, the function
+   * body reads five tables, and unrelated drift inside it raises the same bare
+   * SQLSTATEs. Returning 503 there would tell the operator to apply a migration
+   * that is already in the catalog, hiding a real fault in a money path behind
+   * a confident, wrong explanation.
+   */
+  it('does NOT claim "migration missing" on a bare SQLSTATE with no RPC name', () => {
+    expect(isPayoutApprovalMigrationMissing({ code: '42883', message: 'x' })).toBe(false);
+    expect(isPayoutApprovalMigrationMissing({ code: '42703', message: 'x' })).toBe(false);
+    expect(isPayoutApprovalMigrationMissing({ code: 'PGRST204', message: 'x' })).toBe(false);
+  });
+
+  it('does NOT claim "migration missing" for drift raised inside the applied function', () => {
+    // 42703 from the coverage guard after someone renames a column it reads.
+    expect(
+      isPayoutApprovalMigrationMissing({
+        code: '42703',
+        message: 'column "reward_amount" does not exist',
+        hint: null,
+        details: null,
+      }),
+    ).toBe(false);
+    // Same, but PostgREST forwarded the PL/pgSQL CONTEXT line, which names the
+    // enclosing function for every error raised inside it. The name alone must
+    // not be enough; the text must also say the RPC itself is absent.
+    expect(
+      isPayoutApprovalMigrationMissing({
+        code: '42703',
+        message: 'column "reward_amount" does not exist',
+        details: `PL/pgSQL function ${PAYOUT_TRANSITION_RPC}(uuid,text,uuid,text) line 62 at SQL statement`,
+      }),
+    ).toBe(false);
   });
 
   it('does NOT swallow ordinary failures as "migration missing"', () => {
@@ -189,7 +249,7 @@ describe('httpStatusForPayoutRefusal', () => {
     expect(httpStatusForPayoutRefusal('forbidden_actor')).toBe(403);
     expect(httpStatusForPayoutRefusal('invalid_transition')).toBe(409);
     expect(httpStatusForPayoutRefusal('conflict')).toBe(409);
-    expect(httpStatusForPayoutRefusal('center_has_open_approval')).toBe(409);
+    expect(httpStatusForPayoutRefusal('insufficient_reward_coverage')).toBe(409);
   });
 
   it('never turns an unrecognised refusal into a success', () => {
@@ -288,5 +348,63 @@ describe('the migration proposal keeps its safety properties', () => {
 
   it('does not add a pending-uniqueness index — request creation is §2.7, not this change', () => {
     expect(sql).not.toMatch(/CREATE UNIQUE INDEX[\s\S]*payout_requests[\s\S]*status\s*=\s*'pending'/);
+  });
+
+  /*
+   * The blocker this rework closes. The first version guarded approval with
+   * `count(*) ... WHERE status = 'approved'`, which lapses the moment the
+   * first request is marked paid — approve, mark_paid, approve again, and the
+   * same reward balance leaves twice in sequence. These lock the replacement
+   * in place: a coverage sum that counts 'paid' as still committed.
+   */
+  describe('the approval coverage guard', () => {
+    /** The RPC body only — the header prose quotes the old shape to explain it. */
+    const body = sql.slice(sql.indexOf(`CREATE OR REPLACE FUNCTION public.${PAYOUT_TRANSITION_RPC}(`));
+
+    it('no longer refuses purely on the count of other approved requests', () => {
+      expect(body).not.toContain('center_has_open_approval');
+      expect(body).not.toMatch(/count\(\*\)[\s\S]{0,200}status\s*=\s*'approved'\s*;/);
+    });
+
+    it("counts 'paid' as still committed — the whole point of the fix", () => {
+      expect(body).toMatch(/status IN \('approved', 'paid'\)/);
+    });
+
+    it('sums the committed amount, excluding the request being decided', () => {
+      expect(body).toMatch(/coalesce\(sum\(amount_requested\), 0\)/);
+      expect(body).toContain('id <> p_payout_id');
+    });
+
+    it("measures coverage against referral_reward_records in status 'available'", () => {
+      expect(body).toMatch(/coalesce\(sum\(reward_amount\), 0\)/);
+      expect(body).toContain('FROM public.referral_reward_records');
+      expect(body).toContain('WHERE referrer_center_id = v_center_id');
+    });
+
+    it('refuses when committed plus this request exceeds what is available', () => {
+      expect(body).toMatch(/IF v_committed \+ v_row\.amount_requested > v_available THEN/);
+      expect(body).toContain('insufficient_reward_coverage');
+    });
+
+    it('runs after the advisory lock and the locking read, not before', () => {
+      const lockIdx = body.indexOf('pg_advisory_xact_lock');
+      const forUpdateIdx = body.indexOf('FOR UPDATE');
+      const guardIdx = body.indexOf('insufficient_reward_coverage');
+      const updateIdx = body.indexOf('UPDATE public.payout_requests SET');
+      expect(lockIdx).toBeGreaterThan(-1);
+      expect(forUpdateIdx).toBeGreaterThan(lockIdx);
+      expect(guardIdx).toBeGreaterThan(forUpdateIdx);
+      // and it must gate the write, not follow it
+      expect(updateIdx).toBeGreaterThan(guardIdx);
+    });
+
+    it('only gates approval, so mark_paid cannot be blocked after the fact', () => {
+      // committed already includes an approved row; re-checking on mark_paid
+      // would refuse to record money that has demonstrably been sent.
+      const guardIdx = body.indexOf('insufficient_reward_coverage');
+      const openIdx = body.lastIndexOf("IF v_next = 'approved' THEN", guardIdx);
+      expect(openIdx).toBeGreaterThan(-1);
+      expect(openIdx).toBeLessThan(guardIdx);
+    });
   });
 });

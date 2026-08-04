@@ -1015,6 +1015,14 @@ COLUMN payout_requests.payment_method ord=5 type=text notnull=false default=∅
 COLUMN payout_requests.payment_details ord=6 type=jsonb notnull=false default=∅
 COLUMN payout_requests.requested_at ord=7 type=timestamp with time zone notnull=false default=now()
 COLUMN payout_requests.processed_at ord=8 type=timestamp with time zone notnull=false default=∅
+COLUMN payout_requests.approved_by ord=9 type=uuid notnull=false default=∅
+COLUMN payout_requests.approved_at ord=10 type=timestamp with time zone notnull=false default=∅
+COLUMN payout_requests.rejected_by ord=11 type=uuid notnull=false default=∅
+COLUMN payout_requests.rejected_at ord=12 type=timestamp with time zone notnull=false default=∅
+COLUMN payout_requests.rejection_reason ord=13 type=text notnull=false default=∅
+COLUMN payout_requests.paid_by ord=14 type=uuid notnull=false default=∅
+COLUMN payout_requests.paid_at ord=15 type=timestamp with time zone notnull=false default=∅
+COLUMN payout_requests.decision_authority_source ord=16 type=text notnull=false default=∅
 COLUMN pending_enrollments.id ord=1 type=uuid notnull=true default=uuid_generate_v4()
 COLUMN pending_enrollments.center_id ord=2 type=uuid notnull=true default=∅
 COLUMN pending_enrollments.group_id ord=3 type=uuid notnull=true default=∅
@@ -2150,8 +2158,12 @@ CONSTRAINT payments.payments_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT payments.payments_recorded_by_fkey type=f def=FOREIGN KEY (recorded_by) REFERENCES users(id) ON DELETE SET NULL
 CONSTRAINT payments.payments_student_id_fkey type=f def=FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE RESTRICT
 CONSTRAINT payout_requests.payout_requests_amount_requested_nonneg type=c def=CHECK ((amount_requested >= (0)::numeric))
+CONSTRAINT payout_requests.payout_requests_approved_by_fkey type=f def=FOREIGN KEY (approved_by) REFERENCES admin_users(id) ON DELETE RESTRICT
 CONSTRAINT payout_requests.payout_requests_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
+CONSTRAINT payout_requests.payout_requests_decision_authority_source_check type=c def=CHECK (((decision_authority_source IS NULL) OR (decision_authority_source = ANY (ARRAY['db_row'::text, 'env_phone'::text]))))
+CONSTRAINT payout_requests.payout_requests_paid_by_fkey type=f def=FOREIGN KEY (paid_by) REFERENCES admin_users(id) ON DELETE RESTRICT
 CONSTRAINT payout_requests.payout_requests_pkey type=p def=PRIMARY KEY (id)
+CONSTRAINT payout_requests.payout_requests_rejected_by_fkey type=f def=FOREIGN KEY (rejected_by) REFERENCES admin_users(id) ON DELETE RESTRICT
 CONSTRAINT payout_requests.payout_requests_status_check type=c def=CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'paid'::text, 'rejected'::text])))
 CONSTRAINT pending_enrollments.pending_enrollments_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
 CONSTRAINT pending_enrollments.pending_enrollments_group_id_fkey type=f def=FOREIGN KEY (group_id) REFERENCES student_groups(id) ON DELETE CASCADE
@@ -2660,6 +2672,7 @@ INDEX idx_payments_group ON payments def=CREATE INDEX idx_payments_group ON publ
 INDEX idx_payments_recorded_by ON payments def=CREATE INDEX idx_payments_recorded_by ON public.payments USING btree (recorded_by) WHERE (recorded_by IS NOT NULL)
 INDEX idx_payments_student ON payments def=CREATE INDEX idx_payments_student ON public.payments USING btree (student_id)
 INDEX idx_payout_requests_center ON payout_requests def=CREATE INDEX idx_payout_requests_center ON public.payout_requests USING btree (center_id)
+INDEX idx_payout_requests_status_requested_at ON payout_requests def=CREATE INDEX idx_payout_requests_status_requested_at ON public.payout_requests USING btree (status, requested_at DESC)
 INDEX idx_pending_enrollments_center_id ON pending_enrollments def=CREATE INDEX idx_pending_enrollments_center_id ON public.pending_enrollments USING btree (center_id)
 INDEX idx_pending_enrollments_group_id ON pending_enrollments def=CREATE INDEX idx_pending_enrollments_group_id ON public.pending_enrollments USING btree (group_id)
 INDEX idx_pending_enrollments_student_id ON pending_enrollments def=CREATE INDEX idx_pending_enrollments_student_id ON public.pending_enrollments USING btree (student_id)
@@ -3172,6 +3185,7 @@ FUNCTION set_updated_at_now() returns=trigger lang=plpgsql kind=f volatility=v s
 FUNCTION spend_credits_atomic(p_center_id uuid, p_amount numeric, p_reference_id uuid, p_reference_type text) returns=boolean lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=e511c949ee4507fedf808e80ec321ad9
 FUNCTION teacher_private_access(p_user_id uuid) returns=boolean lang=sql kind=f volatility=s strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=b9492f8d7982c3a9466eced6aa72c63a
 FUNCTION touch_pack_requests_updated_at() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=da5ac28a58c8b4bb30209bf0d3d7082c
+FUNCTION transition_payout_request(p_payout_id uuid, p_action text, p_actor_id uuid, p_reason text) returns=jsonb lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public, pg_temp bodymd5=8b88b88070776c993fc8fe9b9dcf684f
 FUNCTION trigger_recalc_lifecycle_on_scan() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=9e483b7071ae7ed8b9222abeecbc5a30
 FUNCTION try_finalize_payment_session(p_session_id uuid, p_finalized_by text) returns=boolean lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=17bc1f648ba7f7b2359b65d9d23e85f3
 FUNCTION update_billing_amount() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public bodymd5=69f67dddbe9d5af3a1649da356269f37
@@ -6216,6 +6230,7 @@ ROUTINE_GRANT touch_pack_requests_updated_at grantee=PUBLIC priv=EXECUTE grantab
 ROUTINE_GRANT touch_pack_requests_updated_at grantee=anon priv=EXECUTE grantable=NO
 ROUTINE_GRANT touch_pack_requests_updated_at grantee=authenticated priv=EXECUTE grantable=NO
 ROUTINE_GRANT touch_pack_requests_updated_at grantee=service_role priv=EXECUTE grantable=NO
+ROUTINE_GRANT transition_payout_request grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT try_finalize_payment_session grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT update_billing_amount grantee=PUBLIC priv=EXECUTE grantable=NO
 ROUTINE_GRANT update_billing_amount grantee=anon priv=EXECUTE grantable=NO

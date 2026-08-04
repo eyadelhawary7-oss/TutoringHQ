@@ -65,6 +65,25 @@
 --        which is intended (§7.5: requests must age visibly and honestly).
 --   payout_requests live rows .................. 0
 --
+--   public.referral_reward_records — the coverage source read by part 4's
+--   approval guard. RE-VERIFIED LIVE against information_schema.columns,
+--   pg_constraint and pg_indexes on 4 August 2026, because a guard that reads
+--   a column which does not exist is F26 with a money consequence:
+--     referrer_center_id uuid NOT NULL, FK -> centers(id) ON DELETE CASCADE
+--     reward_amount      numeric NOT NULL
+--     status             text NOT NULL default 'pending'
+--   referral_reward_records_status_check
+--     CHECK (status IN ('pending','held','available','paid'))
+--     -> 'available' is a real member of that domain; the guard's filter can
+--        match. 'paid' is where PATCH /api/admin/referral-rewards moves rows.
+--   referral_reward_records_money_nonneg
+--     CHECK (base_amount >= 0 AND reward_amount >= 0)
+--     -> the coverage sum can never be dragged down by a negative row.
+--   idx_referral_reward_records_referrer  btree (referrer_center_id)
+--   idx_payout_requests_center            btree (center_id)
+--     -> both guard reads are index-supported; no new index needed.
+--   referral_reward_records live rows .......... 0
+--
 --   public.audit_log columns: id, center_id, user_id, action, entity_type,
 --     entity_id, details jsonb, created_at
 --   audit_log constraints:
@@ -101,9 +120,13 @@
 --     In particular there is NO
 --       UNIQUE INDEX ... ON payout_requests(center_id) WHERE status='pending'
 --     here: that would change what centre-side request creation is allowed to
---     do, and it is not this defect. The equivalent protection is applied on
---     the APPROVAL side only, inside the RPC (one open 'approved' request per
---     centre at a time), where it cannot break request creation.
+--     do, and it is not this defect. The protection is applied on the APPROVAL
+--     side only, inside the RPC, where it cannot break request creation: a
+--     coverage check that refuses to approve a request whose amount, added to
+--     everything the centre is already committed for in status 'approved' OR
+--     'paid', would exceed its currently-available referral rewards. Read the
+--     block above that check in part 4 for what it does and does not promise —
+--     in particular it is a check, not a hold.
 --   * It does not implement §7's delegated approval cap, the `permissions`
 --     key `can_approve_payouts`, step-up auth, or the §7.4 hash chain. Those
 --     are the payout build, not the missing-approval-path defect. What it does
@@ -230,7 +253,8 @@ DECLARE
   v_reason     text := nullif(btrim(coalesce(p_reason, '')), '');
   v_actor_role text;
   v_actor_is_center_user boolean;
-  v_open_other integer;
+  v_committed  numeric;
+  v_available  numeric;
 BEGIN
   IF p_action IS NULL OR p_action NOT IN ('approve', 'reject', 'mark_paid') THEN
     RETURN jsonb_build_object('ok', false, 'code', 'invalid_action');
@@ -283,21 +307,79 @@ BEGIN
                               'status', v_row.status);
   END IF;
 
-  -- One open approval per centre. The centre-side balance check in
-  -- /api/referrals/payout does not consume `referral_reward_records`, so two
-  -- requests can be created against the same available balance; approving both
-  -- would pay it twice. Enforced here, under the advisory lock, rather than as
-  -- a partial unique index — an index would also constrain request creation,
-  -- which is §2.7's territory and not this change.
+  -- ── Coverage: a centre may not be committed for more than it has earned ────
+  --
+  -- WHAT WAS HERE BEFORE AND WHY IT WAS WRONG. The previous guard counted this
+  -- centre's OTHER requests in status 'approved' and refused if any existed.
+  -- It was described as blocking a double draw. It does not. 'paid' is not
+  -- 'approved', so the counter falls back to zero the instant the first request
+  -- is marked paid:
+  --     approve #1  -> counter 0, allowed
+  --     mark_paid #1 -> #1 is no longer 'approved'
+  --     approve #2  -> counter 0 again, allowed
+  -- and the same reward balance has been drawn twice, in sequence, with every
+  -- check passing. Concurrency was never the hole; sequence was.
+  --
+  -- WHAT IS ENFORCED NOW — exactly this and nothing stronger:
+  --
+  --     SUM(amount_requested) over this centre's OTHER payout_requests
+  --                             in status 'approved' OR 'paid'     -- committed
+  --   + v_row.amount_requested                                     -- this one
+  --   <= SUM(reward_amount) over referral_reward_records
+  --        WHERE referrer_center_id = v_center_id
+  --          AND status = 'available'                              -- available
+  --
+  -- 'paid' being inside the committed sum is the whole fix: a request that has
+  -- already been paid keeps consuming coverage permanently, so the second draw
+  -- has nothing left to draw against.
+  --
+  -- WHY IT HOLDS ON THIS PATH. The committed sum only ever grows here — approve
+  -- adds a row to it, and mark_paid moves a row from 'approved' to 'paid'
+  -- without changing the total, so the figure is stable across the whole
+  -- approve → paid lifecycle. This function never writes
+  -- referral_reward_records, so nothing it does can inflate the available side.
+  -- Both reads happen under the per-centre advisory lock taken above, so two
+  -- concurrent approvals for one centre serialize and the second sees the
+  -- first's commitment.
+  --
+  -- WHAT IT IS *NOT*, stated plainly rather than implied away:
+  --   * It is a CHECK, not a HOLD. No reward row is reserved or consumed, so it
+  --     is only as good as its two inputs at the moment of approval.
+  --   * It does not constrain request CREATION. A centre can still hold several
+  --     'pending' requests drawn on the same balance (§2.7, out of scope here);
+  --     what changes is that only the covered subset can ever be approved.
+  --   * PATCH /api/admin/referral-rewards flips reward records from 'available'
+  --     to 'paid' outside this function. When an operator settles the reward
+  --     records behind a payout that is already counted as committed, the
+  --     available side shrinks while the committed side does not, and this
+  --     guard then REFUSES approvals it would previously have allowed. That is
+  --     the safe direction to fail — a refusal, never an over-pay — but it is a
+  --     real operational edge with no code fix inside this defect's scope. The
+  --     durable answer is the §3 ledger, where a payout and the rewards behind
+  --     it are one posting instead of two tables kept in step by hand.
+  --
+  -- Both reads are index-supported live (idx_payout_requests_center,
+  -- idx_referral_reward_records_referrer — verified in pg_indexes 4 Aug 2026).
   IF v_next = 'approved' THEN
-    SELECT count(*) INTO v_open_other
+    SELECT coalesce(sum(amount_requested), 0) INTO v_committed
       FROM public.payout_requests
      WHERE center_id = v_center_id
        AND id <> p_payout_id
-       AND status = 'approved';
-    IF v_open_other > 0 THEN
-      RETURN jsonb_build_object('ok', false, 'code', 'center_has_open_approval',
-                                'status', v_row.status);
+       AND status IN ('approved', 'paid');
+
+    SELECT coalesce(sum(reward_amount), 0) INTO v_available
+      FROM public.referral_reward_records
+     WHERE referrer_center_id = v_center_id
+       AND status = 'available';
+
+    IF v_committed + v_row.amount_requested > v_available THEN
+      RETURN jsonb_build_object(
+        'ok',        false,
+        'code',      'insufficient_reward_coverage',
+        'status',    v_row.status,
+        'requested', v_row.amount_requested,
+        'committed', v_committed,
+        'available', v_available);
     END IF;
   END IF;
 
@@ -360,7 +442,13 @@ $$;
 COMMENT ON FUNCTION public.transition_payout_request(uuid, text, uuid, text) IS
   'PAYOUT-SYSTEM-SPEC §2.1. Sole writer of payout_requests approval state. '
   'Locks per centre then FOR UPDATE, requires a real admin_users super_admin '
-  'row, is idempotent on re-call, and writes audit_log in the same transaction.';
+  'row, is idempotent on re-call, and writes audit_log in the same transaction. '
+  'Before approving it checks COVERAGE: the centre''s other requests in status '
+  '''approved'' OR ''paid'', plus this one, must not exceed the sum of its '
+  'referral_reward_records in status ''available''. Counting ''paid'' is what '
+  'stops a sequential re-draw of the same balance. It is a check, not a hold — '
+  'no reward row is reserved, and it can start refusing if reward records are '
+  'settled to ''paid'' out of band. Failing closed is intended.';
 
 -- service_role only. The browser must never reach this directly.
 REVOKE ALL ON FUNCTION public.transition_payout_request(uuid, text, uuid, text)
