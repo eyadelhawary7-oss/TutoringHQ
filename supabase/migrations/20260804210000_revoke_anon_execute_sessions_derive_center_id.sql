@@ -47,13 +47,26 @@
 -- change; this file matches the established pattern rather than quietly
 -- introducing a stricter one.
 --
--- NOTE FOR THE DRIFT GATE: this produces no ROUTINE_GRANT line in
--- db/schema.snapshot, because Supabase's anon/authenticated default privileges
--- do not exist in a local rebuild — there is nothing there to revoke. Confirmed
--- by rebuilding on a clean Postgres 17 before and after: byte-identical, 6242
--- objects. check-drift.sh compares a rebuild against the snapshot; NEITHER SIDE
--- IS PRODUCTION, so this whole class of grant drift is invisible to CI and has
--- to be checked against the live catalog by hand.
+-- NOTE FOR THE DRIFT GATE, corrected after CI caught me. An earlier draft of
+-- this header claimed this migration "produces no ROUTINE_GRANT line in
+-- db/schema.snapshot". That was true of the REVOKE-only draft and is FALSE of
+-- the idiom actually used here, because it also issues an explicit GRANT.
+-- Locally, Supabase's anon/authenticated default privileges do not exist, so
+-- there is nothing for the REVOKE to remove — but the GRANT still CREATES two
+-- entries. A clean Postgres 17 rebuild adds exactly:
+--     ROUTINE_GRANT sessions_derive_center_id grantee=authenticated priv=EXECUTE grantable=NO
+--     ROUTINE_GRANT sessions_derive_center_id grantee=service_role  priv=EXECUTE grantable=NO
+-- and nothing else (6242 -> 6244 objects). db/schema.snapshot is regenerated in
+-- this branch to match. The claim was carried over from the draft without being
+-- re-verified against the new SQL; schema-drift failed and was right to.
+--
+-- The load-bearing half of the original note still stands, and matters more:
+-- check-drift.sh compares a rebuild of the migrations against the committed
+-- snapshot, and NEITHER SIDE IS PRODUCTION. The local rebuild has no anon grant
+-- to revoke, so the gate can confirm the GRANT but can say nothing at all about
+-- whether the REVOKE achieved anything on the live database. That is precisely
+-- how the original defect passed review, and it is why the ACL above was
+-- re-queried against production by hand after applying.
 --
 -- Idempotent: re-running produces the same ACL.
 -- ============================================================================
