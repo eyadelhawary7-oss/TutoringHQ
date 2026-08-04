@@ -64,6 +64,19 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      // /demo-request was a stub that only pointed people at WhatsApp; the real
+      // lead form is /talk-to-us and posts to the same /api/demo-request
+      // endpoint. The stub page is deleted, but the URL is public and may be in
+      // circulation, so it redirects rather than 404s.
+      {
+        source: '/:locale(ar|en)/demo-request',
+        destination: '/:locale/talk-to-us',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default withSentryConfig(withBundleAnalyzer(withNextIntl(nextConfig)), {

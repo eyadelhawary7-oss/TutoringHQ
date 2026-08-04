@@ -1,6 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-const CENTERHQ_LOCAL_SUFFIX = '@centerhq.local';
+/**
+ * The Supabase-Auth email domain CenterHQ uses for phone+PIN identities.
+ * Single source of truth for BOTH directions: `authEmailFromPhone` (in
+ * `utils/phone.ts`) appends it, `phoneFromCenterhqAuthEmail` (below) strips it.
+ * Keeping the two directions on one constant is what stops them drifting apart.
+ */
+export const CENTERHQ_LOCAL_SUFFIX = '@centerhq.local';
 
 /** Phone digits from `auth.users.email` when it uses `{digits}@centerhq.local`. */
 export function phoneFromCenterhqAuthEmail(email: string | null | undefined): string | null {

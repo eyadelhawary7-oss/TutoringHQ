@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { teacherStudentCap, teacherHasHardCap } from '@/lib/teacherPlans';
+import { phonesMatch } from '@/lib/utils/phone';
 
 /**
  * Per-tier active-student caps (see src/lib/teacherPlans.ts):
@@ -185,7 +186,7 @@ export async function selfEnrollWouldExceedCap(
   // At/over the cap: only a brand-new head is refused. An existing center-less
   // student with this phone is already in the count -> idempotent, allow.
   const isMatch = (s: StudentEmbed | null | undefined) =>
-    s?.center_id === null && s?.phone === studentPhone;
+    s?.center_id === null && phonesMatch(s?.phone, studentPhone);
   const alreadyCounted = rows.some((r) =>
     Array.isArray(r.students) ? r.students.some(isMatch) : isMatch(r.students),
   );

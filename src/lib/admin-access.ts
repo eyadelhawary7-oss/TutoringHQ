@@ -1,34 +1,43 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { phoneFromCenterhqAuthEmail } from '@/lib/ownerPhone';
+import { normalizePhone, isValidEgyptianMobileE164 } from '@/lib/utils/phone';
 import { fetchAdminPermissionKeys } from '@/lib/adminPermissionsStore';
 
 /**
- * Normalise a phone candidate to digits-only so format differences between
- * `auth.users.phone` (typically E.164 without `+`) and SUPER_ADMIN_PHONES
- * entries (often with `+`) do not let one form pass while the other fails.
- */
-function normalisePhoneForCompare(raw: string | null | undefined): string {
-  if (!raw) return '';
-  return String(raw).replace(/\D/g, '');
-}
-
-/**
- * Env-based phone super-admins. Compares digit-equivalent values so the
- * verified-session phone (auth.users.phone) and SUPER_ADMIN_PHONES entries
- * match regardless of leading `+` / spacing. The caller should prefer the
- * Supabase-Auth-verified session phone (centerAuth/admin-auth pass user.phone
- * from getUser()) over public.users.phone, which is centre-tenant data.
+ * Env-based phone super-admins. Both the candidate session phone AND each
+ * `SUPER_ADMIN_PHONES` entry are normalized to canonical +20 E.164 and compared
+ * EXACTLY — never by digit-substring (the old `normalisePhoneForCompare` did a
+ * digits-only `includes`, which is the trailing-match defect: it let one form
+ * pass while another failed and could match numbers that are not equal).
+ *
+ * FAILS CLOSED both ways:
+ *   - a candidate that is not a valid Egyptian mobile E.164 matches nobody;
+ *   - a `SUPER_ADMIN_PHONES` entry that does not normalize to a valid E.164 is
+ *     an operator misconfiguration: it is logged and matches nobody. It is
+ *     NEVER silently "corrected" or dropped without the log — a malformed
+ *     grant must be visible, not quietly ignored.
+ *
+ * The caller should prefer the Supabase-Auth-verified session phone
+ * (centerAuth/admin-auth pass user.phone from getUser()) over public.users.phone,
+ * which is centre-tenant data.
  */
 export function isSuperAdminPhone(phone: string | null): boolean {
-  const candidate = normalisePhoneForCompare(phone);
-  if (!candidate) return false;
-  const admins = process.env.SUPER_ADMIN_PHONES || '';
-  return admins
-    .split(',')
-    .map((p) => normalisePhoneForCompare(p))
-    .filter(Boolean)
-    .includes(candidate);
+  const candidate = normalizePhone(typeof phone === 'string' ? phone : '');
+  if (!isValidEgyptianMobileE164(candidate)) return false;
+
+  const raw = process.env.SUPER_ADMIN_PHONES || '';
+  for (const entry of raw.split(',').map((p) => p.trim()).filter(Boolean)) {
+    const normalized = normalizePhone(entry);
+    if (!isValidEgyptianMobileE164(normalized)) {
+      console.error(
+        `[isSuperAdminPhone] SUPER_ADMIN_PHONES entry does not normalize to a valid Egyptian E.164; it matches nobody: "${entry}"`,
+      );
+      continue;
+    }
+    if (normalized === candidate) return true;
+  }
+  return false;
 }
 
 /*

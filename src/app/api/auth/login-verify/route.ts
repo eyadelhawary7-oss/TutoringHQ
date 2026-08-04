@@ -3,7 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse, type NextRequest } from 'next/server';
 import { getClientIp, getUpstashRedis, rateLimit, rateLimitedResponse } from '@/lib/ratelimit';
-import { normalizePhone, isValidEgyptianMobileE164 } from '@/lib/utils/phone';
+import { normalizePhone, isValidEgyptianMobileE164, authEmailFromPhone } from '@/lib/utils/phone';
 import { parseBodyWithLimit } from '@/lib/validate';
 
 /**
@@ -166,8 +166,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'auth_system_error' }, { status: 500 });
   }
 
-  const phoneDigits = normalizedPhone.replace(/\D/g, '');
-  const email = `${phoneDigits}@centerhq.local`;
+  const email = authEmailFromPhone(normalizedPhone);
+  if (!email) {
+    return NextResponse.json({ error: 'invalid_credentials' }, { status: 401 });
+  }
 
   const cookieStore = await cookies();
   const response = NextResponse.json({ ok: true });

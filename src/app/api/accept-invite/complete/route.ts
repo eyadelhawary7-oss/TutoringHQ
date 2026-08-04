@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
-import { normalizePhone } from '@/lib/utils/phone';
+import { normalizePhone, authEmailFromPhone } from '@/lib/utils/phone';
 import { isWeakPin } from '@/lib/weakPins';
 
 function generatePin(): string {
@@ -88,8 +88,13 @@ export async function POST(request: Request) {
     // Generate PIN and phone-based email
     const pin = generatePin();
     const storedPhone = normalizePhone(user.phone || invite.phone);
-    const phoneDigits = storedPhone.replace(/\D/g, '');
-    const emailForAuth = `${phoneDigits}@centerhq.local`;
+    const emailForAuth = authEmailFromPhone(storedPhone);
+    if (!emailForAuth) {
+      return NextResponse.json(
+        { error: 'A valid phone number is required to complete the invitation.' },
+        { status: 400 },
+      );
+    }
 
     const { error: updateAuthError } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
       email: emailForAuth,

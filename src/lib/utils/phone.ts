@@ -1,3 +1,10 @@
+import { CENTERHQ_LOCAL_SUFFIX } from '@/lib/ownerPhone';
+
+// The reverse mapping (auth email -> phone digits) lives in ownerPhone.ts. It is
+// re-exported here so callers have ONE import for the whole phone<->auth-email
+// mapping and never re-implement the decode. Do not duplicate its logic.
+export { phoneFromCenterhqAuthEmail } from '@/lib/ownerPhone';
+
 /**
  * Normalize Egyptian phone numbers to E.164 format (+20XXXXXXXXX).
  *
@@ -67,4 +74,45 @@ export function normalizePhone(phone: string): string {
 /** True when `normalized` is +20 followed by a valid Egyptian mobile (10, 11, 12, 15). */
 export function isValidEgyptianMobileE164(normalized: string): boolean {
   return /^\+20(1[0125]\d{8})$/.test(normalized);
+}
+
+/**
+ * Canonical phone-identity comparison. Normalizes BOTH sides to +20 E.164, then
+ * compares the two canonical strings with `===`.
+ *
+ * This exists to kill the trailing-substring/`endsWith(x.slice(-10))`/last-N
+ * family of bugs: two genuinely different numbers can share the last N digits
+ * and falsely match, and `slice(-N)` on a too-short string returns the whole
+ * string, so a short/garbage value "matches" everything. There is exactly one
+ * correct way to know if two phones are the same human number — canonicalize
+ * both and compare exactly — and this is it. No substring/last-N anywhere.
+ *
+ * FAILS CLOSED: if either side does not normalize to a valid Egyptian mobile
+ * E.164, returns `false` (never match on invalid). Accepts null/undefined.
+ */
+export function phonesMatch(
+  a: string | null | undefined,
+  b: string | null | undefined,
+): boolean {
+  const na = normalizePhone(typeof a === 'string' ? a : '');
+  const nb = normalizePhone(typeof b === 'string' ? b : '');
+  if (!isValidEgyptianMobileE164(na) || !isValidEgyptianMobileE164(nb)) return false;
+  return na === nb;
+}
+
+/**
+ * The ONE Supabase-Auth email derivation: phone -> `<digits>@centerhq.local`
+ * (canonical local-part = the E.164 digits WITHOUT the leading `+`, e.g.
+ * `+201234567890` -> `201234567890@centerhq.local`).
+ *
+ * Normalizes the input first, so the login path and the signup path produce the
+ * IDENTICAL local-part for the same human phone regardless of input form — which
+ * is what keeps logins working. Returns `null` if the phone does not normalize
+ * to a valid Egyptian mobile E.164; callers must surface their invalid-phone
+ * error path rather than write a `null@centerhq.local` identity.
+ */
+export function authEmailFromPhone(phone: string | null | undefined): string | null {
+  const e164 = normalizePhone(typeof phone === 'string' ? phone : '');
+  if (!isValidEgyptianMobileE164(e164)) return null;
+  return e164.replace(/^\+/, '') + CENTERHQ_LOCAL_SUFFIX;
 }

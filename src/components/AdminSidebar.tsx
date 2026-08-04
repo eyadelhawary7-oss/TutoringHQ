@@ -36,6 +36,7 @@ import { signOutToLogin } from '@/lib/auth/sign-out-client';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { getAdminPermissions } from '@/lib/admin-roles';
 import { supabase } from '@/lib/supabase';
+import { phoneFromCenterhqAuthEmail } from '@/lib/utils/phone';
 import { ChangePinModal } from '@/components/admin/ChangePinModal';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { Suspense } from 'react';
@@ -231,7 +232,7 @@ export function AdminSidebar({
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) return;
-      const phone = user.email?.replace('@centerhq.local', '') ?? '';
+      const phone = phoneFromCenterhqAuthEmail(user.email) ?? '';
       const displayPhone = phone ? `+${phone}` : 'Admin';
       setUserName(user.user_metadata?.name ?? displayPhone);
       setUserPhone(displayPhone);

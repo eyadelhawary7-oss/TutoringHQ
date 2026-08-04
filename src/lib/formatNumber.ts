@@ -188,6 +188,23 @@ export function formatPhoneLeadPlus(raw: string | null | undefined): string {
   return `+${normalized}`;
 }
 
+/**
+ * Display-only: an Egyptian mobile grouped the way the design draws it —
+ * `+20 10 3948 4833`. Anything that does not normalise to exactly 12 digits
+ * (country code + 10) falls back to `formatPhoneLeadPlus` unchanged, so a
+ * short, foreign or malformed number is never re-spaced into a shape it isn't.
+ *
+ * Deliberately a separate export rather than an option on formatPhoneLeadPlus:
+ * the existing call sites render the ungrouped form and must not move.
+ */
+export function formatPhoneIntlGrouped(raw: string | null | undefined): string {
+  const lead = formatPhoneLeadPlus(raw);
+  if (!lead) return '';
+  const digits = lead.slice(1);
+  if (digits.length !== 12) return lead;
+  return `+${digits.slice(0, 2)} ${digits.slice(2, 4)} ${digits.slice(4, 8)} ${digits.slice(8)}`;
+}
+
 export function formatDateTime(
   date: Date | string,
   locale: string,
