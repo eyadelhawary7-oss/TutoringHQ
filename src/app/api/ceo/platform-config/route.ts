@@ -1,6 +1,7 @@
 import { requireSuperAdminApi } from '@/lib/admin-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { parseBodyWithLimit } from '@/lib/validate';
+import { validateCSRFRequest } from '@/lib/csrf';
 
 const ALLOWED_CONFIG_KEYS = [
   'maintenance_mode',
@@ -13,6 +14,9 @@ const ALLOWED_CONFIG_KEYS = [
 export async function PATCH(request: NextRequest) {
   const auth = await requireSuperAdminApi(request);
   if (!auth.ok) return auth.response;
+  if (!validateCSRFRequest(request, auth.userId)) {
+    return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
+  }
 
   const supabaseAdmin = auth.supabaseAdmin;
 

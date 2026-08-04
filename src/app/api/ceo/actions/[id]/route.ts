@@ -2,6 +2,7 @@ import { requireSuperAdminApi } from '@/lib/admin-auth';
 import { resolveAction, snoozeAction } from '@/lib/ceo';
 import { NextRequest, NextResponse } from 'next/server';
 import { parseBodyWithLimit } from '@/lib/validate';
+import { validateCSRFRequest } from '@/lib/csrf';
 
 export async function PATCH(
   request: NextRequest,
@@ -9,6 +10,9 @@ export async function PATCH(
 ) {
   const auth = await requireSuperAdminApi(request);
   if (!auth.ok) return auth.response;
+  if (!validateCSRFRequest(request, auth.userId)) {
+    return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
+  }
 
   const { id } = await params;
   if (!id) {

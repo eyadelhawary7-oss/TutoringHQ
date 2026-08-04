@@ -3,6 +3,7 @@ import { createLead, getLeads } from '@/lib/ceo';
 import type { CreateLeadInput } from '@/types/ceo';
 import { NextRequest, NextResponse } from 'next/server';
 import { parseBodyWithLimit } from '@/lib/validate';
+import { validateCSRFRequest } from '@/lib/csrf';
 
 export async function GET(request: NextRequest) {
   const auth = await requireSuperAdminApi(request);
@@ -22,6 +23,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const auth = await requireSuperAdminApi(request);
   if (!auth.ok) return auth.response;
+  if (!validateCSRFRequest(request, auth.userId)) {
+    return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
+  }
 
   try {
     const body = (await parseBodyWithLimit(request, 65536)) as CreateLeadInput;
