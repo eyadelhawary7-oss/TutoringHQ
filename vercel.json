@@ -43,7 +43,8 @@
     { "path": "/api/cron/summer-billing", "schedule": "0 23 * * *" },
     { "path": "/api/cron/sync-wa-templates", "schedule": "15 * * * *" },
     { "path": "/api/cron/class-reminders", "schedule": "0 5 * * *" },
-    { "path": "/api/cron/billing-lockout", "schedule": "0,59 * * * *" }
+    { "path": "/api/cron/billing-lockout", "schedule": "0,59 * * * *" },
+    { "path": "/api/cron/payout-reconciliation", "schedule": "30 */6 * * *" }
   ],
   "functions": {
     "src/app/api/login/route.ts": { "maxDuration": 30 },
@@ -73,6 +74,9 @@
     },
     "src/app/api/cron/billing-lockout/route.ts": {
       "maxDuration": 300
+    },
+    "src/app/api/cron/payout-reconciliation/route.ts": {
+      "maxDuration": 60
     },
     "src/app/api/cron/daily-summary/route.ts": {
       "maxDuration": 300

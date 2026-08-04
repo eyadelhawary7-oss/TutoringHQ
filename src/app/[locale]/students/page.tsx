@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+import { useSearchParams } from 'next/navigation';
 import { Link, useRouter } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbUpdate, dbDelete, auditLog } from '@/lib/db-proxy';
@@ -168,6 +169,7 @@ export default function StudentsPage() {
   const tEmpty = useTranslations('emptyStates');
   const tCart = useTranslations('cart');
   const router = useRouter();
+  const searchParams = useSearchParams();
   const tCommon = useTranslations('common');
   const tToast = useTranslations('toasts');
   const tConsent = useTranslations('guardianConsent');
@@ -294,6 +296,23 @@ export default function StudentsPage() {
       document.removeEventListener('mousedown', onMouseDown);
     };
   }, [rowMenuId]);
+
+  // Dashboard deep links (F23): the unpaid-alert banner's "Review" button links
+  // here with `?filter=unpaid`, and the "Add student" quick action links here
+  // with `?action=add`. Both silently landed on the plain unfiltered roster
+  // before this — read once on mount and drive the same segment/modal state a
+  // manual click would.
+  useEffect(() => {
+    if (searchParams?.get('filter') === 'unpaid') {
+      setSegment('behind');
+    }
+    if (searchParams?.get('action') === 'add') {
+      setShowAddModal(true);
+    }
+    // Intentionally run once on mount only — searchParams is read for its
+    // initial value, not to keep re-syncing state on every navigation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const loadStudents = async () => {

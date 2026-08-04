@@ -85,9 +85,21 @@ describe('requirePermission', () => {
 
   it('returns a 403 Response for a denied assistant', async () => {
     const auth = makeAuth('assistant');
-    const result = requirePermission(auth, 'can_request_referral_payouts');
+    const result = requirePermission(auth, 'can_delete_students');
     expect(result).toBeInstanceOf(Response);
     expect((result as Response).status).toBe(403);
+  });
+
+  // PAYOUT-SYSTEM-SPEC.md §2.7. This used to be a plain 403 assertion against
+  // can_request_referral_payouts. The generic helpers now refuse that permission
+  // outright so a release path cannot reach for them by habit; the money-request
+  // gate lives in requireMoneyRequestPermission and is covered in
+  // tests/unit/payoutRequestAuthority.test.ts.
+  it('refuses the request-only money permission outright', () => {
+    const auth = makeAuth('assistant');
+    expect(() => requirePermission(auth, 'can_request_referral_payouts')).toThrow(
+      /REQUEST-ONLY/,
+    );
   });
 
   it('403 response body includes the correct permission field', async () => {
