@@ -215,7 +215,7 @@ async function enrichLatestTransitionRow(
       .from('card_order_status_transitions')
       .select('id')
       .eq('card_order_id', orderId)
-      .order('created_at', { ascending: false })
+      .order('transitioned_at', { ascending: false })
       .limit(1)
       .maybeSingle();
 

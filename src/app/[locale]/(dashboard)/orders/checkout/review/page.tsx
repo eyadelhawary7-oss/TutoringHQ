@@ -19,6 +19,7 @@ import {
 export default function CheckoutReviewPage() {
   const t = useTranslations('checkout.review');
   const tCheckout = useTranslations('checkout');
+  const tCommon = useTranslations('common');
   const router = useRouter();
   const locale = useLocale();
   const localeShort: 'en' | 'ar' = locale.startsWith('ar') ? 'ar' : 'en';
@@ -119,9 +120,9 @@ export default function CheckoutReviewPage() {
             {activeItems.map((i) =>
               i.kind === 'student' ? (
                 <li key={i.id}>
-                  {i.student?.name?.trim() || ','}{' '}
+                  {i.student?.name?.trim() || tCommon('notAvailable')}{' '}
                   <span className="text-[var(--color-text-tertiary)]">
-                    #<bdi>{i.student?.student_number?.trim() || ','}</bdi>
+                    #<bdi>{i.student?.student_number?.trim() || tCommon('notAvailable')}</bdi>
                   </span>
                 </li>
               ) : null,
@@ -141,17 +142,17 @@ export default function CheckoutReviewPage() {
           </Link>
         </div>
         <p>
-          <span className="text-[var(--color-text-secondary)]">{t('govLabel')}:</span> {govLabel || ','}
+          <span className="text-[var(--color-text-secondary)]">{t('govLabel')}:</span> {govLabel || tCommon('notAvailable')}
         </p>
         <p>
-          <span className="text-[var(--color-text-secondary)]">{t('addressLabel')}:</span> {cart?.delivery_address?.trim() || ','}
+          <span className="text-[var(--color-text-secondary)]">{t('addressLabel')}:</span> {cart?.delivery_address?.trim() || tCommon('notAvailable')}
         </p>
         <p>
-          <span className="text-[var(--color-text-secondary)]">{t('phoneLabel')}:</span> {phoneDisp || ','}
+          <span className="text-[var(--color-text-secondary)]">{t('phoneLabel')}:</span> {phoneDisp || tCommon('notAvailable')}
         </p>
         <p>
           <span className="text-[var(--color-text-secondary)]">{t('deliveryNotesLabel')}:</span>{' '}
-          {cart?.notes?.trim() ? cart.notes.trim() : ','}
+          {cart?.notes?.trim() ? cart.notes.trim() : tCommon('notAvailable')}
         </p>
       </section>
 
@@ -164,11 +165,11 @@ export default function CheckoutReviewPage() {
         </div>
         <p>
           <span className="text-[var(--color-text-secondary)]">{t('styleLabel')}:</span>{' '}
-          {cart?.card_style === 'light' ? t('styleLight') : cart?.card_style === 'dark' ? t('styleDark') : ','}
+          {cart?.card_style === 'light' ? t('styleLight') : cart?.card_style === 'dark' ? t('styleDark') : tCommon('notAvailable')}
         </p>
         <p>
           <span className="text-[var(--color-text-secondary)]">{t('vendorNotesLabel')}:</span>{' '}
-          {cart?.vendor_notes?.trim() ? cart.vendor_notes.trim() : ','}
+          {cart?.vendor_notes?.trim() ? cart.vendor_notes.trim() : tCommon('notAvailable')}
         </p>
       </section>
 
@@ -192,7 +193,7 @@ export default function CheckoutReviewPage() {
             </div>
           ) : null}
           <div className="flex justify-between gap-2">
-            <span className="text-[var(--color-text-secondary)]">{t('shippingLine', { zone: zoneLabel || ',' })}</span>
+            <span className="text-[var(--color-text-secondary)]">{t('shippingLine', { zone: zoneLabel || tCommon('notAvailable') })}</span>
             <span className="tabular-nums">{formatCurrency(shipFee, locale)}</span>
           </div>
           <div className="flex justify-between gap-2 pt-2 text-lg font-bold">

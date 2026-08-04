@@ -12,6 +12,7 @@ const TIMEOUT_SEC = 300;
 
 function PaymentInner() {
   const t = useTranslations('checkout.payment');
+  const tCommon = useTranslations('common');
   const router = useRouter();
   const searchParams = useSearchParams();
   const orderIdFromUrl = searchParams?.get('orderId')?.trim() ?? '';
@@ -127,7 +128,7 @@ function PaymentInner() {
     <div className="space-y-4 max-w-4xl mx-auto" data-testid="checkout-payment">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-lg font-bold text-[var(--color-text-primary)]">
-          {t('orderRef', { ref: shortRef || ',' })}
+          {t('orderRef', { ref: shortRef || tCommon('notAvailable') })}
         </h1>
         <p className="text-sm tabular-nums text-amber-700 font-semibold">
           {t('timeout', { mm, ss })}

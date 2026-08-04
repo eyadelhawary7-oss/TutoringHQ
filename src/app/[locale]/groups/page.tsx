@@ -37,6 +37,7 @@ import { isUuid } from '@/lib/uuid';
 import { initialsOf } from '@/lib/initials';
 import { getStudentBalances, type StudentBalance } from '@/lib/studentBalance';
 import * as Sentry from '@sentry/nextjs';
+import { useVerificationState } from '@/hooks/useVerificationState';
 
 interface Group {
   id: string;
@@ -103,6 +104,8 @@ const SUBJECT_GLYPHS: LucideIcon[] = [Atom, BookOpen, FlaskConical, BookOpen];
 const EMPTY_ATTENDANCE: GroupAttendance = { dates: [], presentByDate: {}, presentByStudent: {} };
 
 export default function GroupsPage() {
+  // Imported from the one state machine, never re-derived here.
+  const { state: verification } = useVerificationState();
   const t = useTranslations('groups');
   const tEmpty = useTranslations('emptyStates');
   const tCommon = useTranslations('common');
@@ -145,13 +148,19 @@ export default function GroupsPage() {
   const [addForm, setAddForm] = useState({ name: '', subjectId: '', fee_per_class: '', centerCutPct: '', maxCapacity: '' });
   const [isAdding, setIsAdding] = useState(false);
   /**
-   * §02 (Center Groups Verified) gate — /api/me's exposure of the platform
-   * switch `digital_student_fee_collection.enabled`. False live today, so the
-   * §01 layout stands; when the platform flips the flag, the mint banner, the
-   * ALL GROUPS label and the "{teacher} · {n} students" row line render with no
-   * code change. Fail-closed: anything but `true` keeps it off.
+   * §02 (Center Groups Verified) gate, HALF ONE — /api/me's exposure of the
+   * platform switch `digital_student_fee_collection.enabled`. Live value is
+   * `false` (row exists, set 19 June 2026; re-verified 4 Aug 2026).
+   * Fail-closed: anything but `true` keeps it off.
+   *
+   * This flag alone was the whole gate, and that was a latent defect. It is a
+   * PLATFORM switch with no per-centre component, so flipping it would have
+   * turned on digital collection for every centre at once, verified or not —
+   * which contradicts VERIFICATION-SPEC §6, where online collection is gated on
+   * a passed identity check. The flag is now necessary but not sufficient; see
+   * `digitalCollectionActive` below.
    */
-  const [digitalCollection, setDigitalCollection] = useState(false);
+  const [platformDigitalCollection, setPlatformDigitalCollection] = useState(false);
   const [members, setMembers] = useState<{ student_id: string; student_name: string }[]>([]);
   const [studentOtherGroups, setStudentOtherGroups] = useState<Record<string, string[]>>({});
   const [addMemberSearch, setAddMemberSearch] = useState('');
@@ -170,6 +179,20 @@ export default function GroupsPage() {
     | null
   >(null);
 
+  /**
+   * §02 gate, BOTH HALVES. The platform switch says the feature exists at all;
+   * the verification state says this centre may use it. Online collection is
+   * gated on a passed identity check (VERIFICATION-SPEC §6), so a centre that
+   * has not verified must keep the §01 layout even after the platform flips.
+   *
+   * `state.isVerified` is the ONE boolean `resolveEffectiveState` guarantees
+   * cannot be true while the Valify guard is unhappy — an `unconfigured`
+   * deployment resolves to false no matter what any stored row says. So this is
+   * fail-closed twice over, and today it is false because Valify is not
+   * configured (all four VALIFY_* values are placeholders).
+   */
+  const digitalCollectionActive = platformDigitalCollection && verification.isVerified;
+
   // Design (§01 New group form): a "+ New" chip inline in the subject picker,
   // so a center doesn't have to abandon group creation to add a subject first.
   const NEW_SUBJECT_VALUE = '__new__';
@@ -186,7 +209,7 @@ export default function GroupsPage() {
     const cid = meData.user.center_id;
     setCenterId(cid);
     setUserId(meData.user.id);
-    setDigitalCollection(meData.user.digital_student_fee_collection === true);
+    setPlatformDigitalCollection(meData.user.digital_student_fee_collection === true);
 
     const { data: centerRow } = await dbSelect({
       table: 'centers',
@@ -836,12 +859,12 @@ export default function GroupsPage() {
               while platform_config's digital_student_fee_collection.enabled is
               true. It is false in production today, so this banner does not
               exist for any live centre; nothing about it is "coming soon". */}
-          {digitalCollection && (
+          {digitalCollectionActive && (
             <div className="rounded-md border border-[rgba(14,107,97,0.2)] bg-[#DFEEEB] px-4 py-3 text-xs leading-relaxed text-[#0A514A]">
               {t('digitalCollectionNote')}
             </div>
           )}
-          {digitalCollection && (
+          {digitalCollectionActive && (
             <p className="mb-1 px-1 text-xs font-bold uppercase tracking-wide text-[var(--color-text-muted)]">
               {t('allGroups')}
             </p>
@@ -869,7 +892,7 @@ export default function GroupsPage() {
             // cannot be expressed as a percent, so the segment is omitted, not
             // shown as 0%. Under the §02 flag the teacher moves into the row
             // line instead, so the chip stands down.
-            const showTeacherChip = !digitalCollection && !!g.teacher_name;
+            const showTeacherChip = !digitalCollectionActive && !!g.teacher_name;
             const showCutPct = showTeacherChip && cut > 0 && fee > 0;
             const cutPct = showCutPct ? Math.round((cut / fee) * 100) : 0;
             return (
@@ -898,7 +921,7 @@ export default function GroupsPage() {
                       flag (design lines 680-702) the line is
                       "{teacher} · {n} students" instead. */}
                   {(() => {
-                    if (digitalCollection) {
+                    if (digitalCollectionActive) {
                       const parts: string[] = [];
                       if (g.teacher_name) parts.push(g.teacher_name);
                       parts.push(t('studentsCountLine', { count: formatNumber(enrolled, locale) }));
