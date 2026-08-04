@@ -1207,15 +1207,21 @@ doc and `db/schema.snapshot`, same "drop or document" decision as before, not re
 ## F22 · Center-Students re-verification — four small, previously-unlogged display gaps
 - **What, found together, 31 July 2026, re-verifying `Merged-Center-Students.html` against live code
   fresh (post-#239/#249), not from memory:**
-  1. **§01 Roster — still open.** The design's header/KPI assume a multi-branch rollup — subtitle "128
-     active · **3 branches**", KPI sub "across 3 branches". Live shows a total student count only, no
-     branch breakdown. **Sharpened, 31 July (PR #277):** this isn't a missing field, it's a genuinely
-     different aggregate. `src/stores/branchStore.ts`/`BranchSwitcher.tsx` swap the *single active*
-     `center_id` between separate, fully independent `centers` rows one at a time
-     (`setActiveCenterId(b.id)`) — there is no cross-center rollup query anywhere (`grep -n 'branch'
-     src/app/[locale]/students/page.tsx` → zero matches). A combined count needs a real
-     sum-across-every-`center_id`-an-owner-can-see query, plus a decision on whether RLS should ever
-     let one view span multiple tenants — a bigger question than this file's redesign pass.
+  1. **§01 Roster — still open, corrected 4 August 2026 (see F22 addendum below — the original
+     "no cross-center rollup query anywhere" / "zero matches" claim below was wrong; do not treat it
+     as a finding).** The design's header/KPI assume a multi-branch rollup — subtitle "128
+     active · **3 branches**", KPI sub "across 3 branches". Live's `branchCount`
+     (`src/stores/branchStore.ts`, hydrated by `BranchSwitcher` from `GET /api/branches`) is a real
+     cross-center count for organizations that have `organization_id` set: `src/app/api/branches/route.ts`'s
+     GET handler queries `centers` filtered by `organization_id` — every sibling center in the org,
+     optionally narrowed by `branch_user_assignments` — not just the caller's own row; the
+     single-own-center-array fallback only fires when the user has no `organization_id`. What is
+     genuinely NOT rolled up is the *paired* `active` count: `students/page.tsx` fetches `students`
+     filtered to `center_id = meData.user.center_id` only, so a real 3-branch org's KPI would read
+     e.g. "42 active · 3 branches" where 42 is one branch's own active count against a correct org-wide
+     branch count of 3 — a scope mismatch between the two clauses, not an absent rollup. Fixing the
+     `active` half needs the same RLS-scope decision (should one roster view ever sum students across
+     sibling `center_id`s) already named below — a bigger question than this file's redesign pass.
   2. **§02 Student Detail — still open.** No aging/next-due sub-line under the balance figure at all.
      The design shows "12 days overdue · since 01/07/2026" (owes state) or "Next due 01/08/2026 · 400
      EGP" (paid state). **Confirmed why, 31 July (PR #277):** `getStudentBalances()` is a running
@@ -1237,15 +1243,24 @@ doc and `db/schema.snapshot`, same "drop or document" decision as before, not re
 - **Touches:** none — display/UX only, no schema, no protected file.
 - **Found:** 31 July 2026, Center-Students re-verification (#257). Items 3–4 built, item 1's reasoning
   sharpened, item 2 confirmed correctly blocked: 31 July 2026, PR #277.
-- **Re-confirmed unchanged, 4 August 2026, Center-Students parity pass.** Re-read both items fresh
-  against current `students/page.tsx` and `students/[id]/page.tsx` rather than trusting the prior
-  write-up: item 1 (branch rollup) — `grep -n 'branch' src/app/[locale]/students/page.tsx` still
-  returns zero matches, `branchStore.ts` still swaps one active `center_id` rather than rolling up
-  across centers; still needs the RLS-scope decision, not a display fix. Item 2 (aging/next-due
-  sub-line) — `getStudentBalances()` (`src/lib/studentBalance.ts`) is still a running Σcharges−Σpayments
-  aggregate with no per-invoice "next due" fact; still needs a product decision on what "next due"
-  means under that model. Neither item moved. Items 3–4 (ID card tile, import inline Fix) re-verified
-  still present and working, see the code citations under F22 above.
+- **Re-confirmed 4 August 2026, Center-Students parity pass — CORRECTION, not a re-confirmation, on
+  item 1.** A first pass re-read both items and wrote "item 1 (branch rollup) — `grep -n 'branch'
+  src/app/[locale]/students/page.tsx` still returns zero matches" — that grep claim is false. Running
+  it for real returns 14 matches (the `useBranchStore` import, the `branches`/`branchCount`
+  declarations, and both render sites), and none of them were new to this pass — the same lines exist
+  verbatim on `origin/master`. A second, actual read of `src/app/api/branches/route.ts`'s GET handler
+  (not assumed from the `students/page.tsx` comment alone) shows it queries `centers` by
+  `organization_id` across every sibling center when the user has one set — a genuine cross-center
+  query exists. The real, narrower gap (see the corrected item 1 write-up above): `branchCount` can be
+  a true org-wide figure, but the KPI's `active` half is fetched scoped to the caller's own
+  `center_id` only, so the two clauses of "N active · M branches" don't share a scope for any org with
+  more than one center. Still needs the RLS-scope decision on whether one roster view should ever sum
+  students across sibling centers — that part of the original conclusion holds; the evidence offered
+  for it did not, and is corrected here rather than left standing. Item 2 (aging/next-due sub-line) —
+  `getStudentBalances()` (`src/lib/studentBalance.ts`) is still a running Σcharges−Σpayments aggregate
+  with no per-invoice "next due" fact; still needs a product decision on what "next due" means under
+  that model — unaffected by the item-1 correction. Items 3–4 (ID card tile, import inline Fix)
+  re-verified still present and working, see the code citations under F22 above.
 
 ## F23 · Two dashboard CTAs link to `/students` query params the page never reads — CLOSED, 4 August 2026
 - **What:** `Merged-Center-Home` §01's unpaid-alert banner "Review" button links to `/students?filter=unpaid`, and the dashboard's "Add student" quick action links to `/students?action=add`. `src/app/[locale]/students/page.tsx` has zero `useSearchParams`/`searchParams` handling anywhere — both links silently land on the plain, unfiltered/unprompted roster instead of doing what they promise.
