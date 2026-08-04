@@ -141,6 +141,20 @@ export async function POST(request: NextRequest) {
       p_center_id: centerId,
       p_amount: creditAmount,
     });
+    // PAYOUT-SYSTEM-SPEC.md §2.2 proposes
+    // `UNIQUE INDEX one_pending_withdrawal_per_center ... WHERE status='pending'`
+    // (supabase/migrations/20260804160000_withdrawal_process_atomic_rpc.sql,
+    // NOT APPLIED). Once applied, it — not the racy check-then-insert above —
+    // is what actually enforces one pending request per centre. Two concurrent
+    // submissions both pass that check; the loser lands here with 23505. Report
+    // it as the same 400 the check reports, not an opaque 500. The reservation
+    // is already released by the cancel call above.
+    if ((insErr as { code?: string }).code === '23505') {
+      return NextResponse.json(
+        { error: 'You already have a pending withdrawal request' },
+        { status: 400 },
+      );
+    }
     return NextResponse.json({ error: 'Failed to create request' }, { status: 500 });
   }
 

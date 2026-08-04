@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { requireSuperAdminApi } from '@/lib/admin-auth';
 import { requireSuperAdminRow } from '@/lib/admin-access';
 import { sendWithdrawalProcessed } from '@/lib/centerNotify';
@@ -6,6 +7,17 @@ import { formatNumber } from '@/lib/formatNumber';
 import { ownerContactByCenterId, resolveOwnerWaPhone } from '@/lib/ownerPhone';
 import { parseBodyWithLimit } from '@/lib/validate';
 import { validateCSRFRequest } from '@/lib/csrf';
+import {
+  WITHDRAWAL_PROCESS_RPC,
+  WithdrawalRpcContractError,
+  interpretWithdrawalRpcResult,
+  isMissingWithdrawalRpc,
+  isWithdrawalAction,
+  shouldNotifyOwner,
+  whatsappAmount,
+  whatsappDecisionWord,
+  withdrawalHttpResult,
+} from '@/lib/withdrawalProcessing';
 
 const WA_AR = 'ar';
 
@@ -40,162 +52,154 @@ export async function PATCH(
   }
 
   const action = body.action;
-  if (action !== 'mark_paid' && action !== 'reject') {
+  if (!isWithdrawalAction(action)) {
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
   }
 
-  const { data: row, error: fetchErr } = await auth.supabaseAdmin
-    .from('withdrawal_requests')
-    .select(
-      'id, center_id, credits_deducted, cash_amount, instapay_number, status',
-    )
-    .eq('id', withdrawalId)
-    .maybeSingle();
-
-  if (fetchErr || !row) {
-    return NextResponse.json({ error: 'Withdrawal not found' }, { status: 404 });
-  }
-
-  const w = row as {
-    center_id: string;
-    credits_deducted: number | string | null;
-    cash_amount: number | string | null;
-    instapay_number: string | null;
-    status: string | null;
-  };
-
-  if (w.status !== 'pending') {
-    return NextResponse.json({ error: 'Request is not pending' }, { status: 400 });
-  }
-
-  const credits = Number(w.credits_deducted ?? 0);
-  const cashAmount = Number(w.cash_amount ?? 0);
-  const instapay = String(w.instapay_number ?? '').trim();
-
-  if (!Number.isFinite(credits) || credits <= 0) {
-    return NextResponse.json({ error: 'Invalid credits on request' }, { status: 400 });
-  }
-
-  const now = new Date().toISOString();
-  const notesUpdate =
+  const notes =
     typeof body.notes === 'string' && body.notes.trim() ? body.notes.trim() : null;
 
-  if (action === 'mark_paid') {
-    const { error: cancelErr } = await auth.supabaseAdmin.rpc('cancel_reservation_atomic', {
-      p_center_id: w.center_id,
-      p_amount: credits,
+  // ==========================================================================
+  // PAYOUT-SYSTEM-SPEC.md §2.2 — the whole state change is ONE transaction.
+  //
+  // What used to be here: a non-locking .select, a `status !== 'pending'`
+  // check in JavaScript, cancel_reservation_atomic, spend_credits_atomic, and
+  // an .update({status:'paid'}) — five separate round trips, no transaction.
+  // Two admins on the queue, or one double-click, both passed the JS check,
+  // both spent, both returned {success:true} and both fired the WhatsApp,
+  // because a zero-row PostgREST UPDATE is not an error. And if
+  // spend_credits_atomic raised after cancel_reservation_atomic had already
+  // committed, the centre's balance came back and was immediately
+  // re-withdrawable with the cash already gone.
+  //
+  // The RPC does SELECT ... FOR UPDATE, releases, spends, flips the status and
+  // writes audit_log in one transaction, and tells us via `outcome` whether
+  // WE are the caller that performed the transition.
+  //
+  // THERE IS NO FALLBACK TO THE OLD PATH, DELIBERATELY. The RPC ships in
+  // supabase/migrations/20260804160000_withdrawal_process_atomic_rpc.sql,
+  // which is NOT APPLIED — Eyad applies it by hand (CLAUDE.md rule 5). Until
+  // it is applied this route returns 500 `withdrawal_rpc_missing` and moves
+  // no money. Falling back to the racy path on a missing RPC would silently
+  // re-open the exact defect this closes, so it fails loudly instead.
+  // ==========================================================================
+  const { data: rpcData, error: rpcError } = await auth.supabaseAdmin.rpc(
+    WITHDRAWAL_PROCESS_RPC,
+    {
+      p_withdrawal_id: withdrawalId,
+      p_action: action,
+      p_actor_id: auth.userId,
+      p_notes: notes,
+    },
+  );
+
+  if (rpcError) {
+    if (isMissingWithdrawalRpc(rpcError)) {
+      console.error(
+        `[admin/withdrawals] ${WITHDRAWAL_PROCESS_RPC} is absent from the database. ` +
+          'The §2.2 migration (supabase/migrations/20260804160000_withdrawal_process_atomic_rpc.sql) ' +
+          'has not been applied. Refusing to process this withdrawal — there is no safe non-transactional path.',
+        rpcError,
+      );
+      return NextResponse.json(
+        {
+          error:
+            'Withdrawal processing is unavailable: the atomic approval function is not installed on the database.',
+          cause: 'withdrawal_rpc_missing',
+        },
+        { status: 500 },
+      );
+    }
+    // Anything else rolled the whole transaction back: reservation still
+    // reserved, no credits spent, status still pending. Safe to retry.
+    console.error(`[admin/withdrawals] ${WITHDRAWAL_PROCESS_RPC}`, rpcError);
+    return NextResponse.json(
+      { error: rpcError.message, cause: 'withdrawal_rpc_failed' },
+      { status: 500 },
+    );
+  }
+
+  let result;
+  try {
+    result = interpretWithdrawalRpcResult(rpcData);
+  } catch (e) {
+    if (e instanceof WithdrawalRpcContractError) {
+      console.error('[admin/withdrawals] RPC contract mismatch:', e.message, rpcData);
+      return NextResponse.json(
+        { error: e.message, cause: 'withdrawal_rpc_contract_mismatch' },
+        { status: 500 },
+      );
+    }
+    throw e;
+  }
+
+  const http = withdrawalHttpResult(result);
+
+  // The transaction has committed by the time we are here. Notify exactly
+  // once, and only for the caller that actually performed the transition —
+  // the loser of a double-click gets `already_applied` and stays silent.
+  if (shouldNotifyOwner(result.outcome) && result.centerId) {
+    await notifyOwner(auth.supabaseAdmin, result.centerId, action, {
+      cashAmount: result.cashAmount,
+      creditsDeducted: result.creditsDeducted,
+      instapayNumber: result.instapayNumber,
+      notes: result.notes,
     });
+  }
 
-    if (cancelErr) {
-      console.error('[admin/withdrawals] cancel_reservation_atomic', cancelErr);
-      return NextResponse.json({ error: cancelErr.message }, { status: 500 });
-    }
+  return NextResponse.json(http.body, { status: http.httpStatus });
+}
 
-    const { error: spendErr } = await auth.supabaseAdmin.rpc('spend_credits_atomic', {
-      p_center_id: w.center_id,
-      p_amount: credits,
-      p_reference_id: withdrawalId,
-      p_reference_type: 'withdrawal',
-    });
-
-    if (spendErr) {
-      console.error('[admin/withdrawals] spend_credits_atomic', spendErr);
-      return NextResponse.json({ error: spendErr.message }, { status: 500 });
-    }
-
-    const { error: updErr } = await auth.supabaseAdmin
-      .from('withdrawal_requests')
-      .update({
-        status: 'paid',
-        processed_at: now,
-        processed_by: auth.userId,
-        ...(notesUpdate ? { notes: notesUpdate } : {}),
-      })
-      .eq('id', withdrawalId)
-      .eq('status', 'pending');
-
-    if (updErr) {
-      return NextResponse.json({ error: updErr.message }, { status: 500 });
-    }
-
-    const { data: center } = await auth.supabaseAdmin
+async function notifyOwner(
+  supabaseAdmin: SupabaseClient,
+  centerId: string,
+  action: 'mark_paid' | 'reject',
+  details: {
+    cashAmount: number;
+    creditsDeducted: number;
+    instapayNumber: string;
+    notes: string | null;
+  },
+): Promise<void> {
+  try {
+    const { data: center } = await supabaseAdmin
       .from('centers')
       .select('phone, owner_name, name')
-      .eq('id', w.center_id)
+      .eq('id', centerId)
       .maybeSingle();
 
-    const cRow = center as { phone?: string | null; owner_name?: string | null; name?: string | null } | null;
-    const ownerMap = await ownerContactByCenterId(auth.supabaseAdmin, [w.center_id]);
-    const oc = ownerMap.get(w.center_id);
+    const cRow = center as {
+      phone?: string | null;
+      owner_name?: string | null;
+      name?: string | null;
+    } | null;
+
+    const ownerMap = await ownerContactByCenterId(supabaseAdmin, [centerId]);
+    const oc = ownerMap.get(centerId);
     const ownerPhone = await resolveOwnerWaPhone(
-      auth.supabaseAdmin,
+      supabaseAdmin,
       oc?.authId ?? null,
       oc?.userPhone,
       cRow?.phone,
     );
-    if (ownerPhone) {
-      const ownerName = (cRow?.owner_name ?? '').trim() || (cRow?.name ?? '').trim() || ',';
-      const note = notesUpdate ?? `إنستاباي: ${instapay || ','}`;
-      try {
-        await sendWithdrawalProcessed(ownerPhone, ownerName, 'قبول', cashAmount, note);
-      } catch (e) {
-        console.error('[admin/withdrawals] mark_paid WA:', e);
-      }
-    }
+    if (!ownerPhone) return;
 
-    return NextResponse.json({ success: true });
+    const ownerName = (cRow?.owner_name ?? '').trim() || (cRow?.name ?? '').trim() || ',';
+    const fallbackNote =
+      action === 'mark_paid'
+        ? `إنستاباي: ${details.instapayNumber || ','}`
+        : `${formatNumber(details.creditsDeducted, WA_AR)} نقطة أُعيدت للرصيد`;
+
+    await sendWithdrawalProcessed(
+      ownerPhone,
+      ownerName,
+      whatsappDecisionWord(action),
+      whatsappAmount(action, details),
+      details.notes ?? fallbackNote,
+    );
+  } catch (e) {
+    // The money has already moved and committed. A WhatsApp failure must not
+    // turn a successful transition into an error response.
+    console.error(`[admin/withdrawals] ${action} WA:`, e);
   }
-
-  // reject
-  const { error: cancelErr } = await auth.supabaseAdmin.rpc('cancel_reservation_atomic', {
-    p_center_id: w.center_id,
-    p_amount: credits,
-  });
-
-  if (cancelErr) {
-    console.error('[admin/withdrawals] reject cancel_reservation_atomic', cancelErr);
-    return NextResponse.json({ error: cancelErr.message }, { status: 500 });
-  }
-
-  const { error: updErr } = await auth.supabaseAdmin
-    .from('withdrawal_requests')
-    .update({
-      status: 'rejected',
-      processed_at: now,
-      processed_by: auth.userId,
-      ...(notesUpdate ? { notes: notesUpdate } : {}),
-    })
-    .eq('id', withdrawalId)
-    .eq('status', 'pending');
-
-  if (updErr) {
-    return NextResponse.json({ error: updErr.message }, { status: 500 });
-  }
-
-  const { data: center } = await auth.supabaseAdmin
-    .from('centers')
-    .select('phone, owner_name, name')
-    .eq('id', w.center_id)
-    .maybeSingle();
-
-  const cRow2 = center as { phone?: string | null; owner_name?: string | null; name?: string | null } | null;
-  const ownerMap2 = await ownerContactByCenterId(auth.supabaseAdmin, [w.center_id]);
-  const oc2 = ownerMap2.get(w.center_id);
-  const ownerPhone2 = await resolveOwnerWaPhone(
-    auth.supabaseAdmin,
-    oc2?.authId ?? null,
-    oc2?.userPhone,
-    cRow2?.phone,
-  );
-  if (ownerPhone2) {
-    const ownerName = (cRow2?.owner_name ?? '').trim() || (cRow2?.name ?? '').trim() || ',';
-    const note = notesUpdate ?? formatNumber(credits, WA_AR) + ' نقطة أُعيدت للرصيد';
-    try {
-      await sendWithdrawalProcessed(ownerPhone2, ownerName, 'رفض', credits, note);
-    } catch (e) {
-      console.error('[admin/withdrawals] reject WA:', e);
-    }
-  }
-
-  return NextResponse.json({ success: true });
 }
