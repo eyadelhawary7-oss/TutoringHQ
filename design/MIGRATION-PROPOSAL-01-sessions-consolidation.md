@@ -135,7 +135,72 @@ Also noted: the one live slot has `recurring = true` with `recurring_until = NUL
 
 ---
 
-## 6. What I need from you
+## 6. ANSWERS — four decisions, live-verified 4 August
+
+Re-queried the live catalog before answering. **Two answers changed as a result**, and one question turned out to be already solved by an existing column.
+
+### (a) `owner_scope` vs nullable `center_id` — ANSWER: **neither. `sessions.kind` already is the discriminator.**
+
+I recommended adding `owner_scope`. That was wrong — the column already exists:
+
+```
+sessions_kind_chk  CHECK (kind = ANY (ARRAY['center', 'private']))
+```
+
+`kind` is **NOT NULL** and already constrained to exactly the two values I was about to re-invent. Adding `owner_scope` would create a second source of truth for the same fact, which is the `referral_reward_records` / `referral_commissions` failure shape (D22) — two columns meaning one thing, drifting apart.
+
+**What live data proves, and why it kills the nullable-`center_id` option outright:** all 4 `sessions` rows are `kind='private'`, but **two of them sit on a group that HAS a `center_id`** (group `ewfinewfiew`, a test centre). So:
+
+| session | kind | group has center_id |
+|---|---|---|
+| 887fbfda | private | **yes** |
+| 17866373 | private | **yes** |
+| acdf8142 | private | no |
+| bc597d9c | private | no |
+
+Backfilling `center_id` from `student_groups.center_id` would give two **private** sessions a non-null `center_id`. Under the "NULL means teacher-private" rule those two would read as centre sessions. **The semantic is already false on today's data** — not theoretically fragile, actually wrong.
+
+**Recommendation:** add `center_id` purely as a **tenant key for RLS and indexing**, carrying no ownership meaning, and keep `kind` as the sole owner discriminator. RLS predicates read `kind = 'center' AND center_id = …`, never `center_id IS NULL`.
+
+### (b) Eager cron vs lazy read-through — ANSWER: **lazy, unchanged.**
+
+Reinforced by a fact from §5.4: the one live slot is `recurring = true` with `recurring_until = NULL` — an **unbounded** recurrence. An eager generator has no natural stopping point and would need an invented horizon. Lazy materialisation has no horizon problem: a row exists exactly when something real touched it.
+
+### (c) Drop the duplicate `attendance_scans` columns — ANSWER: **yes, drop — but the sequencing matters more than I said, and I had one fact wrong.**
+
+**Correction to §2.4.** I wrote that `attendance_scans.session_id` is "nullable, and nothing populates it as a rule." That is wrong as stated. Live: **3 of 3 scans have `session_id` populated.** The accurate statement is narrower and more useful:
+
+- The **teacher-private** path populates `session_id` (every reader/writer of it lives under `api/teacher/private/*`).
+- The **centre scanner** path — the 34-file `attendance_scans` surface — does **not**.
+- All 3 live scans are teacher-private, which is why the column looks fully populated.
+
+**Consequence:** `ALTER COLUMN session_id SET NOT NULL` must **not** be applied on the strength of "3/3 rows are populated." It would break the centre scanner the first time a centre scan is recorded. NOT NULL comes only after the centre path populates it too — which is Phase 1's dependency, not this migration's.
+
+The duplicate pairs (`payment_method`/`method`, `payment_status_at_scan`/`status`) still get dropped, still only after the 34-call-site audit maps which writer uses which.
+
+### (d) Drop dead `parent_slot_id` — ANSWER: **yes, drop. Re-verified 4 August, and this closes the question the dead reviewer left open.**
+
+| check | result |
+|---|---|
+| `schedule_slots` total rows | **1** |
+| rows with `parent_slot_id` set | **0** |
+| writers/readers in `src/` | **zero** — appears only in `baseline.sql` and archived `025_schedule_group_recurring.sql` |
+| `schedule_exceptions` rows | **0** |
+
+**Direct answer to "does ignoring it cause duplicate occurrences?" — no, not today.** Nothing populates it, so a generator that ignores it cannot double-count anything.
+
+**It is a latent hazard, not a live one.** Recurrence is expanded at *read* time by matching `day_of_week` (`src/app/[locale]/schedule/page.tsx:113` says so in its own comment: *"schedule_slots is a recurring weekly template with no per-occurrence…"*). The column exists to support materialising slots into child slot rows — a **second** materialisation mechanism. Build the `sessions` generator and leave this column, and a later implementation of slot-expansion collides with it. Dropping it now makes the generator the single mechanism by construction.
+
+If you would rather keep it, the generator must carry an explicit `WHERE parent_slot_id IS NULL` with a comment saying why — strictly worse than deleting a column nothing reads.
+
+### One more live fact that bears on the "pattern of record" question
+
+`group_schedule` holds **6 rows**; `schedule_slots` holds **1**. The warnings doc flags that `schedule_exceptions.schedule_id` FKs to `group_schedule`, not `schedule_slots`. So the table the exceptions mechanism is actually wired to is also the one carrying six times more data. That is worth weighing before declaring `schedule_slots` the pattern of record — it is not part of this additive migration, but it will decide the generator's shape.
+
+---
+
+## 7. What I need from you
+
 
 
 1. Approve or amend **§2.1–2.3** (additive, safe, unblocks three files immediately).
