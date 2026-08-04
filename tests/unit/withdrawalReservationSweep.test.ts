@@ -145,19 +145,44 @@ describe('selectStaleWithdrawals', () => {
       row({ id: 'fresh', requested_at: '2026-01-20T10:00:00Z' }),
     ];
     const out = selectStaleWithdrawals(rows, '2026-01-28');
-    expect(out.map((r) => r.id)).toEqual(['old']);
+    expect(out.stale.map((r) => r.id)).toEqual(['old']);
   });
 
-  it('skips rows with a non-positive or unparseable reservation', () => {
+  it('reports rows with a non-positive or unparseable reservation instead of dropping them', () => {
+    // These are not swept — no safe amount exists to hand the RPC — but they
+    // must come back so the caller can count, log and escalate them. A bare
+    // `continue` re-skipped them in silence on every run, forever.
     const rows = [
       row({ id: 'zero', credits_deducted: 0 }),
       row({ id: 'neg', credits_deducted: -50 }),
       row({ id: 'junk', credits_deducted: 'abc' }),
+      row({ id: 'nul', credits_deducted: null }),
       row({ id: 'ok', credits_deducted: '2000' }),
     ];
     const out = selectStaleWithdrawals(rows, '2026-02-01');
-    expect(out.map((r) => r.id)).toEqual(['ok']);
-    expect(out[0].credits).toBe(2000);
+    expect(out.stale.map((r) => r.id)).toEqual(['ok']);
+    expect(out.stale[0].credits).toBe(2000);
+    expect(out.invalidCredits.map((r) => r.id).sort()).toEqual(['junk', 'neg', 'nul', 'zero']);
+    // The raw value is carried through for the operator's log line.
+    expect(out.invalidCredits.find((r) => r.id === 'junk')?.rawCredits).toBe('abc');
+  });
+
+  it('a 0-credit pending row is reachable, not theoretical', () => {
+    // Verified live in pg_constraint: withdrawal_requests_money_nonneg is
+    // `credits_deducted >= 0`, so zero is insertable.
+    const out = selectStaleWithdrawals([row({ id: 'z', credits_deducted: 0 })], '2026-02-01');
+    expect(out.stale).toHaveLength(0);
+    expect(out.invalidCredits.map((r) => r.id)).toEqual(['z']);
+  });
+
+  it('does not report a fresh row as invalid even if its credits are unusable', () => {
+    // Age is the first gate: a row that is not yet stale is nobody's problem.
+    const out = selectStaleWithdrawals(
+      [row({ id: 'fresh', credits_deducted: 0, requested_at: '2026-01-20T10:00:00Z' })],
+      '2026-01-25',
+    );
+    expect(out.stale).toHaveLength(0);
+    expect(out.invalidCredits).toHaveLength(0);
   });
 
   it('processes oldest first and honours the cap', () => {
@@ -166,8 +191,15 @@ describe('selectStaleWithdrawals', () => {
       row({ id: 'a', requested_at: '2026-01-02T10:00:00Z' }),
       row({ id: 'c', requested_at: '2026-01-12T10:00:00Z' }),
     ];
-    expect(selectStaleWithdrawals(rows, '2026-02-01').map((r) => r.id)).toEqual(['a', 'b', 'c']);
-    expect(selectStaleWithdrawals(rows, '2026-02-01', 2).map((r) => r.id)).toEqual(['a', 'b']);
+    expect(selectStaleWithdrawals(rows, '2026-02-01').stale.map((r) => r.id)).toEqual([
+      'a',
+      'b',
+      'c',
+    ]);
+    expect(selectStaleWithdrawals(rows, '2026-02-01', 2).stale.map((r) => r.id)).toEqual([
+      'a',
+      'b',
+    ]);
   });
 
   it('has a sane default cap', () => {
@@ -186,8 +218,12 @@ type FakeState = {
   updates: Record<string, unknown>[];
   rpcError?: string;
   claimError?: string;
+  /** Fails only the revert-to-pending UPDATE, not the claim. */
+  revertError?: string;
   auditError?: string;
   selectError?: string;
+  /** Runs before each rpc call, so a test can model a concurrent actor. */
+  onRpc?: (state: FakeState) => void;
 };
 
 function makeFake(state: FakeState) {
@@ -221,8 +257,11 @@ function makeFake(state: FakeState) {
                 return q;
               },
               select() {
-                if (state.claimError) {
-                  return Promise.resolve({ data: null, error: { message: state.claimError } });
+                // The revert is the only UPDATE that writes status='pending'.
+                const isRevert = patch.status === 'pending';
+                const failure = isRevert ? state.revertError : state.claimError;
+                if (failure) {
+                  return Promise.resolve({ data: null, error: { message: failure } });
                 }
                 const current = state.status.get(id);
                 if (current !== requiredStatus) {
@@ -252,6 +291,7 @@ function makeFake(state: FakeState) {
     },
     rpc(name: string, args: { p_center_id: string; p_amount: number }) {
       expect(name).toBe('cancel_reservation_atomic');
+      state.onRpc?.(state);
       if (state.rpcError) return Promise.resolve({ error: { message: state.rpcError } });
       state.rpcCalls.push({ center_id: args.p_center_id, amount: args.p_amount });
       return Promise.resolve({ error: null });
@@ -335,7 +375,10 @@ describe('sweepStaleWithdrawalReservations', () => {
     expect(state.audits).toHaveLength(1);
   });
 
-  it('claims before releasing, so a row an admin already handled is never double-released', async () => {
+  it('skips a row an admin had ALREADY FINISHED before the run', async () => {
+    // Narrow on purpose: this covers only the case where the admin's status
+    // flip has already committed. The harder, real interleave — admin
+    // mid-flight, row still pending — is the DEPENDS ON 2.2 test below.
     const state = baseState([row({ id: 'w1' })]);
     state.status.set('w1', 'paid'); // admin marked it paid between fetch and update
     const res = await sweepStaleWithdrawalReservations(makeFake(state), { now: NOW });
@@ -344,20 +387,210 @@ describe('sweepStaleWithdrawalReservations', () => {
     expect(state.rpcCalls).toEqual([]);
   });
 
-  it('escalates when the status flipped but the RPC failed, and does not count it released', async () => {
-    const state = baseState([row({ id: 'w1' })]);
+  it('reverts the claim to pending when the RPC fails, keeping the row admin-workable', async () => {
+    // The whole point: PATCH /api/admin/withdrawals/[id] refuses any row whose
+    // status is not 'pending' (route.ts:67). Leaving this row 'rejected' would
+    // put the fence out of reach of the only path that can free it.
+    const state = baseState([row({ id: 'w1', notes: 'operator note' })]);
     state.rpcError = 'boom';
-    const failures: string[] = [];
+    const deferred: string[] = [];
+    const stranded: string[] = [];
 
     const res = await sweepStaleWithdrawalReservations(makeFake(state), {
       now: NOW,
-      hooks: { onReleaseFailed: async (r, m) => void failures.push(`${r.id}:${m}`) },
+      hooks: {
+        onReleaseDeferred: async (r, m) => void deferred.push(`${r.id}:${m}`),
+        onReleaseFailed: async (r, m) => void stranded.push(`${r.id}:${m}`),
+      },
     });
 
     expect(res.released).toBe(0);
-    expect(res.releaseFailed).toBe(1);
-    expect(failures).toEqual(['w1:boom']);
+    expect(res.releaseDeferred).toBe(1);
+    // NOT stranded: the red signal is reserved for a failed revert.
+    expect(res.releaseFailed).toBe(0);
+    expect(stranded).toEqual([]);
+    expect(deferred).toEqual(['w1:boom']);
+
+    // The row is back where it started, and reachable again.
+    expect(state.status.get('w1')).toBe('pending');
+    const revert = state.updates.at(-1)!;
+    expect(revert.status).toBe('pending');
+    expect(revert.processed_at).toBeNull();
+    // The release marker is replaced by a failure marker; the operator's own
+    // note survives.
+    expect(String(revert.notes)).toContain('operator note');
+    expect(String(revert.notes)).toContain('cancel_reservation_atomic failed');
+    expect(String(revert.notes)).not.toContain('Credits returned to the balance');
+
     expect(state.audits).toHaveLength(0);
+  });
+
+  it('a deferred row is retried and released on the next run', async () => {
+    const state = baseState([row({ id: 'w1', credits_deducted: 2000 })]);
+    state.rpcError = 'transient';
+    const first = await sweepStaleWithdrawalReservations(makeFake(state), { now: NOW });
+    expect(first.releaseDeferred).toBe(1);
+    expect(state.status.get('w1')).toBe('pending');
+
+    // The blip clears.
+    state.rpcError = undefined;
+    const second = await sweepStaleWithdrawalReservations(makeFake(state), { now: NOW });
+    expect(second.released).toBe(1);
+    expect(state.rpcCalls).toEqual([{ center_id: 'c1', amount: 2000 }]);
+    expect(state.status.get('w1')).toBe('rejected');
+  });
+
+  it('escalates red ONLY when the revert itself also fails — the genuinely stranded case', async () => {
+    const state = baseState([row({ id: 'w1' })]);
+    state.rpcError = 'boom';
+    state.revertError = 'revert died too';
+    const stranded: string[] = [];
+    const deferred: string[] = [];
+
+    const res = await sweepStaleWithdrawalReservations(makeFake(state), {
+      now: NOW,
+      hooks: {
+        onReleaseFailed: async (r, m) => void stranded.push(`${r.id}:${m}`),
+        onReleaseDeferred: async (r, m) => void deferred.push(`${r.id}:${m}`),
+      },
+    });
+
+    expect(res.released).toBe(0);
+    expect(res.releaseDeferred).toBe(0);
+    expect(res.releaseFailed).toBe(1);
+    expect(deferred).toEqual([]);
+    expect(stranded).toHaveLength(1);
+    // The signal names both failures, because both are needed to act on it.
+    expect(stranded[0]).toContain('cancel_reservation_atomic failed (boom)');
+    expect(stranded[0]).toContain('revert to pending also failed (revert died too)');
+    // Terminal status with the reservation still held: out of reach.
+    expect(state.status.get('w1')).toBe('rejected');
+    expect(state.audits).toHaveLength(0);
+  });
+
+  it('separates a claim error from a stranded fence', async () => {
+    // These used to share one counter, so cron_log.metadata could not tell a
+    // benign retryable blip from somebody's money being stranded.
+    const state = baseState([row({ id: 'w1' })]);
+    state.claimError = 'connection reset';
+    const claimFails: string[] = [];
+    const stranded: string[] = [];
+
+    const res = await sweepStaleWithdrawalReservations(makeFake(state), {
+      now: NOW,
+      hooks: {
+        onClaimFailed: async (r, m) => void claimFails.push(`${r.id}:${m}`),
+        onReleaseFailed: async (r, m) => void stranded.push(`${r.id}:${m}`),
+      },
+    });
+
+    expect(res.claimFailed).toBe(1);
+    expect(res.releaseFailed).toBe(0);
+    expect(res.releaseDeferred).toBe(0);
+    expect(claimFails).toEqual(['w1:connection reset']);
+    expect(stranded).toEqual([]);
+    // Nothing was written and no money moved.
+    expect(state.status.get('w1')).toBe('pending');
+    expect(state.rpcCalls).toEqual([]);
+    expect(state.updates).toHaveLength(0);
+  });
+
+  it('counts, logs and escalates a stale row whose credits are unusable', async () => {
+    const state = baseState([
+      row({ id: 'bad', credits_deducted: 0 }),
+      row({ id: 'good', credits_deducted: 500 }),
+    ]);
+    const flagged: string[] = [];
+
+    const res = await sweepStaleWithdrawalReservations(makeFake(state), {
+      now: NOW,
+      hooks: { onInvalidCredits: async (r) => void flagged.push(r.id) },
+    });
+
+    expect(res.invalidCredits).toBe(1);
+    expect(flagged).toEqual(['bad']);
+    // Not swept, and not silently forgotten either.
+    expect(state.status.get('bad')).toBe('pending');
+    // The good row is unaffected.
+    expect(res.released).toBe(1);
+    expect(state.rpcCalls).toEqual([{ center_id: 'c1', amount: 500 }]);
+  });
+
+  it('a throwing onInvalidCredits hook does not abort the run', async () => {
+    const state = baseState([
+      row({ id: 'bad', credits_deducted: 0 }),
+      row({ id: 'good', credits_deducted: 500 }),
+    ]);
+    const res = await sweepStaleWithdrawalReservations(makeFake(state), {
+      now: NOW,
+      hooks: {
+        onInvalidCredits: async () => {
+          throw new Error('ceo queue down');
+        },
+      },
+    });
+    expect(res.invalidCredits).toBe(1);
+    expect(res.released).toBe(1);
+  });
+
+  /**
+   * ── The interleave that matters: THE §2.2 DEPENDENCY ─────────────────────
+   *
+   * The neighbouring test sets status='paid' BEFORE the run, which only
+   * models the case where the admin already finished. That is the easy half.
+   *
+   * This test models origin/master's REAL ordering. `PATCH
+   * /api/admin/withdrawals/[id]` calls cancel_reservation_atomic FIRST
+   * (route.ts:84 / :150) and flips the status only afterwards (:106 / :160),
+   * across three un-transacted round trips. So there is a span in which the
+   * admin has ALREADY released the reservation and the row is STILL 'pending'.
+   * A sweeper claim landing in that span succeeds, and the RPC is called a
+   * second time for one request.
+   *
+   * The assertion below is deliberately an assertion about the DEFECT, not
+   * about a fix this branch contains. It is here to encode the dependency:
+   * two decrements for one request. Because centers.credit_reserved is one
+   * counter shared with combined_payment_sessions holds, and the RPC clamps
+   * with GREATEST(0, ...), the surplus decrement silently frees somebody
+   * else's live hold.
+   *
+   * This is closed by claude/payout-2-2-withdrawal-race, whose
+   * process_withdrawal_request() holds SELECT ... FOR UPDATE on the row for
+   * the whole release+spend+flip transaction: the sweeper's claim then blocks
+   * and re-reads a non-pending status, taking the alreadyHandled path instead.
+   * That is a database-level lock, which this in-memory fake cannot reproduce
+   * — which is precisely why the dependency is a deployment-order requirement
+   * and not something this branch can assert away.
+   */
+  it('DEPENDS ON 2.2: an admin mid-flight on master causes a double release', async () => {
+    const state = baseState([row({ id: 'w1', credits_deducted: 2000 })]);
+
+    // The admin's PATCH is between its own cancel_reservation_atomic and its
+    // status flip. It has already decremented credit_reserved once.
+    state.rpcCalls.push({ center_id: 'c1', amount: 2000 });
+    // The row is STILL pending — the flip has not happened yet.
+    expect(state.status.get('w1')).toBe('pending');
+
+    const res = await sweepStaleWithdrawalReservations(makeFake(state), { now: NOW });
+
+    // The sweeper's claim succeeds, because 'pending' is exactly what it
+    // requires. Claim-first ordering does not help here: it never saw the
+    // admin's RPC, only the admin's status flip would have stopped it.
+    expect(res.released).toBe(1);
+    expect(res.alreadyHandled).toBe(0);
+
+    // TWO cancel_reservation_atomic calls for ONE withdrawal request.
+    expect(state.rpcCalls).toEqual([
+      { center_id: 'c1', amount: 2000 }, // the admin's
+      { center_id: 'c1', amount: 2000 }, // the sweeper's — the surplus
+    ]);
+    expect(state.rpcCalls).toHaveLength(2);
+
+    // 4000 credits unfenced against a 2000-credit request. The extra 2000 came
+    // off a counter shared with live combined_payment_sessions holds.
+    const decremented = state.rpcCalls.reduce((sum, c) => sum + c.amount, 0);
+    expect(decremented).toBe(4000);
+    expect(decremented).toBeGreaterThan(2000);
   });
 
   it('counts a failed audit insert instead of swallowing it', async () => {

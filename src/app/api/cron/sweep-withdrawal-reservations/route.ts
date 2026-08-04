@@ -114,15 +114,50 @@ export async function POST(request: Request) {
           );
           await notifyOwner(row);
         },
+        onClaimFailed: async (row, message) => {
+          // Nothing was written. The row is untouched, still pending, still
+          // admin-workable, and the next run retries it. Amber, not red — a
+          // transient DB blip must not read as stranded money.
+          await raise(
+            row,
+            'amber',
+            `Withdrawal sweep could not claim request ${row.id}`,
+            `claim UPDATE failed, row untouched and still pending, will retry: ${message.slice(0, 200)}`,
+          );
+        },
+        onReleaseDeferred: async (row, message) => {
+          // RPC failed, claim reverted to pending. Credits still fenced — the
+          // pre-existing state — but reachable by both the next run and
+          // PATCH /api/admin/withdrawals/[id]. Amber.
+          await raise(
+            row,
+            'amber',
+            `Withdrawal reservation release deferred, ${row.id}`,
+            `cancel_reservation_atomic failed and the claim was reverted to pending; ${row.credits} credits stay fenced but the request is still workable: ${message.slice(0, 200)}`,
+          );
+        },
         onReleaseFailed: async (row, message) => {
-          // Status flipped but the RPC did not release: still fenced, and no
-          // later run will retry because the row is no longer pending.
+          // The RPC failed AND the revert failed: terminal status, reservation
+          // still held, out of reach of the admin route. Needs a human.
           await raise(
             row,
             'red',
-            `Withdrawal reservation still fenced after sweep, ${row.id}`,
-            `cancel_reservation_atomic failed: ${message.slice(0, 200)}`,
+            `Withdrawal reservation STRANDED after sweep, ${row.id}`,
+            `${row.credits} credits fenced with a terminal status, unreachable by the admin path: ${message.slice(0, 200)}`,
           );
+        },
+        onInvalidCredits: async (row) => {
+          // Stale by age but no safe amount to release. Never swept; would
+          // otherwise be re-skipped in silence every day forever.
+          await createAction(supabase, {
+            type: 'ops',
+            priority: 'amber',
+            center_id: row.center_id,
+            title: `Withdrawal request has unusable credits_deducted, ${row.id}`,
+            subtitle: `stale since ${row.requestedYmd} but credits_deducted is ${JSON.stringify(row.rawCredits)}; not swept, reservation still fenced, needs a human`,
+            revenue_at_risk: Number(row.cash_amount ?? 0),
+            auto_generated: true,
+          });
         },
       },
     });

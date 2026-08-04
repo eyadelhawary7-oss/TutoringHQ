@@ -1799,6 +1799,8 @@ COLUMN withdrawal_requests.requested_at ord=8 type=timestamp with time zone notn
 COLUMN withdrawal_requests.processed_at ord=9 type=timestamp with time zone notnull=false default=∅
 COLUMN withdrawal_requests.processed_by ord=10 type=uuid notnull=false default=∅
 COLUMN withdrawal_requests.notes ord=11 type=text notnull=false default=∅
+COLUMN withdrawal_requests.reservation_expires_at ord=12 type=timestamp with time zone notnull=false default=∅
+COLUMN withdrawal_requests.reservation_released_at ord=13 type=timestamp with time zone notnull=false default=∅
 CONSTRAINT academic_periods.academic_periods_academic_year_id_fkey type=f def=FOREIGN KEY (academic_year_id) REFERENCES academic_years(id) ON DELETE CASCADE
 CONSTRAINT academic_periods.academic_periods_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
 CONSTRAINT academic_periods.academic_periods_period_type_check type=c def=CHECK ((period_type = ANY (ARRAY['exam'::text, 'holiday'::text, 'peak'::text, 'normal'::text])))
@@ -2484,7 +2486,7 @@ CONSTRAINT withdrawal_requests.withdrawal_requests_center_id_fkey type=f def=FOR
 CONSTRAINT withdrawal_requests.withdrawal_requests_money_nonneg type=c def=CHECK (((cash_amount >= (0)::numeric) AND (credits_deducted >= (0)::numeric) AND (fee_amount >= (0)::numeric)))
 CONSTRAINT withdrawal_requests.withdrawal_requests_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT withdrawal_requests.withdrawal_requests_processed_by_fkey type=f def=FOREIGN KEY (processed_by) REFERENCES admin_users(id)
-CONSTRAINT withdrawal_requests.withdrawal_requests_status_check type=c def=CHECK ((status = ANY (ARRAY['pending'::text, 'paid'::text, 'rejected'::text])))
+CONSTRAINT withdrawal_requests.withdrawal_requests_status_check type=c def=CHECK ((status = ANY (ARRAY['pending'::text, 'paid'::text, 'rejected'::text, 'expired'::text])))
 INDEX idx_academic_periods_center ON academic_periods def=CREATE INDEX idx_academic_periods_center ON public.academic_periods USING btree (center_id)
 INDEX idx_academic_periods_dates ON academic_periods def=CREATE INDEX idx_academic_periods_dates ON public.academic_periods USING btree (center_id, start_date, end_date)
 INDEX idx_academic_periods_year ON academic_periods def=CREATE INDEX idx_academic_periods_year ON public.academic_periods USING btree (academic_year_id)
@@ -2806,6 +2808,8 @@ INDEX idx_whatsapp_usage_center ON whatsapp_usage def=CREATE INDEX idx_whatsapp_
 INDEX idx_whatsapp_usage_center_month ON whatsapp_usage def=CREATE INDEX idx_whatsapp_usage_center_month ON public.whatsapp_usage USING btree (center_id, billed_month)
 INDEX idx_whatsapp_usage_student ON whatsapp_usage def=CREATE INDEX idx_whatsapp_usage_student ON public.whatsapp_usage USING btree (student_id)
 INDEX idx_withdrawal_requests_processed_by ON withdrawal_requests def=CREATE INDEX idx_withdrawal_requests_processed_by ON public.withdrawal_requests USING btree (processed_by) WHERE (processed_by IS NOT NULL)
+INDEX one_pending_withdrawal_per_center ON withdrawal_requests def=CREATE UNIQUE INDEX one_pending_withdrawal_per_center ON public.withdrawal_requests USING btree (center_id) WHERE (status = 'pending'::text)
+INDEX withdrawal_requests_pending_requested_at_idx ON withdrawal_requests def=CREATE INDEX withdrawal_requests_pending_requested_at_idx ON public.withdrawal_requests USING btree (requested_at) WHERE (status = 'pending'::text)
 POLICY academic_periods.academic_periods_delete cmd=DELETE permissive=PERMISSIVE roles=public using=(center_id IN ( SELECT users.center_id FROM users WHERE (users.id = auth.uid()))) check=∅
 POLICY academic_periods.academic_periods_insert cmd=INSERT permissive=PERMISSIVE roles=public using=∅ check=(center_id IN ( SELECT users.center_id FROM users WHERE (users.id = auth.uid())))
 POLICY academic_periods.academic_periods_select cmd=SELECT permissive=PERMISSIVE roles=public using=(center_id IN ( SELECT users.center_id FROM users WHERE (users.id = auth.uid()))) check=∅

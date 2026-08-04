@@ -1,4 +1,31 @@
 /**
+ * ===========================================================================
+ * DEPENDENCY — DO NOT DEPLOY THIS SWEEPER ON ITS OWN.
+ *
+ * This branch requires `claude/payout-2-2-withdrawal-race` to have landed AND
+ * its migration (`process_withdrawal_request`) to have been APPLIED BY HAND to
+ * production first. Merged is NOT applied (CLAUDE.md rule 5, tested 15 July
+ * 2026).
+ *
+ * Why: on origin/master `PATCH /api/admin/withdrawals/[id]` releases the
+ * reservation BEFORE it flips the request status, across three un-transacted
+ * round trips. For that whole span the row is still `pending`, so a sweeper
+ * claim landing inside it succeeds and `cancel_reservation_atomic` is called
+ * TWICE for one request. `centers.credit_reserved` is a single counter shared
+ * with `combined_payment_sessions` holds, and the RPC is amount-based with a
+ * `GREATEST(0, ...)` clamp, so the surplus decrement silently frees a
+ * different, live hold — a double-spend window, not a harmless no-op.
+ *
+ * §2.2's `process_withdrawal_request()` closes that window: it takes
+ * `SELECT ... FOR UPDATE` on the request row and does the release, the spend
+ * and the status flip in ONE transaction, so a concurrent sweeper claim blocks
+ * and then sees a non-pending status.
+ *
+ * The full argument is on `sweepStaleWithdrawalReservations` below; the
+ * interleave is encoded as a test in
+ * tests/unit/withdrawalReservationSweep.test.ts.
+ * ===========================================================================
+ *
  * PAYOUT-SYSTEM-SPEC.md §2.5 — credit reservations never expire.
  *
  * `POST /api/billing/withdrawal` calls `reserve_credits_atomic`, which bumps
@@ -158,21 +185,58 @@ export type StaleWithdrawal = PendingWithdrawalRow & {
   credits: number;
 };
 
-/** Pure selection step: which fetched rows are actually releasable today. */
+/**
+ * A stale row whose `credits_deducted` cannot be handed to
+ * `cancel_reservation_atomic` — non-positive, or not a finite number.
+ *
+ * This is reachable, not theoretical: the live CHECK is
+ * `withdrawal_requests_money_nonneg`, which is `credits_deducted >= 0`, so a
+ * 0-credit pending row is perfectly insertable (verified in pg_constraint).
+ */
+export type InvalidCreditWithdrawal = PendingWithdrawalRow & {
+  requestedYmd: string;
+  /** The value as stored, before Number() — kept for the operator's log line. */
+  rawCredits: number | string | null;
+};
+
+export type StaleSelection = {
+  /** Releasable today, oldest first, capped at `limit`. */
+  stale: StaleWithdrawal[];
+  /**
+   * Stale by age but unusable. NOT capped by `limit`: these are never handed
+   * to the RPC, they are only counted and logged, and leaving them out of the
+   * report is exactly the silence this field exists to end.
+   */
+  invalidCredits: InvalidCreditWithdrawal[];
+};
+
+/**
+ * Pure selection step: which fetched rows are actually releasable today, and
+ * which are stale but unusable.
+ *
+ * The unusable ones are returned rather than dropped. They used to be a bare
+ * `continue`: such a row is re-fetched and re-skipped every single run,
+ * forever, fencing its centre's credits with no counter, no log line and no
+ * hook anywhere to say so. The caller now counts them, logs each one, and can
+ * escalate them.
+ */
 export function selectStaleWithdrawals(
   rows: readonly PendingWithdrawalRow[],
   todayCairoYmd: string,
   limit: number = DEFAULT_SWEEP_LIMIT,
-): StaleWithdrawal[] {
+): StaleSelection {
   const out: StaleWithdrawal[] = [];
+  const invalidCredits: InvalidCreditWithdrawal[] = [];
   for (const row of rows) {
     if (!isWithdrawalReservationStale(row.requested_at, todayCairoYmd)) continue;
-    const credits = Number(row.credits_deducted ?? 0);
-    // A non-positive or non-finite reservation is not something to hand to
-    // cancel_reservation_atomic; flag it rather than releasing an unknown
-    // amount. The row is still not swept, so it stays visible as pending.
-    if (!Number.isFinite(credits) || credits <= 0) continue;
     const requestedYmd = cairoDateKey(new Date(row.requested_at as string));
+    const credits = Number(row.credits_deducted ?? 0);
+    if (!Number.isFinite(credits) || credits <= 0) {
+      // Releasing an unknown or non-positive amount would corrupt the shared
+      // credit_reserved counter, so the row is not swept — but it IS reported.
+      invalidCredits.push({ ...row, requestedYmd, rawCredits: row.credits_deducted });
+      continue;
+    }
     out.push({
       ...row,
       credits,
@@ -182,18 +246,44 @@ export function selectStaleWithdrawals(
     });
   }
   out.sort((a, b) => (a.requested_at ?? '').localeCompare(b.requested_at ?? ''));
-  return out.slice(0, Math.max(0, limit));
+  invalidCredits.sort((a, b) => (a.requested_at ?? '').localeCompare(b.requested_at ?? ''));
+  return { stale: out.slice(0, Math.max(0, limit)), invalidCredits };
 }
 
 export type SweepHooks = {
   /** Tell the centre owner. Non-fatal: a throw is caught and counted. */
   onReleased?: (row: StaleWithdrawal) => Promise<void>;
   /**
-   * The status flip succeeded but cancel_reservation_atomic did not, so the
-   * credits are still fenced and no further run will retry (the row is no
-   * longer pending). This needs a human. Non-fatal: a throw is caught.
+   * The claim UPDATE itself errored, so nothing was written at all: the row is
+   * untouched, still `pending`, still reachable by the admin path, and the
+   * next run retries it. Benign and retryable — deliberately NOT the same
+   * signal as a stranded fence. Non-fatal: a throw is caught.
+   */
+  onClaimFailed?: (row: StaleWithdrawal, message: string) => Promise<void>;
+  /**
+   * The claim succeeded, `cancel_reservation_atomic` failed, and the claim was
+   * successfully REVERTED to `pending`. The credits are still fenced — which is
+   * the pre-existing state — but the request is back within reach of both the
+   * next sweep run and `PATCH /api/admin/withdrawals/[id]`. Retryable.
+   * Non-fatal: a throw is caught.
+   */
+  onReleaseDeferred?: (row: StaleWithdrawal, message: string) => Promise<void>;
+  /**
+   * The genuinely stranded case, and the only one that warrants a red flag:
+   * the RPC failed AND the revert to `pending` also failed. The row now sits
+   * in a terminal status with its reservation un-released, which puts it out
+   * of reach of the admin path (that route refuses any row that is not
+   * `pending`). No automated path will ever free this fence. Needs a human.
+   * Non-fatal: a throw is caught.
    */
   onReleaseFailed?: (row: StaleWithdrawal, message: string) => Promise<void>;
+  /**
+   * A row that is stale by age but whose `credits_deducted` is non-positive or
+   * non-finite, so no amount can safely be handed to the RPC. Never swept;
+   * without this it would be re-skipped in silence every run forever.
+   * Non-fatal: a throw is caught.
+   */
+  onInvalidCredits?: (row: InvalidCreditWithdrawal) => Promise<void>;
 };
 
 export type SweepResult = {
@@ -204,7 +294,19 @@ export type SweepResult = {
   released: number;
   releasedCredits: number;
   alreadyHandled: number;
+  /**
+   * Claim UPDATE errored; row untouched and still pending. Retryable.
+   * Separate from `releaseFailed` on purpose: these two used to share one
+   * counter, which made it impossible to tell from `cron_log.metadata` whether
+   * a run had hit a transient DB blip or had stranded somebody's money.
+   */
+  claimFailed: number;
+  /** RPC failed, claim reverted to pending. Still fenced, still retryable. */
+  releaseDeferred: number;
+  /** RPC failed AND the revert failed. Fence stranded out of reach. Red. */
   releaseFailed: number;
+  /** Stale rows skipped because `credits_deducted` was unusable. */
+  invalidCredits: number;
   auditFailed: number;
 };
 
@@ -212,17 +314,49 @@ export type SweepResult = {
  * Release every fenced credit reservation whose withdrawal request has been
  * pending past its window plus grace.
  *
- * Safe to re-run, and the ordering is the reason. The manual admin path calls
- * `cancel_reservation_atomic` *first* and flips the status afterwards, which is
- * exactly the shape §2.2 describes: two concurrent passes both release, and
- * `credit_reserved` is decremented twice for one request — which would silently
- * free some *other* pending session's reservation (`GREATEST(0, ...)` hides the
- * underflow) and open a double-spend. This sweeper inverts it: the conditional
- * `UPDATE ... WHERE status='pending'` is the lock. Only the pass whose update
- * actually changed a row goes on to release, so a retry, an overlapping run, or
- * an admin working the queue at the same moment can never double-release. The
- * cost of the inversion is the `onReleaseFailed` case above — credits stay
- * fenced, which is the pre-existing state, not a new loss.
+ * ── What the claim-first ordering buys, and what it does NOT ───────────────
+ *
+ * The conditional `UPDATE ... WHERE status='pending'` is a compare-and-swap:
+ * only the caller whose update actually changed a row goes on to call
+ * `cancel_reservation_atomic`. That is a real guarantee against exactly one
+ * thing — ANOTHER PASS OF THIS SWEEPER. A retry, an overlapping cron
+ * invocation, a manual re-run: all of them serialise on the row, the loser
+ * sees zero rows changed and stops before the RPC.
+ *
+ * It does NOT make this sweeper immune to the admin path, and an earlier
+ * version of this comment claimed that it did. That claim was false and is
+ * retracted. On origin/master `PATCH /api/admin/withdrawals/[id]` calls
+ * `cancel_reservation_atomic` FIRST (route.ts:84 for mark_paid, :150 for
+ * reject) and flips the status only afterwards (:106 / :160), in three
+ * separate un-transacted round trips. Across the whole span
+ * admin-cancel-RPC → spend_credits_atomic → status-flip the row is still
+ * `pending`, so a sweeper claim landing in that span SUCCEEDS, and one request
+ * gets TWO `cancel_reservation_atomic` calls.
+ *
+ * That surplus decrement is not absorbed harmlessly. `centers.credit_reserved`
+ * is one shared counter — `cleanup-expired-sessions` and `check-stuck-payments`
+ * decrement the same column for `combined_payment_sessions` holds (verified
+ * live). The RPC is amount-based rather than request-based and clamps with
+ * `GREATEST(0, ...)`, so the extra release neither errors nor underflows
+ * visibly: it quietly frees somebody else's live hold.
+ *
+ * This is why the file header makes the branch dependent on
+ * `claude/payout-2-2-withdrawal-race` landing AND its migration being applied
+ * by hand first. §2.2's `process_withdrawal_request()` performs the release,
+ * the spend and the status flip in one transaction behind
+ * `SELECT ... FOR UPDATE`, so the concurrent claim blocks and then sees a
+ * non-pending status. Until that is applied, the window above is open.
+ *
+ * ── On RPC failure the claim is REVERTED ───────────────────────────────────
+ *
+ * If the claim succeeds but the RPC fails, the row is put back to `pending`,
+ * `processed_at` is cleared, and the release marker is replaced by a failure
+ * marker. This matters because the admin route refuses any row whose status is
+ * not `pending` (route.ts:67), so leaving the row `rejected` would push the
+ * fence out of reach of the one existing path that can free it. Reverting
+ * restores the pre-existing state exactly — fenced AND manually releasable —
+ * and lets the next run retry. Only if the revert ITSELF fails is the fence
+ * genuinely stranded, and only then does the red `onReleaseFailed` fire.
  */
 export async function sweepStaleWithdrawalReservations(
   supabase: SupabaseClient,
@@ -243,7 +377,10 @@ export async function sweepStaleWithdrawalReservations(
     released: 0,
     releasedCredits: 0,
     alreadyHandled: 0,
+    claimFailed: 0,
+    releaseDeferred: 0,
     releaseFailed: 0,
+    invalidCredits: 0,
     auditFailed: 0,
   };
 
@@ -260,8 +397,26 @@ export async function sweepStaleWithdrawalReservations(
   const rows = (data ?? []) as PendingWithdrawalRow[];
   result.candidates = rows.length;
 
-  const stale = selectStaleWithdrawals(rows, todayCairoYmd, limit);
+  const { stale, invalidCredits } = selectStaleWithdrawals(rows, todayCairoYmd, limit);
   result.stale = stale.length;
+  result.invalidCredits = invalidCredits.length;
+
+  // Stale but unusable. These are NOT swept, and without this loop they would
+  // be re-skipped in silence on every run for the life of the row.
+  for (const bad of invalidCredits) {
+    console.error(
+      '[sweep-withdrawal-reservations] unusable credits_deducted, row skipped and still fenced',
+      bad.id,
+      `center=${bad.center_id}`,
+      `requested=${bad.requestedYmd}`,
+      `credits_deducted=${JSON.stringify(bad.rawCredits)}`,
+    );
+    try {
+      await hooks.onInvalidCredits?.(bad);
+    } catch (hookErr) {
+      console.error('[sweep-withdrawal-reservations] onInvalidCredits hook', bad.id, hookErr);
+    }
+  }
 
   for (const row of stale) {
     const marker =
@@ -280,8 +435,17 @@ export async function sweepStaleWithdrawalReservations(
       .select('id');
 
     if (claimErr) {
+      // Nothing was written: the row is untouched, still pending, still
+      // admin-reachable, and the next run retries it. Benign and retryable —
+      // counted and signalled separately from a stranded fence so that
+      // cron_log.metadata can tell the two apart.
       console.error('[sweep-withdrawal-reservations] claim', row.id, claimErr.message);
-      result.releaseFailed++;
+      result.claimFailed++;
+      try {
+        await hooks.onClaimFailed?.(row, claimErr.message);
+      } catch (hookErr) {
+        console.error('[sweep-withdrawal-reservations] onClaimFailed hook', row.id, hookErr);
+      }
       continue;
     }
     if (!claimed || claimed.length === 0) {
@@ -297,9 +461,56 @@ export async function sweepStaleWithdrawalReservations(
 
     if (rpcErr) {
       console.error('[sweep-withdrawal-reservations] cancel_reservation_atomic', row.id, rpcErr.message);
+
+      // REVERT THE CLAIM. The reservation was not released, so the row must go
+      // back to being what it was a moment ago: pending, un-processed, and
+      // therefore workable by `PATCH /api/admin/withdrawals/[id]` — the only
+      // existing path that can free this fence, and one that refuses any row
+      // whose status is not 'pending'. Leaving it 'rejected' would strand the
+      // credits permanently.
+      const failMarker =
+        `[auto] sweep-withdrawal-reservations tried to release this reservation on ${todayCairoYmd} ` +
+        `and cancel_reservation_atomic failed (${rpcErr.message.slice(0, 200)}). The status flip was ` +
+        `reverted to pending: the credits are still fenced, and the request is still workable by hand ` +
+        `and will be retried on the next run.`;
+      const revertNotes = existing ? `${existing}\n${failMarker}` : failMarker;
+
+      const { data: reverted, error: revertErr } = await supabase
+        .from('withdrawal_requests')
+        .update({ status: 'pending', processed_at: null, notes: revertNotes })
+        .eq('id', row.id)
+        // Only undo the claim this run made; never resurrect a row somebody
+        // else moved on in the meantime.
+        .eq('status', 'rejected')
+        .select('id');
+
+      if (!revertErr && reverted && reverted.length > 0) {
+        result.releaseDeferred++;
+        try {
+          await hooks.onReleaseDeferred?.(row, rpcErr.message);
+        } catch (hookErr) {
+          console.error('[sweep-withdrawal-reservations] onReleaseDeferred hook', row.id, hookErr);
+        }
+        continue;
+      }
+
+      // The revert itself failed. THIS is the genuinely stranded case: a
+      // terminal status with the reservation still held, out of reach of both
+      // this sweeper and the admin route. Only now does the red flag fire.
+      const revertMessage = revertErr
+        ? revertErr.message
+        : 'revert matched no row (status was no longer "rejected")';
+      console.error(
+        '[sweep-withdrawal-reservations] STRANDED: revert after RPC failure failed',
+        row.id,
+        revertMessage,
+      );
       result.releaseFailed++;
       try {
-        await hooks.onReleaseFailed?.(row, rpcErr.message);
+        await hooks.onReleaseFailed?.(
+          row,
+          `cancel_reservation_atomic failed (${rpcErr.message}); revert to pending also failed (${revertMessage})`,
+        );
       } catch (hookErr) {
         console.error('[sweep-withdrawal-reservations] onReleaseFailed hook', row.id, hookErr);
       }
