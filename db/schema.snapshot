@@ -2806,6 +2806,7 @@ INDEX idx_whatsapp_usage_center ON whatsapp_usage def=CREATE INDEX idx_whatsapp_
 INDEX idx_whatsapp_usage_center_month ON whatsapp_usage def=CREATE INDEX idx_whatsapp_usage_center_month ON public.whatsapp_usage USING btree (center_id, billed_month)
 INDEX idx_whatsapp_usage_student ON whatsapp_usage def=CREATE INDEX idx_whatsapp_usage_student ON public.whatsapp_usage USING btree (student_id)
 INDEX idx_withdrawal_requests_processed_by ON withdrawal_requests def=CREATE INDEX idx_withdrawal_requests_processed_by ON public.withdrawal_requests USING btree (processed_by) WHERE (processed_by IS NOT NULL)
+INDEX one_pending_withdrawal_per_center ON withdrawal_requests def=CREATE UNIQUE INDEX one_pending_withdrawal_per_center ON public.withdrawal_requests USING btree (center_id) WHERE (status = 'pending'::text)
 POLICY academic_periods.academic_periods_delete cmd=DELETE permissive=PERMISSIVE roles=public using=(center_id IN ( SELECT users.center_id FROM users WHERE (users.id = auth.uid()))) check=∅
 POLICY academic_periods.academic_periods_insert cmd=INSERT permissive=PERMISSIVE roles=public using=∅ check=(center_id IN ( SELECT users.center_id FROM users WHERE (users.id = auth.uid())))
 POLICY academic_periods.academic_periods_select cmd=SELECT permissive=PERMISSIVE roles=public using=(center_id IN ( SELECT users.center_id FROM users WHERE (users.id = auth.uid()))) check=∅
@@ -3144,6 +3145,7 @@ FUNCTION log_card_order_status_transition() returns=trigger lang=plpgsql kind=f 
 FUNCTION payments_auto_confirm_cash() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public bodymd5=cfae3b3cc1557c105ef1428aae489214
 FUNCTION process_due_subscriptions(p_as_of timestamp with time zone) returns=TABLE(action_taken text, subscription_id uuid) lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=ff528d8763ed878854cd4179fba8e70e
 FUNCTION process_payment_rpc(p_center_id uuid, p_invoice_id uuid, p_amount numeric, p_payment_method text, p_recorded_by uuid) returns=jsonb lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public, pg_temp bodymd5=16a88f099f5af175d83da7df4fc22411
+FUNCTION process_withdrawal_request(p_withdrawal_id uuid, p_action text, p_actor_id uuid, p_notes text) returns=jsonb lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public, pg_temp bodymd5=f978f02a1cc60d1a3629080da60d3c4c
 FUNCTION propose_group_slot(p_group_id uuid, p_actor_user_id uuid, p_day_of_week smallint, p_start_time time without time zone, p_end_time time without time zone, p_room_id uuid, p_note text) returns=group_slot_proposals lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=3bdc198d1a7766b49eeccdc43ae909e4
 FUNCTION provision_teacher_subscription_on_first_private_group() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=39cba70e38e848830170d52fab99214f
 FUNCTION recalc_all_lifecycle_status() returns=void lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=e7c79684847e5216a49a9d2b51089c18
@@ -6157,6 +6159,7 @@ ROUTINE_GRANT payments_auto_confirm_cash grantee=authenticated priv=EXECUTE gran
 ROUTINE_GRANT payments_auto_confirm_cash grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT process_due_subscriptions grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT process_payment_rpc grantee=service_role priv=EXECUTE grantable=NO
+ROUTINE_GRANT process_withdrawal_request grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT propose_group_slot grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT provision_teacher_subscription_on_first_private_group grantee=PUBLIC priv=EXECUTE grantable=NO
 ROUTINE_GRANT provision_teacher_subscription_on_first_private_group grantee=anon priv=EXECUTE grantable=NO

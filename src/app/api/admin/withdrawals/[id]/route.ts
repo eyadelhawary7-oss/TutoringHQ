@@ -110,8 +110,20 @@ export async function PATCH(
         { status: 500 },
       );
     }
-    // Anything else rolled the whole transaction back: reservation still
-    // reserved, no credits spent, status still pending. Safe to retry.
+    // Anything else is one of two things, and from here we CANNOT tell which:
+    //   * A Postgres-raised error — a RAISE inside the function, a constraint,
+    //     'Insufficient credits', a deadlock. The transaction rolled back:
+    //     reservation still reserved, no credits spent, status still pending.
+    //   * A transport failure — dropped connection, gateway or statement
+    //     timeout — which supabase-js surfaces in this SAME `rpcError` field.
+    //     That can happen AFTER the server committed, in which case the
+    //     credits ARE spent and the status IS 'paid'/'rejected' despite this
+    //     500. Do not read this log line as proof that nothing moved.
+    // Retrying is safe either way, because the RPC is idempotent: a retry
+    // against a row that did commit returns `already_applied`, moves no money
+    // and sends no WhatsApp. Note the corollary — on a committed-but-
+    // unreported call the owner is never notified, by this call or the retry,
+    // so check the row's status before assuming they were told.
     console.error(`[admin/withdrawals] ${WITHDRAWAL_PROCESS_RPC}`, rpcError);
     return NextResponse.json(
       { error: rpcError.message, cause: 'withdrawal_rpc_failed' },

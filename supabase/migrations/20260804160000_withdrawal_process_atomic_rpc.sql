@@ -293,6 +293,21 @@ BEGIN
 END;
 $function$;
 
+-- Pin the owner. SECURITY DEFINER means this function executes AS ITS OWNER,
+-- and it PERFORMs two nested SECURITY DEFINER money RPCs whose EXECUTE is
+-- granted to {postgres, service_role} only — so the owner has to be one of
+-- those or the nested calls raise 42501 at runtime, not at create time.
+-- CREATE OR REPLACE leaves the owner as whoever ran the DDL, which is the
+-- right answer today and an implicit assumption tomorrow. Verified live in
+-- pg_proc on 4 August 2026 (project lczmjpnbuhnsislcvzar): all four existing
+-- credit RPCs — reserve_credits_atomic, cancel_reservation_atomic,
+-- spend_credits_atomic, earn_credits_atomic — plus
+-- assert_caller_center_access are prosecdef=true, proowner=postgres,
+-- proacl={postgres=X/postgres,service_role=X/postgres}. This line makes the
+-- new function state that explicitly rather than inherit it by luck. It pins
+-- an existing assumption; it changes no behaviour.
+ALTER FUNCTION public.process_withdrawal_request(uuid, text, uuid, text) OWNER TO postgres;
+
 -- Match the grants on the three functions this composes with, exactly:
 -- {postgres=X/postgres, service_role=X/postgres}. No authenticated, no anon —
 -- this function moves money and has no per-caller authorisation of its own;
@@ -352,11 +367,26 @@ COMMIT;
 --     (SELECT count(*) FROM pg_class
 --       WHERE relname = 'one_pending_withdrawal_per_center') AS idx;
 --
--- And confirm the grant is service_role-only:
+-- And confirm the OWNER is postgres and the grant is service_role-only. Both
+-- matter: SECURITY DEFINER runs as the owner, so a non-postgres owner cannot
+-- EXECUTE the two nested money RPCs and every approval fails with 42501.
+-- Expected: owner = postgres,
+--           proacl = {postgres=X/postgres,service_role=X/postgres}
 --
---   SELECT p.oid::regprocedure::text, p.proacl::text
+--   SELECT p.oid::regprocedure::text,
+--          pg_get_userbyid(p.proowner) AS owner,
+--          p.prosecdef,
+--          p.proacl::text
 --   FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
 --   WHERE n.nspname = 'public' AND p.proname = 'process_withdrawal_request';
+--
+-- Same query without the proname filter, over the credit RPCs, shows what it
+-- must match (all owner=postgres, all service_role-only) — re-run it if the
+-- owner above comes back as anything else:
+--
+--   ... AND p.proname IN ('reserve_credits_atomic','cancel_reservation_atomic',
+--                         'spend_credits_atomic','earn_credits_atomic',
+--                         'assert_caller_center_access');
 --
 -- ROLLBACK, if it comes to that:
 --   DROP INDEX IF EXISTS public.one_pending_withdrawal_per_center;
