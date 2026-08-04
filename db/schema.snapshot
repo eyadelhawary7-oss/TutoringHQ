@@ -251,6 +251,7 @@ COLUMN audit_log.entity_type ord=5 type=text notnull=false default=∅
 COLUMN audit_log.entity_id ord=6 type=uuid notnull=false default=∅
 COLUMN audit_log.details ord=7 type=jsonb notnull=false default='{}'::jsonb
 COLUMN audit_log.created_at ord=8 type=timestamp with time zone notnull=true default=now()
+COLUMN audit_log.authority_source ord=9 type=text notnull=false default=∅
 COLUMN backup_log.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN backup_log.checked_at ord=2 type=timestamp with time zone notnull=true default=now()
 COLUMN backup_log.last_verified_at ord=3 type=timestamp with time zone notnull=false default=∅
@@ -1799,6 +1800,7 @@ COLUMN withdrawal_requests.requested_at ord=8 type=timestamp with time zone notn
 COLUMN withdrawal_requests.processed_at ord=9 type=timestamp with time zone notnull=false default=∅
 COLUMN withdrawal_requests.processed_by ord=10 type=uuid notnull=false default=∅
 COLUMN withdrawal_requests.notes ord=11 type=text notnull=false default=∅
+COLUMN withdrawal_requests.processed_by_authority_source ord=12 type=text notnull=false default=∅
 CONSTRAINT academic_periods.academic_periods_academic_year_id_fkey type=f def=FOREIGN KEY (academic_year_id) REFERENCES academic_years(id) ON DELETE CASCADE
 CONSTRAINT academic_periods.academic_periods_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
 CONSTRAINT academic_periods.academic_periods_period_type_check type=c def=CHECK ((period_type = ANY (ARRAY['exam'::text, 'holiday'::text, 'peak'::text, 'normal'::text])))
@@ -1852,6 +1854,7 @@ CONSTRAINT attendance_scans.attendance_scans_session_id_fkey type=f def=FOREIGN 
 CONSTRAINT attendance_scans.attendance_scans_session_student_unique type=u def=UNIQUE (session_id, student_id)
 CONSTRAINT attendance_scans.attendance_scans_status_chk type=c def=CHECK (((status IS NULL) OR (status = ANY (ARRAY['present'::text, 'absent'::text]))))
 CONSTRAINT attendance_scans.attendance_scans_student_id_fkey type=f def=FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
+CONSTRAINT audit_log.audit_log_authority_source_check type=c def=CHECK (((authority_source IS NULL) OR (authority_source = ANY (ARRAY['db_row'::text, 'env_phone'::text]))))
 CONSTRAINT audit_log.audit_log_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE RESTRICT
 CONSTRAINT audit_log.audit_log_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT audit_log.audit_log_user_id_fkey type=f def=FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
@@ -2483,6 +2486,7 @@ CONSTRAINT whatsapp_usage.whatsapp_usage_student_id_fkey type=f def=FOREIGN KEY 
 CONSTRAINT withdrawal_requests.withdrawal_requests_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
 CONSTRAINT withdrawal_requests.withdrawal_requests_money_nonneg type=c def=CHECK (((cash_amount >= (0)::numeric) AND (credits_deducted >= (0)::numeric) AND (fee_amount >= (0)::numeric)))
 CONSTRAINT withdrawal_requests.withdrawal_requests_pkey type=p def=PRIMARY KEY (id)
+CONSTRAINT withdrawal_requests.withdrawal_requests_processed_by_authority_source_check type=c def=CHECK (((processed_by_authority_source IS NULL) OR (processed_by_authority_source = ANY (ARRAY['db_row'::text, 'env_phone'::text]))))
 CONSTRAINT withdrawal_requests.withdrawal_requests_processed_by_fkey type=f def=FOREIGN KEY (processed_by) REFERENCES admin_users(id)
 CONSTRAINT withdrawal_requests.withdrawal_requests_status_check type=c def=CHECK ((status = ANY (ARRAY['pending'::text, 'paid'::text, 'rejected'::text])))
 INDEX idx_academic_periods_center ON academic_periods def=CREATE INDEX idx_academic_periods_center ON public.academic_periods USING btree (center_id)
@@ -2508,6 +2512,7 @@ INDEX idx_attendance_scans_group ON attendance_scans def=CREATE INDEX idx_attend
 INDEX idx_attendance_student_scanned ON attendance_scans def=CREATE INDEX idx_attendance_student_scanned ON public.attendance_scans USING btree (student_id, scanned_at DESC)
 INDEX idx_scans_center_date ON attendance_scans def=CREATE INDEX idx_scans_center_date ON public.attendance_scans USING btree (center_id, scanned_at)
 INDEX idx_scans_student ON attendance_scans def=CREATE INDEX idx_scans_student ON public.attendance_scans USING btree (student_id, scanned_at)
+INDEX audit_log_env_phone_authority_idx ON audit_log def=CREATE INDEX audit_log_env_phone_authority_idx ON public.audit_log USING btree (created_at DESC) WHERE (authority_source = 'env_phone'::text)
 INDEX idx_audit_center_date ON audit_log def=CREATE INDEX idx_audit_center_date ON public.audit_log USING btree (center_id, created_at)
 INDEX idx_audit_log_action ON audit_log def=CREATE INDEX idx_audit_log_action ON public.audit_log USING btree (action)
 INDEX idx_audit_log_center_id ON audit_log def=CREATE INDEX idx_audit_log_center_id ON public.audit_log USING btree (center_id)

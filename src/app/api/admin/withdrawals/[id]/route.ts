@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireSuperAdminApi } from '@/lib/admin-auth';
-import { requireSuperAdminRow } from '@/lib/admin-access';
+import { requireSuperAdmin } from '@/lib/admin-access';
 import { sendWithdrawalProcessed } from '@/lib/centerNotify';
 import { formatNumber } from '@/lib/formatNumber';
 import { ownerContactByCenterId, resolveOwnerWaPhone } from '@/lib/ownerPhone';
@@ -17,8 +17,8 @@ export async function PATCH(
 ) {
   const auth = await requireSuperAdminApi(request);
   if (!auth.ok) return auth.response;
-  const row403 = await requireSuperAdminRow(auth.supabaseAdmin, auth.userId);
-  if (row403) return row403;
+  const denied = await requireSuperAdmin(auth.supabaseAdmin, auth.userId);
+  if (denied) return denied;
   // super_admin only; can_approve_signups does not apply.
   // PAYOUT-SYSTEM-SPEC.md §2.6 — the serious one. This is the gate that
   // RELEASES real money, and it had no CSRF check. `requireSuperAdminApi`

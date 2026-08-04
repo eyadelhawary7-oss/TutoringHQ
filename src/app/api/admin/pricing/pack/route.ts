@@ -1,5 +1,5 @@
 import { requireSuperAdminApi } from '@/lib/admin-auth';
-import { requireSuperAdminRow } from '@/lib/admin-access';
+import { requireSuperAdmin } from '@/lib/admin-access';
 import { validateCSRFRequest } from '@/lib/csrf';
 import { NextRequest, NextResponse } from 'next/server';
 import { parseBodyWithLimit } from '@/lib/validate';
@@ -25,8 +25,8 @@ function parsePackPrice(value: unknown): number {
 export async function GET(request: Request) {
   const auth = await requireSuperAdminApi(request);
   if (!auth.ok) return auth.response;
-  const row403 = await requireSuperAdminRow(auth.supabaseAdmin, auth.userId);
-  if (row403) return row403;
+  const denied = await requireSuperAdmin(auth.supabaseAdmin, auth.userId);
+  if (denied) return denied;
   // super_admin only; can_approve_signups does not apply.
 
   const { data: existingKey } = await auth.supabaseAdmin.from('platform_config').select('key').eq('key', KEY).maybeSingle();
@@ -68,8 +68,8 @@ export async function GET(request: Request) {
 export async function PATCH(request: NextRequest) {
   const auth = await requireSuperAdminApi(request);
   if (!auth.ok) return auth.response;
-  const row403 = await requireSuperAdminRow(auth.supabaseAdmin, auth.userId);
-  if (row403) return row403;
+  const denied = await requireSuperAdmin(auth.supabaseAdmin, auth.userId);
+  if (denied) return denied;
   // super_admin only; can_approve_signups does not apply.
 
   if (!validateCSRFRequest(request, auth.userId)) {

@@ -127,10 +127,37 @@ export async function fetchAdminAccessFlags(
 }
 
 /**
- * DB + phone super_admin check (for routes that must stay super_admin-only beyond JWT).
- * Returns a 403 response if not super_admin, else null.
+ * Super-admin gate for routes that must stay super_admin-only beyond the JWT.
+ * Returns a 403 response if the caller is not a super-admin, else null.
+ *
+ * RENAMED 4 August 2026, from `requireSuperAdminRow`. NO BEHAVIOUR CHANGED —
+ * the body is byte-for-byte what it was. The old name promised a database row
+ * and did not require one: it returns true for `adminUser?.role ===
+ * 'super_admin'` OR `isSuperAdminPhone(sessionPhone)`, and that second arm
+ * reads the SAME `SUPER_ADMIN_PHONES` env var that the first gate
+ * (`requireSuperAdminApi` -> `admin-auth.ts`, which returns a session on
+ * `adminRow || adminByPhone`) already consulted. Every route that called it
+ * believing it had added an independent, DB-backed second check had added
+ * nothing. The misleading name is the defect being fixed here; see S10 in
+ * design/BUILD-AFTER-REDESIGN.md.
+ *
+ * THE INTENDED END STATE IS A DIFFERENT FUNCTION, NOT A DIFFERENT NAME.
+ * A genuinely row-requiring variant — call it `requireSuperAdminDbRow`, one
+ * that drops the `isSuperAdminPhone` arm entirely so an env-phone super-admin
+ * with no `admin_users` row is refused — is what S10 actually asks for, at
+ * minimum on money movement (PAYOUT-SYSTEM-SPEC.md §7.5) and honestly
+ * everywhere. IT IS DELIBERATELY NOT BUILT HERE.
+ *
+ * Why not: Eyad's sequencing is (a)-first and it is not negotiable. A real
+ * `admin_users.role='super_admin'` row must exist for every current
+ * env-phone holder BEFORE any gate stops accepting the env phone. Live
+ * catalog, 4 August 2026: `admin_users` holds 2 rows, exactly 1 of them
+ * `super_admin`. Tightening the gate first would lock the only super-admin
+ * out of the very surface needed to create the missing rows. Do not "finish
+ * the job" by deleting the phone arm below until (a) is done and confirmed
+ * against information_schema — that change is the outage, not the fix.
  */
-export async function requireSuperAdminRow(
+export async function requireSuperAdmin(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<NextResponse | null> {

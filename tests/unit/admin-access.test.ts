@@ -1,17 +1,23 @@
 /**
  * Regression for §10c follow-up: `fetchAdminAccessFlags` and
- * `requireSuperAdminRow` must derive the super-admin phone check from
- * `auth.users.phone` (verified session, not writable via /api/db), not
- * `public.users.phone` (centre-tenant data, prior storage path for
- * self-elevation against SUPER_ADMIN_PHONES).
+ * `requireSuperAdmin` (renamed from `requireSuperAdminRow`, S10) must derive
+ * the super-admin phone check from `auth.users.phone` (verified session, not
+ * writable via /api/db), not `public.users.phone` (centre-tenant data, prior
+ * storage path for self-elevation against SUPER_ADMIN_PHONES).
  *
  * Even though `dbProxyProtectedColumns` now blocks writes to
  * `public.users.phone` via the proxy as defence-in-depth, the helpers
  * must structurally prefer the auth source so the escalation class is
  * killed, not just the current instance.
+ *
+ * The `requireSuperAdmin` block below ALSO pins the S10 fact that the rename
+ * makes honest: an env-phone holder with NO `admin_users` row is allowed
+ * through. That is today's behaviour and the tests assert it deliberately, so
+ * that anyone who tightens the gate has to come here, see the assertion fail,
+ * and check Eyad's (a)-first sequencing before shipping it.
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { fetchAdminAccessFlags, requireSuperAdminRow } from '@/lib/admin-access';
+import { fetchAdminAccessFlags, requireSuperAdmin } from '@/lib/admin-access';
 
 const PREV_PHONES = process.env.SUPER_ADMIN_PHONES;
 
@@ -149,25 +155,32 @@ describe('fetchAdminAccessFlags (§10c re-source regression)', () => {
   });
 });
 
-describe('requireSuperAdminRow (§10c re-source regression)', () => {
+describe('requireSuperAdmin (§10c re-source regression + S10 rename)', () => {
   it('rejects 403 when session phone is non-super and public.users.phone is tampered', async () => {
     const supa = makeMockSupabase({
       authPhone: '+201000000000',
       publicUsersPhone: '+201234567890', // tampered
       adminUser: null,
     });
-    const res = await requireSuperAdminRow(supa as unknown as never, 'user-1');
+    const res = await requireSuperAdmin(supa as unknown as never, 'user-1');
     expect(res).not.toBeNull();
     expect(res!.status).toBe(403);
   });
 
-  it('allows (null) when session phone matches SUPER_ADMIN_PHONES', async () => {
+  // S10, pinned deliberately: the old name `requireSuperAdminRow` promised a
+  // database row. This case has `adminUser: null` — no `admin_users` row at
+  // all — and is still allowed, because the function ORs in
+  // `isSuperAdminPhone(sessionPhone)`, the same env var the first gate already
+  // read. If this assertion starts failing, the gate was tightened: confirm
+  // Eyad's step (a) (a real admin_users row for every current env-phone
+  // holder) is done and verified in information_schema BEFORE accepting it.
+  it('allows (null) when session phone matches SUPER_ADMIN_PHONES and there is NO admin_users row', async () => {
     const supa = makeMockSupabase({
       authPhone: '+201234567890',
       publicUsersPhone: null,
       adminUser: null,
     });
-    const res = await requireSuperAdminRow(supa as unknown as never, 'user-1');
+    const res = await requireSuperAdmin(supa as unknown as never, 'user-1');
     expect(res).toBeNull();
   });
 
@@ -177,7 +190,7 @@ describe('requireSuperAdminRow (§10c re-source regression)', () => {
       publicUsersPhone: null,
       adminUser: { role: 'super_admin', custom_permissions: [] },
     });
-    const res = await requireSuperAdminRow(supa as unknown as never, 'user-1');
+    const res = await requireSuperAdmin(supa as unknown as never, 'user-1');
     expect(res).toBeNull();
   });
 
@@ -188,7 +201,7 @@ describe('requireSuperAdminRow (§10c re-source regression)', () => {
       publicUsersPhone: null,
       adminUser: null,
     });
-    const res = await requireSuperAdminRow(supa as unknown as never, 'user-1');
+    const res = await requireSuperAdmin(supa as unknown as never, 'user-1');
     expect(res).toBeNull();
   });
 
@@ -199,7 +212,7 @@ describe('requireSuperAdminRow (§10c re-source regression)', () => {
       publicUsersPhone: '+201234567890', // tampered
       adminUser: null,
     });
-    const res = await requireSuperAdminRow(supa as unknown as never, 'user-1');
+    const res = await requireSuperAdmin(supa as unknown as never, 'user-1');
     expect(res).not.toBeNull();
     expect(res!.status).toBe(403);
   });

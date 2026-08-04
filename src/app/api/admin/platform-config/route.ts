@@ -18,11 +18,11 @@
  * --   }'::jsonb
  * -- );
  *
- * PATCH is not available on can_approve_signups alone - requires super_admin (see requireSuperAdminRow).
+ * PATCH is not available on can_approve_signups alone - requires super_admin (see requireSuperAdmin).
  */
 
 import { requireSuperAdminApi } from '@/lib/admin-auth';
-import { requireSuperAdminRow } from '@/lib/admin-access';
+import { requireSuperAdmin } from '@/lib/admin-access';
 import { PLATFORM_CONFIG_INSERT_DEFAULTS } from '@/lib/platformConfigUi';
 import { NextRequest, NextResponse } from 'next/server';
 import { parseBodyWithLimit } from '@/lib/validate';
@@ -42,8 +42,8 @@ export async function GET(request: NextRequest) {
   const auth = await requireSuperAdminApi(request);
   if (!auth.ok) return auth.response;
 
-  const row403 = await requireSuperAdminRow(auth.supabaseAdmin, auth.userId);
-  if (row403) return row403;
+  const denied = await requireSuperAdmin(auth.supabaseAdmin, auth.userId);
+  if (denied) return denied;
   // admin_users.role === 'super_admin' (or env phone super); not can_approve_signups.
 
   const { data, error } = await auth.supabaseAdmin
@@ -64,8 +64,8 @@ export async function PATCH(request: NextRequest) {
   const auth = await requireSuperAdminApi(request);
   if (!auth.ok) return auth.response;
 
-  const row403 = await requireSuperAdminRow(auth.supabaseAdmin, auth.userId);
-  if (row403) return row403;
+  const denied = await requireSuperAdmin(auth.supabaseAdmin, auth.userId);
+  if (denied) return denied;
   // admin_users.role === 'super_admin'; can_approve_signups does not grant PATCH.
 
   try {
