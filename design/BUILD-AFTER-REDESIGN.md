@@ -520,6 +520,25 @@ whose core Add-branch flow sits on top of this unresolved billing question.
   server-side and thread it into the client component's 5 signup CTAs as `?ref=` — no client-side
   `useSearchParams()`, since that would need a Suspense boundary this page doesn't have and risks
   breaking static rendering.
+- **Re-confirmed 4 August 2026 (Teacher-Insight parity pass, `claude/parity-teacher-insight-w2`).**
+  Read `Merged-Teacher-Insight.html` section by section against the live screen fresh, no code
+  changed. §01 Analytics holds at ~0.9/1: `AnalyticsView.tsx`'s `PileBPlaceholders` renders all 5 of
+  the design's "what you'll unlock" cards (`dropoutTitle`/`trendingTitle`/`missingTitle`/
+  `avgSessionTitle`/`missedIncomeTitle`) with real, non-placeholder Arabic copy, for both the Pro and
+  Standard (locked) states — the #259 fix holds. §02 Referrals is still the flat +1-free-month loop,
+  not the design's 25/10/5% program; `ReferralCard.tsx` now points at `/teachers?ref=` (moved off the
+  old `/teacher/landing` redirect hop since PR #314's Public-Marketing rewrite) and `TeachersClient.tsx`
+  still threads `?ref=` into all 5 signup CTAs — the attribution fix from this same entry survived that
+  rewrite intact, re-verified by reading both files, not inferred. Every column `teacherAnalytics.ts`
+  and `buildTeacherAnalytics` read — `student_groups.{fee_per_class,kind,status,teacher_id}`,
+  `enrollments.{group_id,student_id,status}`, `students.{id,name,is_guest}`,
+  `group_schedule.{group_id,day_of_week}`, `schedule_exceptions.{group_id,exception_date,kind,new_date}`,
+  `transactions.{group_id,teacher_net,paid_at,teacher_id,kind,status,is_test}`,
+  `sessions.{id,group_id,scheduled_at,status}`, `attendance_scans.{session_id,student_id,scanned_at}`,
+  `ar_by_student.{student_id,outstanding_amount,unpaid_amount,unpaid_count,teacher_id}`,
+  `teacher_subscriptions.{plan_key,teacher_id}` — was checked directly against
+  `information_schema.columns` on project `lczmjpnbuhnsislcvzar`; all present, no F26-class drift.
+  D14 itself is unchanged: still Eyad's call, still the file's only real gap.
 - **Drawn in:** `Merged-Teacher-Insight` §02.
 - **Touches:** money.
 
