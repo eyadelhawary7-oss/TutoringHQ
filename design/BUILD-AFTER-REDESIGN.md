@@ -245,7 +245,7 @@ found while checking this table's own staleness before starting the next file).
 - **Build:** the rate/countdown display against the **live** ladder — 25% → 10% → 5% (D2). The design's month-6 drop is wrong.
 - **Touches:** money (read only — displays a commission calculated elsewhere).
 - **Blocked by:** **D22** (below). The credit-versus-withdraw block on the same screen is **V4** and stays blocked regardless.
-- **Re-confirmed independently, 31 July 2026 (Center-Insight survey).** Read `/api/referral/route.ts` and `/api/referrals/payout/route.ts` fresh, without re-reading this entry first: both still read/deduct exclusively against `referral_reward_records`. Same table, same finding, arrived at cold — still blocked, still correct. Also found in the same pass: the payout route has no CSRF check (**S6**-class gap, logged separately as **S7**), currently low-blast-radius only because this table's balance is always 0 in production.
+- **Re-confirmed independently, 31 July 2026 (Center-Insight survey).** Read `/api/referral/route.ts` and `/api/referrals/payout/route.ts` fresh, without re-reading this entry first: both still read/deduct exclusively against `referral_reward_records`. Same table, same finding, arrived at cold — still blocked, still correct. Also found in the same pass: the payout route has no CSRF check (**S6**-class gap, logged separately as **S7**), currently low-blast-radius only because this table's balance is always 0 in production. **The CSRF half is since closed — S7, PR #308, `d728da75`. D22 itself is not:** re-read on master 4 August 2026, `/api/referrals/payout/route.ts:59` still reads `.from('referral_reward_records')`. Wrong table, unchanged.
 
 ## R7 · Admin teacher list and teacher account detail
 - **What:** The teacher half of the admin portal — a solo-teacher list beside the center list.
@@ -988,11 +988,47 @@ correction is in `TOKEN-SPEC.md` §2.
 - **Blocked by:** nothing technical. Waiting on Eyad's go-ahead to land it as its own PR, separate from the design-restructure chain.
 
 ## S7 · No CSRF on the referral payout route
+> ### ✅ CLOSED — PR #308, merged as `d728da75`, 3 August 2026
+> No migration involved; this one is code-only and is live on master.
+>
+> Verified by reading the route on master on 4 August 2026, not from the PR description
+> (rule 2 — an AI-written PR body is not evidence). `src/app/api/referrals/payout/route.ts`
+> imports `validateCSRFRequest` from `@/lib/csrf` and calls it immediately after
+> `requireCenterAuth`, ahead of the permission gate and ahead of any body parsing:
+>
+> ```ts
+> if (!validateCSRFRequest(request, auth.userId)) {
+>   return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
+> }
+> ```
+>
+> The client half is there too, so this is not a route that now 403s its own caller:
+> `src/components/referrals/ReferralWithdrawalPanel.tsx` attaches
+> `await getCsrfHeaders(session.access_token)` to the POST. End-to-end.
+>
+> **S6 is NOT closed with it, and do not read this as a general CSRF sweep.** Re-checked the
+> same day: none of the five WhatsApp-Pack mutation routes (`parent-pack/announcement`,
+> `parent-pack/request`, `settings/parent-pack`, `parent-pack/student/[id]`,
+> `parent-pack/toggle`) calls `validateCSRFRequest`. **S6 stays open.** S9's four routes
+> (`ceo/leads`, `ceo/actions/[id]`, `ceo/platform-config`, `admin/centers/[id]`) also still
+> have none — **S9 stays open**. **S8 is now partial, not open-as-written:** the same PR added
+> `validateCSRFRequest` to `/api/billing/withdrawal` (and to `/api/admin/withdrawals/[id]`),
+> which S8 names, so whoever picks S8 up must re-enumerate its route list against master
+> rather than trusting the original entry. Not re-scoped here.
+>
+> The entry below is kept as written — it is the record of how the gap was found and why the
+> D22 interaction mattered, and that reasoning stays true after the fix. Only its **Blocked by**
+> line is struck through, since leaving that one reading "waiting on Eyad" is the thing that
+> would send someone to do work that is already done.
+>
+> **D22 is untouched by this.** The payout route still reads its balance from
+> `referral_reward_records`. Closing S7 closed the CSRF gap, not the wrong-table one.
+
 - **What:** `POST /api/referrals/payout` (`ReferralWithdrawalPanel.tsx`, `Merged-Center-Insight` §03) has no `validateCSRFRequest` call — confirmed by direct read of the full route plus a repo-wide grep. Gating today is `requireCenterAuth` (bearer token) + `requirePermission(auth, 'can_request_referral_payouts')` + `src/proxy.ts`'s CORS-origin check — none of which is CSRF-token validation.
 - **Why it matters, with the caveat that matters more:** this creates a real `payout_requests` row against a center's referral commission balance — the same class of gap as **S6**. The blast radius today is small because of **D22** below: the balance it checks is always read from `referral_reward_records`, a table with zero live writers, so `available` is always 0 in production and the route 400s before anything is created. If D22 is ever resolved by repointing reads at `referral_commissions` (the table the real cron writes), this route inherits real money exposure the moment that happens — so the CSRF fix and D22 are worth landing together, not treating this one as low-priority because of the other.
 - **Contrast case, found the same pass:** `POST /api/whatsapp/send-balance-reminder` (used one screen over, on Analytics' Aging report) does call `validateCSRFRequest` correctly, and its client caller (`AgingReport.tsx`) correctly attaches `X-CSRF-Token`/`X-Session-ID` via `getCsrfHeaders()`. Whatever pattern protects that route was not extended to this one.
 - **Touches:** auth, and money.
-- **Blocked by:** nothing technical. Waiting on Eyad's go-ahead, same as S6.
+- **Blocked by:** ~~nothing technical. Waiting on Eyad's go-ahead, same as S6.~~ **Nothing — closed by PR #308, see the header above.** S6 is the one still waiting.
 
 ---
 
@@ -1357,7 +1393,8 @@ Surfaced by the 19-file design-parity sweep, 3 August 2026, then **re-verified b
 - **The standing rule for whoever builds the generator.** Occurrences live in `sessions`. Slots stay templates. **Do not re-add `parent_slot_id`, or any equivalent parent/child pointer on `schedule_slots`, as part of building a sessions generator.** If a future requirement appears to need per-occurrence *slot* rows, that is a deliberate schema decision that must reconcile with `sessions_generated_occurrence_uniq` first — it is not an implementation detail of a generator. The rule is also carried in-database as `COMMENT ON TABLE public.schedule_slots`, so it survives anyone who never reads this file.
 - **Two adjacent facts a generator author will need anyway** (from `SESSIONS-MIGRATION-WARNINGS.md` §5.3, both outside the migration): `schedule_exceptions.schedule_id` FKs to **`group_schedule`, not `schedule_slots`**, so a generator iterating slots holds the wrong id class and exception lookups match zero rows forever — meaning centre-side generation has **no cancellation mechanism at all** today; and the one live slot is `recurring = true` with `recurring_until = NULL`, an **unbounded** recurrence with no natural horizon.
 - **Found:** 4 August 2026, closing the item the warnings doc marked "examined by nobody" after its reviewer died mid-run.
-- **Status:** column drop is part of `supabase/migrations/20260804120000_sessions_tenant_key_and_occurrence_uniqueness.sql`, proposed and awaiting Eyad's manual apply (rule 5). The standing rule above outlives the migration.
+- **Status — APPLIED, 4 August 2026.** The column drop shipped as part of `supabase/migrations/20260804120000_sessions_tenant_key_and_occurrence_uniqueness.sql`, applied by hand to production and recorded in the migration history as version **`20260804094631`** (`sessions_tenant_key_and_occurrence_uniqueness`) — the last entry in that history. Re-verified live against the catalog on 4 August: `schedule_slots.parent_slot_id` returns **0** rows from `information_schema.columns`, `sessions.center_id` and `sessions.started_at` are both present, `sessions_generated_occurrence_uniq` and `sessions_center_id_fkey` both exist, 2 rows backfilled, `trg_sessions_derive_center_id` present. This entry previously said "proposed and awaiting Eyad's manual apply", which was true when written and false by the time anyone read it. The standing rule above outlives the migration.
+- **Version-string drift — the migration history is not an index of which files have run.** The FILE is named `20260804120000`; `apply_migration` stamped it **`20260804094631`**. The same drift exists on the two migrations before it: `20260730090000_permissions_canonical_admin_store.sql` is recorded as `20260729184405`, and `20260730110000_students_inactive_reason.sql` as `20260730122204`. So a filename cannot be looked up in `supabase_migrations.schema_migrations`, and absence from that table is **not** evidence a file has not been applied — match on the migration *name*, or better, check the catalog for the objects the file creates.
 
 ## Found, not yet formally logged — cross-file i18n data-quality audit
 - **Dozens of `ar.json` values across many top-level namespaces are literal English placeholders or half machine-translated** ("Confirmed", "Last30Days", "Sparkline عنوان", "Trend صعود Suffix", etc.) — found while surveying `Center-Setup` (PR #282), where several of the worst examples turned out to be **mis-homed under the `settings` namespace but actually rendered by `Center-Home`'s dashboard widgets** (`PlanUsageCard`, `/dashboard`), not any Center-Setup screen. Left untouched by that pass (out of `Center-Setup`'s file territory, and touching them risked colliding with `Center-Home`'s own concurrent PR). Not yet scoped to a single file or given a code — worth a dedicated cross-file i18n audit rather than folding piecemeal into whichever file's sweep happens to trip over the next instance.
