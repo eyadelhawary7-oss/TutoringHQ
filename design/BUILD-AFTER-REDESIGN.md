@@ -524,13 +524,38 @@ whose core Add-branch flow sits on top of this unresolved billing question.
 - **Touches:** money.
 
 ## D15 · "Mark collected" and "Send reminder" on the teacher's student-detail balance card
+> ### ✅ CLOSED — built 3 Aug 2026, PR #310 (commit `4435369`)
+> Both buttons shipped. **`Mark collected`** opens the same four-method picker (`cash | instapay |
+> vodafone_cash | other`) the two existing callers use, then fires one `POST
+> /api/teacher/private/transactions/[id]/mark-paid` per pending charge (the balance is an aggregate,
+> the endpoint settles one charge at a time) and reports how many failed without zeroing the card
+> optimistically. **`Send reminder`** is new — `POST
+> /api/teacher/private/students/[studentId]/send-reminder`, gated by `requireTeacherPrivateAccess`
+> and the same tenant check as the GET, reusing the nightly cron's exact template and body-parameter
+> construction (moved into `src/lib/teacherFeeReminder.ts` so the two paths cannot drift) and the same
+> `fee_reminder_count` / `fee_reminder_last_at` cadence columns so the two paths cannot double-send.
+> It ships **fail-visible, not fake-visible**: `chq_fee_reminder` is still PENDING at Meta and the
+> `platform_config` row `teacher.fee_reminder.manual_enabled` does not exist — re-confirmed live on
+> this pass (`select count(*) from platform_config where key =
+> 'teacher.fee_reminder.manual_enabled'` → 0) — so a missing row reads as off, the button ships
+> disabled, and a one-line reason prints underneath. There is no code path that reports a send that
+> did not happen.
+> **Re-verified this pass (4 Aug 2026), independent of the PR's own account:** read
+> `students/[studentId]/page.tsx`, the `mark-paid` and `send-reminder` routes, and
+> `students/[studentId]/route.ts` directly; confirmed live against `information_schema.columns` on
+> project `lczmjpnbuhnsislcvzar` that every column the new code reads or writes actually exists —
+> `transactions.{fee_reminder_count,fee_reminder_last_at,payer_phone,session_id,paid_at,method,
+> amount_billed,is_test}`, `teacher_profiles.{instapay_address,wallet_phone,payment_phone,
+> accepted_methods,default_payment_method}`, `group_schedule.day_of_week`, `students.parent_phone`,
+> `sessions.{scheduled_at,status}`, `attendance_scans.*` — all present. `npm run typecheck`, `lint`,
+> `verify:stabilization` and `test:unit` (1597 tests) all pass on `origin/master` unmodified.
+> **This entry, `FILE-COMPLETION-TABLE.md` row 5, and the row's `no — D15` status column were all
+> one day stale** — the table still listed D15 as the file's sole open item after the PR that closed
+> it had already merged. `git log --oneline origin/master` shows `4435369` predates this pass by a
+> day. Table corrected below (see `FILE-COMPLETION-TABLE.md`).
 - **What:** the design's Balance card carries two buttons: `Mark collected` (the teacher confirms a parent paid them directly) and `Send reminder` (nudge the parent about an outstanding balance).
 - **Drawn in:** `Merged-Teacher-Students` §02.
-- **Found:** 30 July 2026, building `Merged-Teacher-Students`. Not built — this is a WRITE that changes money state, on a screen with no protected-file wall. Per the standing rule, behaviour decides, not filename.
-- **`Mark collected` is mostly plumbing, not a new decision.** `POST /api/teacher/private/transactions/[id]/mark-paid` already exists, is already audited (`apply_transaction_transition`, idempotent, ownership-checked), and is already called from two places today — `GroupClassesTab` and the session-detail page. Wiring a third caller from student-detail reuses it; it does not invent new money logic. The one open question is UI, not backend: the endpoint requires a `method` (`cash | instapay | vodafone_cash | other`), so a single-tap "Mark collected" button needs a small method picker, same as the two existing callers already have.
-- **`Send reminder` has no existing per-student manual trigger.** The only related code is a bulk nightly cron (`send-balance-reminder`); sending one on a teacher's tap, per student, per outstanding balance, is new functionality, not reuse. It would also spend WhatsApp cost per send, which is the same class of decision as D4/D5.
-- **Touches:** money (write), WhatsApp cost (for the reminder).
-- **Blocked by:** Eyad's call on whether to build `Mark collected` (small UI reusing an existing endpoint) and, separately, whether/how to build `Send reminder` (new, and cost-bearing).
+- **Touches:** money (write), WhatsApp cost (for the reminder, currently blocked external — see above).
 
 ## D16 · The center-class commission engine is dormant — every teacher's "Owed" figure on `Merged-Teacher-Setup` §02 reads 0.00 EGP, live, today
 - **What:** the design's hero ("Owed to you across centers", This month / All time) and the per-center "Owed" figures are drawn as one populated block. Live, this is split across two already-shipped components — `CenterCutsSection` (`/api/teacher/center-cuts`) and `CenterEarningsSection` (`/api/teacher/center-attendance`) — and both read `transactions.kind = 'center_fee'`, which has never had a row written to it in production.
