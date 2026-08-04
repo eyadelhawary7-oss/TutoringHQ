@@ -8,6 +8,7 @@ import { useUser } from '@/contexts/UserContext';
 import { useBranchStore } from '@/stores/branchStore';
 import AgingReport from '@/components/analytics/AgingReport';
 import PnLCard from '@/components/analytics/PnLCard';
+import CollectionRateGauge from '@/components/analytics/CollectionRateGauge';
 import { chartColors, colors } from '@/lib/tokens';
 import { TrendingUp, Percent, Users, Wallet } from 'lucide-react';
 import { ChartCard, ChartLegend } from '@/components/charts';
@@ -359,6 +360,15 @@ export default function AnalyticsPage() {
             <p className="text-sm text-[var(--color-text-muted)] py-8 text-center">{ta('no_data')}</p>
           )}
         </ChartCard>
+      </div>
+
+      <div className="mx-4 mb-4 chart-animate chart-animate-delay-2">
+        <CollectionRateGauge
+          rate={Number(d.collection_rate ?? 0)}
+          collected={Number(d.mrr ?? 0)}
+          outstanding={Number(d.outstanding_total ?? 0)}
+          locale={locale}
+        />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-4 mb-4">
