@@ -6,6 +6,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useTransition } from 'react';
 import { signOutToLogin } from '@/lib/auth/sign-out-client';
 import { supabase } from '@/lib/supabase';
+import { phoneFromCenterhqAuthEmail } from '@/lib/utils/phone';
 import { Globe } from 'lucide-react';
 import { ChangePinModal } from './ChangePinModal';
 import { TestLiveToggle } from '@/components/admin/TestLiveToggle';
@@ -39,7 +40,7 @@ export function AdminHeader() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       // Auth email format: {phoneDigits}@centerhq.local - derive phone without querying users (RLS blocks client)
-      const phone = user.email?.replace('@centerhq.local', '') ?? '';
+      const phone = phoneFromCenterhqAuthEmail(user.email) ?? '';
       const displayPhone = phone ? `+${phone}` : 'Admin';
       setUserName(user.user_metadata?.name ?? displayPhone);
       setUserPhone(displayPhone);

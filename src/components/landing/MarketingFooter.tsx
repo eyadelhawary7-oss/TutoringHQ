@@ -1,132 +1,162 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import { usePathname } from 'next/navigation';
 import { Link } from '@/i18n/routing';
-import PublicLocaleToggle from '@/components/PublicLocaleToggle';
-import { getSupportWhatsAppWaMeBase, getSupportWhatsAppDisplayLabel } from '@/lib/supportWhatsApp';
-
-const WA_SUPPORT = getSupportWhatsAppWaMeBase();
-const WA_SUPPORT_LABEL = getSupportWhatsAppDisplayLabel();
-
-interface MarketingFooterProps {
-  /** "Create an account" destination. Omit if `onCreateAccountClick` is used instead. */
-  createAccountHref?: string;
-  /** When set, "Create an account" renders as a button (e.g. opens a center/teacher chooser) instead of a Link. */
-  onCreateAccountClick?: () => void;
-}
+import SummerLine from '@/components/marketing/SummerLine';
+import { SITE } from '@/config/site';
 
 /**
- * Shared four-column marketing footer (Product / Your account / Legal / Talk to
- * us), used at the bottom of every public marketing screen — matches
- * `Merged-Public-Marketing.html`'s ".bigfoot" pattern, drawn identically on
- * every one of that file's four sections. Lives under `landing/` because it is
- * only ever used by the marketing pages that make up that one design file.
+ * The `.bigfoot` block drawn identically at the bottom of all four public
+ * marketing screens: a CTA band, four link columns, a language row, and the
+ * operating-company line.
  *
- * "How it works" and "For parents" are intentionally omitted: the former has
- * no stable cross-page anchor target on every page that would use this
- * footer, and `/parents` has no live route at all (see BUILD-AFTER-REDESIGN.md
- * follow-up). Neither is worth a dead or half-working link.
+ * Support number: read from `SITE` (src/config/site.ts), NOT from
+ * `getSupportWhatsAppWaMeBase()`. The env helper resolves
+ * `NEXT_PUBLIC_SUPPORT_WHATSAPP`, which is currently unset in production and
+ * falls back to a placeholder — so the whole Talk-to-us column rendered with no
+ * children, silently. A constant cannot be unset, so the column is always
+ * populated and that failure mode is gone. The env helpers stay for the
+ * server-side alert path (`ADMIN_WHATSAPP_NUMBER`), a genuinely different
+ * number.
+ *
+ * "For parents" is still omitted from the Your-account column: the design draws
+ * the link but no `/parents` screen exists in any design file, so shipping it
+ * would put a 404 on all four public pages. It is a NEEDS-DESIGN item.
  */
-export default function MarketingFooter({ createAccountHref, onCreateAccountClick }: MarketingFooterProps) {
+export default function MarketingFooter({
+  /** Where "How it works" points: the landing page's own `#steps` anchor on
+   *  screens that have it, the landing page itself everywhere else. */
+  howItWorksHref = '/',
+  /** Brass CTA + the teacher wording of the summer line, on /teachers. */
+  tone = 'center',
+  createAccountHref = '/signup',
+}: {
+  howItWorksHref?: string;
+  tone?: 'center' | 'teacher';
+  createAccountHref?: string;
+}) {
   const t = useTranslations('publicFooter');
+  const locale = useLocale();
+  const isAr = locale === 'ar';
+  const pathname = usePathname();
+  const bare = (pathname ?? '/').replace(/^\/(?:ar|en)(?=\/|$)/, '') || '/';
+
+  const wa = `https://wa.me/${SITE.supportWhatsAppIntl}`;
+  const linkCls = 'block text-xs leading-snug text-[#ECE8DF]/76 transition-colors hover:text-white';
+  // Column headings tint with the page's accent family: mint on teal screens,
+  // sand on /teachers (design `.fh` / `.t .fh`).
+  const headCls = `mb-3 text-[11px] font-bold uppercase tracking-[.1em] rtl:normal-case rtl:tracking-[.02em] ${
+    tone === 'teacher' ? 'text-[var(--color-canvas)]' : 'text-[var(--color-mint-deep)]'
+  }`;
 
   return (
-    <footer className="border-t border-[var(--color-border)] bg-[#14181A] px-5 py-10 text-[#ECE8DF] md:px-6 md:py-12">
-      <div className="mx-auto grid max-w-5xl grid-cols-2 gap-x-6 gap-y-8 text-start sm:grid-cols-4">
-        <div>
-          <p className="mb-3 text-xs font-bold uppercase tracking-wider text-[var(--color-teal)]">
-            {t('productHeading')}
-          </p>
-          <div className="flex flex-col gap-2">
-            <Link href="/pricing" className="text-sm text-[#ECE8DF]/76 transition-colors hover:text-white">
-              {t('pricing')}
-            </Link>
-            <Link href="/center" className="text-sm text-[#ECE8DF]/76 transition-colors hover:text-white">
-              {t('forCenters')}
-            </Link>
-            <Link href="/teacher/landing" className="text-sm text-[#ECE8DF]/76 transition-colors hover:text-white">
-              {t('forTeachers')}
-            </Link>
-          </div>
+    <footer className="bg-[#14181A] px-6 pb-6 pt-12 text-[var(--color-paper)]">
+      {/* CTA band */}
+      <div className="mb-6 border-b border-[#ECE8DF]/14 pb-8">
+        <h3 className="mb-2 text-[22px] font-bold leading-tight tracking-[-.01em] text-white rtl:tracking-normal">
+          {t('ctaHeading')}
+        </h3>
+        <SummerLine
+          variant={tone === 'teacher' ? 'fctaTeacher' : 'fcta'}
+          className="mb-4 text-xs leading-snug text-[#ECE8DF]/68"
+        />
+        <Link
+          href={createAccountHref}
+          className="inline-flex min-h-[46px] items-center justify-center rounded-xl px-6 text-[15px] font-bold text-[var(--color-paper)]"
+          style={{
+            backgroundColor: tone === 'teacher' ? 'var(--color-brass)' : 'var(--color-accent)',
+          }}
+        >
+          {t('ctaButton')}
+        </Link>
+      </div>
+
+      <div className="flex flex-wrap gap-6">
+        <div className="min-w-[116px]">
+          <p className={headCls}>{t('productHeading')}</p>
+          <Link href={howItWorksHref} className={linkCls}>
+            {t('howItWorks')}
+          </Link>
+          <Link href="/pricing" className={linkCls}>
+            {t('pricing')}
+          </Link>
+          <Link href="/centers" className={linkCls}>
+            {t('forCenters')}
+          </Link>
+          <Link href="/teachers" className={linkCls}>
+            {t('forTeachers')}
+          </Link>
         </div>
 
-        <div>
-          <p className="mb-3 text-xs font-bold uppercase tracking-wider text-[var(--color-teal)]">
-            {t('accountHeading')}
-          </p>
-          <div className="flex flex-col gap-2">
-            {onCreateAccountClick ? (
-              <button
-                type="button"
-                onClick={onCreateAccountClick}
-                className="text-start text-sm text-[#ECE8DF]/76 transition-colors hover:text-white"
-              >
-                {t('createAccount')}
-              </button>
-            ) : (
-              <Link
-                href={createAccountHref ?? '/signup'}
-                className="text-sm text-[#ECE8DF]/76 transition-colors hover:text-white"
-              >
-                {t('createAccount')}
-              </Link>
-            )}
-            <Link href="/login" className="text-sm text-[#ECE8DF]/76 transition-colors hover:text-white">
-              {t('login')}
-            </Link>
-          </div>
+        <div className="min-w-[116px]">
+          <p className={headCls}>{t('accountHeading')}</p>
+          <Link href={createAccountHref} className={linkCls}>
+            {t('createAccount')}
+          </Link>
+          <Link href="/login" className={linkCls}>
+            {t('login')}
+          </Link>
         </div>
 
-        <div>
-          <p className="mb-3 text-xs font-bold uppercase tracking-wider text-[var(--color-teal)]">
-            {t('legalHeading')}
-          </p>
-          <div className="flex flex-col gap-2">
-            <Link href="/legal/privacy" className="text-sm text-[#ECE8DF]/76 transition-colors hover:text-white">
-              {t('privacy')}
-            </Link>
-            <Link href="/legal/terms" className="text-sm text-[#ECE8DF]/76 transition-colors hover:text-white">
-              {t('terms')}
-            </Link>
-            <Link href="/legal/cookie" className="text-sm text-[#ECE8DF]/76 transition-colors hover:text-white">
-              {t('cookies')}
-            </Link>
-            {/* s08-3: the design does not draw this footer, so "identical" does
-                not bind here — coverage does. Without this row the DPA and the
-                public data-rights form are unreachable from the marketing site.
-                The three deep links above stay, because people already expect
-                them. */}
-            <Link href="/legal" className="text-sm text-[#ECE8DF]/76 transition-colors hover:text-white">
-              {t('legal')}
-            </Link>
-          </div>
+        <div className="min-w-[116px]">
+          <p className={headCls}>{t('legalHeading')}</p>
+          <Link href="/privacy" className={linkCls}>
+            {t('privacy')}
+          </Link>
+          <Link href="/terms" className={linkCls}>
+            {t('terms')}
+          </Link>
+          <Link href="/cookies" className={linkCls}>
+            {t('cookies')}
+          </Link>
+          {/* s08-3: the design does not draw this footer, so "identical" does
+              not bind here — coverage does. Without this row the DPA and the
+              public data-rights form are unreachable from the marketing site.
+              The three deep links above stay, because people already expect
+              them. */}
+          <Link href="/legal" className={linkCls}>
+            {t('legal')}
+          </Link>
         </div>
 
-        <div>
-          <p className="mb-3 text-xs font-bold uppercase tracking-wider text-[var(--color-teal)]">
-            {t('talkHeading')}
-          </p>
-          <div className="flex flex-col gap-2">
-            {WA_SUPPORT ? (
-              <>
-                <a href={WA_SUPPORT} target="_blank" rel="noopener noreferrer" dir="ltr" className="text-sm text-[#ECE8DF]/76 transition-colors hover:text-white">
-                  {WA_SUPPORT_LABEL}
-                </a>
-                <a href={WA_SUPPORT} target="_blank" rel="noopener noreferrer" className="text-sm text-[#ECE8DF]/76 transition-colors hover:text-white">
-                  {t('whatsappHours')}
-                </a>
-              </>
-            ) : null}
-          </div>
+        <div className="min-w-[116px]">
+          <p className={headCls}>{t('talkHeading')}</p>
+          <a href={wa} target="_blank" rel="noopener noreferrer" dir="ltr" className={`mkt-mono ${linkCls}`}>
+            {SITE.supportWhatsAppDisplay}
+          </a>
+          <a href={wa} target="_blank" rel="noopener noreferrer" className={linkCls}>
+            {t('whatsappHours')}
+          </a>
         </div>
       </div>
 
-      <div className="mx-auto mt-8 flex max-w-5xl flex-wrap items-center gap-3 border-t border-white/10 pt-6">
-        <PublicLocaleToggle className="inline-flex items-center gap-1.5 rounded-lg px-0 py-0 text-xs font-semibold text-[#ECE8DF]/76 transition-colors hover:text-white" />
+      {/* Language row — both endonyms, the active one in white. */}
+      <div className="mt-6 flex items-center gap-2 border-t border-[#ECE8DF]/14 pt-6 text-[11px] text-[#ECE8DF]/50">
+        <span>{t('languageLabel')}</span>
+        <Link
+          href={bare}
+          locale="en"
+          className={`font-semibold ${isAr ? 'text-[#ECE8DF]/76' : 'text-white'}`}
+        >
+          English
+        </Link>
+        <span aria-hidden>·</span>
+        <Link
+          href={bare}
+          locale="ar"
+          className={`font-semibold ${isAr ? 'text-white' : 'text-[#ECE8DF]/76'}`}
+        >
+          العربية
+        </Link>
       </div>
 
-      <div className="mx-auto mt-4 max-w-5xl text-xs leading-relaxed text-[#ECE8DF]/44">
-        <p>{t('legalLine')}</p>
+      <div className="mt-4 border-t border-[#ECE8DF]/14 pt-6 text-[11px] leading-relaxed text-[#ECE8DF]/44">
+        <p>
+          {t.rich('legalLine', {
+            b: (chunks) => <b className="font-medium text-[#ECE8DF]/68">{chunks}</b>,
+          })}
+        </p>
         <p>{t('rightsLine')}</p>
       </div>
     </footer>

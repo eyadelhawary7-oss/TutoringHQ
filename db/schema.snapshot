@@ -1300,8 +1300,7 @@ COLUMN schedule_slots.recurring ord=8 type=boolean notnull=false default=false
 COLUMN schedule_slots.created_at ord=9 type=timestamp with time zone notnull=false default=now()
 COLUMN schedule_slots.group_id ord=10 type=uuid notnull=false default=∅
 COLUMN schedule_slots.recurring_until ord=11 type=date notnull=false default=∅
-COLUMN schedule_slots.parent_slot_id ord=12 type=uuid notnull=false default=∅
-COLUMN schedule_slots.day_of_week ord=13 type=text notnull=false default=∅
+COLUMN schedule_slots.day_of_week ord=12 type=text notnull=false default=∅
 COLUMN sessions.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN sessions.group_id ord=2 type=uuid notnull=true default=∅
 COLUMN sessions.schedule_id ord=3 type=uuid notnull=false default=∅
@@ -1315,6 +1314,8 @@ COLUMN sessions.billed ord=10 type=boolean notnull=true default=false
 COLUMN sessions.billed_at ord=11 type=timestamp with time zone notnull=false default=∅
 COLUMN sessions.created_by ord=12 type=uuid notnull=false default=∅
 COLUMN sessions.created_at ord=13 type=timestamp with time zone notnull=true default=now()
+COLUMN sessions.center_id ord=14 type=uuid notnull=false default=∅
+COLUMN sessions.started_at ord=15 type=timestamp with time zone notnull=false default=∅
 COLUMN staff.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN staff.name ord=2 type=text notnull=true default=∅
 COLUMN staff.phone ord=3 type=text notnull=true default=∅
@@ -2270,11 +2271,11 @@ CONSTRAINT schedule_exceptions.schedule_exceptions_pkey type=p def=PRIMARY KEY (
 CONSTRAINT schedule_exceptions.schedule_exceptions_schedule_id_fkey type=f def=FOREIGN KEY (schedule_id) REFERENCES group_schedule(id) ON DELETE CASCADE
 CONSTRAINT schedule_slots.schedule_slots_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
 CONSTRAINT schedule_slots.schedule_slots_group_id_fkey type=f def=FOREIGN KEY (group_id) REFERENCES student_groups(id) ON DELETE CASCADE
-CONSTRAINT schedule_slots.schedule_slots_parent_slot_id_fkey type=f def=FOREIGN KEY (parent_slot_id) REFERENCES schedule_slots(id) ON DELETE SET NULL
 CONSTRAINT schedule_slots.schedule_slots_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT schedule_slots.schedule_slots_room_id_fkey type=f def=FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE CASCADE
 CONSTRAINT schedule_slots.schedule_slots_teacher_id_fkey type=f def=FOREIGN KEY (teacher_id) REFERENCES users(id) ON DELETE SET NULL
 CONSTRAINT sessions.sessions_billed_chk type=c def=CHECK (((NOT billed) OR ((status = 'finished'::text) AND (billed_at IS NOT NULL))))
+CONSTRAINT sessions.sessions_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE CASCADE
 CONSTRAINT sessions.sessions_created_by_fkey type=f def=FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
 CONSTRAINT sessions.sessions_group_id_fkey type=f def=FOREIGN KEY (group_id) REFERENCES student_groups(id) ON DELETE CASCADE
 CONSTRAINT sessions.sessions_kind_chk type=c def=CHECK ((kind = ANY (ARRAY['center'::text, 'private'::text])))
@@ -2718,6 +2719,8 @@ INDEX idx_schedule_teacher ON schedule_slots def=CREATE INDEX idx_schedule_teach
 INDEX idx_sessions_billing ON sessions def=CREATE INDEX idx_sessions_billing ON public.sessions USING btree (status, billed)
 INDEX idx_sessions_group_time ON sessions def=CREATE INDEX idx_sessions_group_time ON public.sessions USING btree (group_id, scheduled_at)
 INDEX idx_sessions_schedule ON sessions def=CREATE INDEX idx_sessions_schedule ON public.sessions USING btree (schedule_id)
+INDEX sessions_center_id_scheduled_at_idx ON sessions def=CREATE INDEX sessions_center_id_scheduled_at_idx ON public.sessions USING btree (center_id, scheduled_at DESC)
+INDEX sessions_generated_occurrence_uniq ON sessions def=CREATE UNIQUE INDEX sessions_generated_occurrence_uniq ON public.sessions USING btree (schedule_id, (((scheduled_at AT TIME ZONE 'Africa/Cairo'::text))::date)) WHERE ((schedule_id IS NOT NULL) AND (status <> 'cancelled'::text))
 INDEX idx_staff_user_id ON staff def=CREATE INDEX idx_staff_user_id ON public.staff USING btree (user_id)
 INDEX idx_status_checks_service_time ON status_checks def=CREATE INDEX idx_status_checks_service_time ON public.status_checks USING btree (service, checked_at DESC)
 INDEX idx_status_incidents_resolved ON status_incidents def=CREATE INDEX idx_status_incidents_resolved ON public.status_incidents USING btree (resolved_at) WHERE (resolved_at IS NULL)
@@ -3055,6 +3058,7 @@ TRIGGER trg_privacy_requests_updated_at ON privacy_requests def=CREATE TRIGGER t
 TRIGGER sales_leads_updated_at ON sales_leads def=CREATE TRIGGER sales_leads_updated_at BEFORE UPDATE ON public.sales_leads FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()
 TRIGGER trg_saved_cards_updated_at ON saved_cards def=CREATE TRIGGER trg_saved_cards_updated_at BEFORE UPDATE ON public.saved_cards FOR EACH ROW EXECUTE FUNCTION set_saved_card_updated_at()
 TRIGGER trg_guard_sessions_lifecycle ON sessions def=CREATE TRIGGER trg_guard_sessions_lifecycle BEFORE UPDATE ON public.sessions FOR EACH ROW EXECUTE FUNCTION guard_sessions_lifecycle()
+TRIGGER trg_sessions_derive_center_id ON sessions def=CREATE TRIGGER trg_sessions_derive_center_id BEFORE INSERT OR UPDATE OF group_id, center_id ON public.sessions FOR EACH ROW EXECUTE FUNCTION sessions_derive_center_id()
 TRIGGER check_reports_to ON staff def=CREATE TRIGGER check_reports_to BEFORE INSERT OR UPDATE ON public.staff FOR EACH ROW EXECUTE FUNCTION validate_reports_to()
 TRIGGER staff_updated_at_trigger ON staff def=CREATE TRIGGER staff_updated_at_trigger BEFORE UPDATE ON public.staff FOR EACH ROW EXECUTE FUNCTION set_staff_updated_at()
 TRIGGER trg_student_group_notes_updated_at ON student_group_notes def=CREATE TRIGGER trg_student_group_notes_updated_at BEFORE UPDATE ON public.student_group_notes FOR EACH ROW EXECUTE FUNCTION set_updated_at()
@@ -3155,6 +3159,7 @@ FUNCTION resolve_or_create_student(p_name text, p_phone text, p_center_id uuid, 
 FUNCTION respond_center_group_proposal(p_proposal_id uuid, p_actor_user_id uuid, p_action text, p_cut_egp numeric, p_note text) returns=TABLE(proposal_status text, group_id uuid) lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=86accf991a8254cabb0420325c2993e8
 FUNCTION respond_group_proposal(p_proposal_id uuid, p_actor_user_id uuid, p_side text, p_action text, p_cut_egp numeric, p_note text) returns=TABLE(proposal_status text, group_id uuid) lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=211e1b5888505466d25785a97066f54c
 FUNCTION respond_teacher_code_group_proposal(p_proposal_id uuid, p_center_id uuid, p_actor_user_id uuid, p_action text, p_cut_egp numeric, p_note text) returns=TABLE(proposal_status text, group_id uuid) lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=9c5b7169989ee012a70089d03a2e096b
+FUNCTION sessions_derive_center_id() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public, pg_temp bodymd5=20e98ac0771cb34d56cef9c6eb5fe22d
 FUNCTION set_center_notes_updated_at() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public bodymd5=5b733ab523bad442e4b10f836de9e4ba
 FUNCTION set_demo_requests_updated_at() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=301a884953d37769916294bb60562e05
 FUNCTION set_privacy_requests_updated_at() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=301a884953d37769916294bb60562e05

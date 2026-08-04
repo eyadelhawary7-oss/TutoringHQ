@@ -3,7 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import * as Sentry from '@sentry/nextjs';
 import { sendWelcomeTemplate } from '@/lib/centerNotify';
 import { generateReferralCode } from '@/lib/referral';
-import { normalizePhone } from '@/lib/utils/phone';
+import { normalizePhone, authEmailFromPhone } from '@/lib/utils/phone';
 import { issueForWebhook as issuePinSetupTokenForWebhook } from '@/lib/pinSetupTokens';
 
 export interface ProvisionCenterOwnerArgs {
@@ -36,8 +36,11 @@ export async function provisionCenterOwner(
 ): Promise<string> {
   const { centerId, centerName, ownerName } = args;
   const normalizedPhone = normalizePhone((args.phone ?? '').trim());
-  const phoneDigits = normalizedPhone.replace(/\D/g, '');
-  if (!phoneDigits) {
+  // Refuse to provision — and thus refuse to WRITE — a phone that does not
+  // canonicalize to a valid Egyptian mobile E.164. authEmailFromPhone returns
+  // null in exactly that case, so it is also the write guard.
+  const authEmail = authEmailFromPhone(normalizedPhone);
+  if (!authEmail) {
     throw new Error('provisionCenterOwner: missing/invalid phone');
   }
 
@@ -45,7 +48,6 @@ export async function provisionCenterOwner(
   // /api/auth/set-initial-pin once the owner chooses a PIN; until then pin_set_at
   // stays NULL (the "no PIN yet" gate).
   const placeholderPassword = randomBytes(32).toString('base64url');
-  const authEmail = `${phoneDigits}@centerhq.local`;
 
   const { data: authData, error: createAuthError } = await supabase.auth.admin.createUser({
     email: authEmail,

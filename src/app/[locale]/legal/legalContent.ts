@@ -59,7 +59,23 @@ export type LegalDocument = {
 /** Drives the index rows and the reader's "N of 4 documents" counter. */
 export const DOC_ORDER: readonly LegalSlug[] = ['privacy', 'terms', 'cookie', 'dpa'] as const;
 
-export const DOC_VERSION = { version: 2, date: '2026-06-22' } as const;
+/**
+ * The version line on Privacy, Terms and Cookie. L-09 in
+ * design/LEGAL-CHANGE-LEDGER.md, answered by Eyad on 4 August 2026.
+ *
+ * The number stays 2 and does NOT bump, because version 2.0 was never
+ * published. Until this ships, production serves interim placeholder copy
+ * reading "interim copy applies until 9 May 2026" — a self-declared expiry
+ * that lapsed nearly three months ago. So this is FIRST PUBLICATION, not a
+ * version bump, and 2 is the number the drafts already carry with Adsero;
+ * renumbering would only desynchronise that thread. The next change after
+ * publication is the first real bump.
+ *
+ * The date is publication day, not the design's 22 June: L-05 removed two
+ * false claims from the Privacy policy after that date, so 22 June would have
+ * been wrong the moment it rendered.
+ */
+export const DOC_VERSION = { version: 2, date: '2026-08-04' } as const;
 
 /* ── Chrome, index and shared strings ───────────────────────────────────── */
 
@@ -89,6 +105,16 @@ export const LEGAL_CHROME = {
    * a user can tick "I agree" without ever passing the index where the design
    * states the draft status once. Appended to the version line the design
    * already draws, rather than restoring the removed amber banner.
+   *
+   * KEPT DELIBERATELY — Eyad, 4 August 2026, answering L-09: "Keep the
+   * 'pending Adsero review' suffix. The consent checkboxes deep-link past the
+   * index where draft status is stated."
+   *
+   * This is a known, recorded deviation from the design, which draws the
+   * version line bare. Do not "restore design parity" by deleting it. It comes
+   * off in the commit that records Adsero's sign-off, and at that point the
+   * customers get told once (also Eyad's L-09 answer: no notification before
+   * sign-off, then one).
    */
   pendingReview: { en: ' · pending Adsero review', ar: ' · تحت مراجعة Adsero' },
   ofDocuments: { en: 'of 4 documents', ar: 'من ٤ مستندات' },

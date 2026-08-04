@@ -6,7 +6,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { Link, useRouter } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
-import { normalizePhone } from '@/lib/utils/phone';
+import { authEmailFromPhone } from '@/lib/utils/phone';
 
 /**
  * PUBLIC teacher signup page (no auth - mirrors /login). Brand-new, center-less
@@ -143,9 +143,12 @@ function TeacherSignupInner() {
       const data = (await res.json()) as { code?: string };
       if (res.ok) {
         // Account exists; sign in immediately with phone + PIN, then land home.
-        // Same email derivation as the server (normalized E.164 digits).
-        const email = `${normalizePhone(phone).replace(/\D/g, '')}@centerhq.local`;
-        await supabase.auth.signInWithPassword({ email, password: pin }).catch(() => undefined);
+        // authEmailFromPhone is the SAME derivation the server uses, so this
+        // login local-part is byte-identical to the one signup created.
+        const email = authEmailFromPhone(phone);
+        if (email) {
+          await supabase.auth.signInWithPassword({ email, password: pin }).catch(() => undefined);
+        }
         // Pro-intent teachers are steered to the Pro pricing screen; everyone
         // else lands on the portal home (both still on the Standard trial).
         router.replace(proIntent ? '/teacher/pricing' : '/teacher');
