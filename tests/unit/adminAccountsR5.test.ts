@@ -218,7 +218,7 @@ describe('privacyQueueCounts — Merged-Admin-Platform §06', () => {
     const rows = [
       { status: 'pending', due_at: inDays(20), request_types: ['access'] },
       { status: 'in_progress', due_at: inDays(20), request_types: ['deletion'] },
-      { status: 'completed', due_at: inDays(-5), request_types: ['export'] },
+      { status: 'completed', due_at: inDays(-5), request_types: ['portability'] },
       { status: 'rejected', due_at: inDays(-9), request_types: ['access'] },
     ];
     expect(privacyQueueCounts(rows, now)).toEqual({ open: 2, dueSoon: 0, closed: 2 });
@@ -239,14 +239,30 @@ describe('privacyQueueCounts — Merged-Admin-Platform §06', () => {
   it('filters on request_types, which is an array per row', async () => {
     const { filterByPrivacyType } = await import('@/components/admin/PrivacyQueueHeader');
     const rows = [
-      { status: 'pending', due_at: null, request_types: ['access', 'export'] },
+      { status: 'pending', due_at: null, request_types: ['access', 'portability'] },
       { status: 'pending', due_at: null, request_types: ['deletion'] },
       { status: 'pending', due_at: null, request_types: null },
     ];
     expect(filterByPrivacyType(rows, 'all')).toHaveLength(3);
-    expect(filterByPrivacyType(rows, 'export')).toHaveLength(1);
+    expect(filterByPrivacyType(rows, 'portability')).toHaveLength(1);
     // One row carries two types and must appear under both.
     expect(filterByPrivacyType(rows, 'access')).toHaveLength(1);
     expect(filterByPrivacyType(rows, 'deletion')).toHaveLength(1);
+  });
+
+  it('every filter value is one the intake route can actually write', async () => {
+    const { filterByPrivacyType } = await import('@/components/admin/PrivacyQueueHeader');
+    // REGRESSION: the queue used to offer 'export' while the API stored
+    // 'portability', so that chip matched zero rows and always would have. The
+    // old fixtures hid it by inventing 'export' rows that no code path
+    // produces. Pin the vocabulary to the intake route's own allow-list —
+    // imported, not duplicated, so a route-side change breaks this test.
+    const { VALID_TYPES } = await import('@/app/api/privacy-request/route');
+    const STORED = [...VALID_TYPES];
+    for (const filter of ['access', 'deletion', 'portability'] as const) {
+      expect(STORED).toContain(filter);
+      const rows = [{ status: 'pending', due_at: null, request_types: [filter] }];
+      expect(filterByPrivacyType(rows, filter)).toHaveLength(1);
+    }
   });
 });

@@ -35,6 +35,8 @@ import {
 import { canonicalPlanId } from '@/lib/plans';
 import { formatDate, formatNumber } from '@/lib/formatNumber';
 import type { CenterRow } from '@/types/admin';
+import { useAdminVerificationAvailability } from '@/hooks/useAdminVerificationAvailability';
+import { adminVerificationView } from '@/lib/verification/uiState';
 
 const PLAN_SORT_ORDER: Record<string, number> = {
   nano: 1,
@@ -50,14 +52,42 @@ function AdminCentersPageInner() {
   const tCommon = useTranslations('common');
   const tStatus = useTranslations('status');
   const tBilling = useTranslations('billing');
+  const tVerification = useTranslations('verification');
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { closeMainSidebar } = useSidebar() ?? {};
   const { setHideShell } = useLayout();
+  const { state: verification } = useAdminVerificationAvailability();
+  // `Merged-Admin-Platform` §01 draws an "Unverified" filter pill on both
+  // /admin/centers and /admin/teachers. It cannot work today: filtering on
+  // verification needs somewhere for verification state to live, and there is
+  // nowhere. Re-verified live against project lczmjpnbuhnsislcvzar on 4 August
+  // 2026: `public.centers` has 128 columns and not one identity-verification
+  // column among them; `public.teacher_profiles` has 24, likewise; and
+  // `verification_records` / `verification_attempts` are both absent from
+  // `information_schema.tables` (142 base tables, neither of them). The pill is
+  // drawn DISABLED with its reason rather than dropped — a filter that is simply
+  // absent tells an operator nothing, and they will keep looking for it.
+  //
+  // Note the state will NOT arrive as a column on `centers`. It arrives as
+  // `verification_records`, because a national ID on `centers` would be readable
+  // by every centre owner: RLS grants a row and cannot withhold a column, and
+  // `centers_select_own USING (id = get_auth_center_id())` is the only SELECT
+  // policy on that table.
+  const verificationGate = adminVerificationView(verification);
 
-  const statusFilter = searchParams?.get('status') ?? 'all';
+  const statusFilterRaw = searchParams?.get('status') ?? 'all';
+  /**
+   * A hand-typed `?status=unverified` must not reach the API while the filter
+   * is gated. `/api/admin/centers` would run `.eq('status','unverified')`
+   * against `centers.status`, whose vocabulary has no such value, and return
+   * zero rows — an empty list reading as "no unverified centres", which is a
+   * confident wrong answer rather than a visible failure. Fall back to `all`.
+   */
+  const statusFilter =
+    statusFilterRaw === 'unverified' && verificationGate.gated ? 'all' : statusFilterRaw;
   const filterPlan = searchParams?.get('plan') ?? 'all';
   const centerSearch = searchParams?.get('q') ?? '';
   const sortBy = searchParams?.get('sort') ?? 'newest';
@@ -451,8 +481,38 @@ function AdminCentersPageInner() {
                           : t('suspended')}
                 </button>
               ))}
+
+              {/* The design's fifth pill. Disabled while verification state has
+                  no live source; it enables itself the moment one exists. */}
+              <button
+                type="button"
+                disabled={verificationGate.gated}
+                title={
+                  verificationGate.causeKey
+                    ? tVerification(verificationGate.causeKey)
+                    : undefined
+                }
+                onClick={
+                  verificationGate.gated
+                    ? undefined
+                    : () => updateParams({ status: 'unverified', page: '1' })
+                }
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  statusFilter === 'unverified'
+                    ? 'bg-primary/20 text-primary'
+                    : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]'
+                } disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent`}
+              >
+                {tVerification('badge.unverified')}
+              </button>
             </div>
           </div>
+
+          {verificationGate.gated && (
+            <p className="-mt-2 mb-4 text-xs leading-relaxed text-[var(--color-text-muted)]">
+              {tVerification('admin.filterUnverifiedDisabled')}
+            </p>
+          )}
 
           {selectedIds.size > 0 && (
             <div className="flex items-center gap-3 flex-wrap bg-primary/10 border border-primary/25 rounded-xl p-4 mb-4">
