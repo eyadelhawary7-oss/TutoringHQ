@@ -4656,7 +4656,9 @@
       "missingSession": "انتهت جلسة الدفع. افتح الطلب من صفحة الطلبات.",
       "notAuthenticated": "سجّل الدخول مجددًا لمتابعة الدفع.",
       "orderNotFound": "الطلب غير موجود.",
-      "recoverFailed": "تعذّر بدء الدفع."
+      "recoverFailed": "تعذّر بدء الدفع.",
+      "total": "الإجمالي",
+      "securedBy": "محمي بواسطة Paymob"
     },
     "success": {
       "title": "تم تأكيد الطلب",
@@ -5027,7 +5029,9 @@
     "totalEarned": "إجمالي Earned",
     "totalReferrals": "إجمالي الإحالات",
     "whatsappPack": "باقة واتساب",
-    "you": "انت"
+    "you": "انت",
+    "heroTitle": "اطلب كروت الطلاب",
+    "heroSubtitle": "كروت مطبوعة يمسحها الطلاب عند الباب."
   },
   "ceoDashboard": {
     "title": "لوحة معلومات الرئيس التنفيذي",

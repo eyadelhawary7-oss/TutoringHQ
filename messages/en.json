@@ -6038,7 +6038,9 @@
       "missingSession": "Payment session expired. Open your order from Orders.",
       "notAuthenticated": "Sign in again to continue payment.",
       "orderNotFound": "Order not found.",
-      "recoverFailed": "Could not start payment."
+      "recoverFailed": "Could not start payment.",
+      "total": "Total",
+      "securedBy": "Secured by Paymob"
     },
     "success": {
       "title": "Order placed",
@@ -6409,7 +6411,9 @@
     "totalEarned": "Total Earned",
     "totalReferrals": "Total Referrals",
     "whatsappPack": "WhatsApp Pack",
-    "you": "You"
+    "you": "You",
+    "heroTitle": "Order student cards",
+    "heroSubtitle": "Printed QR cards your students scan at the door."
   },
   "landing": {
     "subtitle": "Center Management System",

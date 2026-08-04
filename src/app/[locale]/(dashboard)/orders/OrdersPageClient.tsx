@@ -13,13 +13,16 @@ import {
   getShippingZone,
 } from '@/lib/bostaShipping';
 import { cardOrderProductInclusiveFromQty } from '@/lib/pricing/taxMath';
-import { ChevronDown, ChevronUp, IdCard } from 'lucide-react';
+import { ChevronDown, ChevronUp, IdCard, MoreVertical, Eye, MapPin, Plus, RotateCcw } from 'lucide-react';
 import { CardOrderCartHeader } from '@/components/orders/CardOrderCartHeader';
 import { CardOrderCartContents } from '@/components/orders/CardOrderCartContents';
 import { CardOrderMobileStickyFooter } from '@/components/orders/CardOrderMobileStickyFooter';
+import { CardOrderStyleSampleMock } from '@/components/CardOrderStyleSampleMock';
 import { useCardOrderCart } from '@/hooks/useCardOrderCart';
 import { useToast } from '@/components/ui/ToastProvider';
 import { EmptyState, SectionHeader } from '@/components/shared';
+import { ActionSheet, type SheetAction } from '@/components/patterns';
+import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 
 export type CardOrdersShippingQuote = {
   hasGovernorate: boolean;
@@ -35,6 +38,7 @@ interface StudentLite {
 
 interface CenterInfoState {
   governorate?: string | null;
+  name?: string | null;
 }
 
 interface CardOrderRow {
@@ -50,6 +54,8 @@ interface CardOrderRow {
   delivery_address?: string | null;
   notes?: string | null;
   created_at: string;
+  /** `card_orders.tracking_number` — confirmed present in the live catalogue. */
+  tracking_number?: string | null;
 }
 
 const CARD_UNIT_INCLUSIVE_EGP = cardOrderProductInclusiveFromQty(1);
@@ -138,6 +144,7 @@ export default function OrdersPageClient({
   const tHist = useTranslations('orderHistory');
   const tOrders = useTranslations('orders');
   const tCheckoutErr = useTranslations('checkout.errors');
+  const tDetail = useTranslations('orderDetail');
   const tCommon = useTranslations('common');
   const tEmpty = useTranslations('emptyStates');
   const locale = useLocale();
@@ -156,6 +163,7 @@ export default function OrdersPageClient({
   const [histLoading, setHistLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [sheetOrder, setSheetOrder] = useState<CardOrderRow | null>(null);
   const [, startTransition] = useTransition();
 
   const [page, setPage] = useState(1);
@@ -201,6 +209,7 @@ export default function OrdersPageClient({
       setCenterId(cid);
       setCenterInfo({
         governorate: meData.user.center?.governorate ?? null,
+        name: meData.user.center?.name ?? null,
       });
 
       const studentsRes = await dbSelect({
@@ -291,6 +300,51 @@ export default function OrdersPageClient({
     setExpandedId((prev) => (prev === id ? null : id));
   };
 
+  function scrollToNewOrder() {
+    document.getElementById('card-order-new-order')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  /**
+   * §01's three-dot, on the shared `ActionSheet` primitive (patterns rule —
+   * a local menu is not an option). Only actions with a real destination are
+   * offered: "Track shipment" appears solely when the order actually carries a
+   * `tracking_number`, and "Reorder" navigates to the order's own page, where
+   * the existing confirm-then-POST flow lives, rather than firing a second
+   * write path from the list.
+   */
+  const sheetActions: SheetAction[] = sheetOrder
+    ? [
+        {
+          id: 'view',
+          label: t('viewOrder'),
+          icon: Eye,
+          onSelect: () => router.push(`/orders/${sheetOrder.id}`),
+        },
+        ...(sheetOrder.tracking_number?.trim()
+          ? [
+              {
+                id: 'track',
+                label: tDetail('trackBosta'),
+                icon: MapPin,
+                onSelect: () => {
+                  window.open(
+                    `https://bosta.co/tracking/${encodeURIComponent(sheetOrder.tracking_number!.trim())}`,
+                    '_blank',
+                    'noopener,noreferrer',
+                  );
+                },
+              } satisfies SheetAction,
+            ]
+          : []),
+        {
+          id: 'reorder',
+          label: tDetail('reorder'),
+          icon: RotateCcw,
+          onSelect: () => router.push(`/orders/${sheetOrder.id}`),
+        },
+      ]
+    : [];
+
   const totalPages = Math.max(1, Math.ceil(ordersTotal / pageSize));
   const rangeFrom = ordersTotal === 0 ? 0 : (page - 1) * pageSize + 1;
   const rangeTo = Math.min(page * pageSize, ordersTotal);
@@ -306,6 +360,10 @@ export default function OrdersPageClient({
 
   const trulyNoOrders =
     ordersTotal === 0 && page === 1 && !debouncedQ && histFilter === 'all';
+
+  // First roster student, alphabetical (the students query already orders by
+  // name). Undefined on an empty roster — the mock then draws its placeholders.
+  const heroStudent = students[0];
 
   const liveGov = centerInfo?.governorate?.trim();
   const showGovernorateHint = !loading && !!centerInfo && !liveGov?.length;
@@ -361,6 +419,43 @@ export default function OrdersPageClient({
               })}
             </p>
           </div>
+        ) : null}
+
+        {/*
+          §01's hero entry point: a preview of the card this centre would
+          actually receive, then the New order CTA. The preview is driven by
+          real values where they exist — the centre's own name and the first
+          student on its roster — and falls back to the mock's neutral
+          placeholders when the roster is empty. No invented student is ever
+          drawn. The CTA targets the cart below, which is the real ordering
+          surface on this build.
+        */}
+        {!loading ? (
+          <section className="mb-6 rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 sm:p-5">
+            <div className="mx-auto w-full max-w-[280px]">
+              <CardOrderStyleSampleMock
+                variant="dark"
+                className="rounded-xl"
+                centerName={centerInfo?.name}
+                studentName={heroStudent?.name}
+                studentNumber={
+                  heroStudent?.student_number
+                    ? formatStudentNumberForDisplay(heroStudent.student_number)
+                    : null
+                }
+              />
+            </div>
+            <h2 className="mt-4 text-base font-semibold text-[var(--color-text-primary)]">{t('heroTitle')}</h2>
+            <p className="mt-1 text-xs text-[var(--color-text-secondary)]">{t('heroSubtitle')}</p>
+            <button
+              type="button"
+              onClick={scrollToNewOrder}
+              className="mt-3 w-full flex items-center justify-center gap-1.5 px-4 py-3 min-h-[48px] bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold rounded-xl transition-all duration-150 shadow-sm"
+            >
+              <Plus className="w-[18px] h-[18px]" aria-hidden />
+              {t('newOrder')}
+            </button>
+          </section>
         ) : null}
 
         <div id="card-order-new-order">
@@ -469,11 +564,19 @@ export default function OrdersPageClient({
                     key={order.id}
                     className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] overflow-hidden"
                   >
+                    <div className="flex items-stretch">
                     <button
                       type="button"
                       onClick={() => toggleExpand(order.id)}
-                      className="w-full flex items-center gap-3 p-4 text-start hover:bg-[var(--color-surface-0)]/50 transition-colors"
+                      className="flex-1 min-w-0 flex items-center gap-3 p-4 text-start hover:bg-[var(--color-surface-0)]/50 transition-colors"
                     >
+                      {/* §01's leading `.oicon` tile. */}
+                      <span
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] bg-[var(--color-teal-soft)] text-[var(--color-teal-deep)]"
+                        aria-hidden
+                      >
+                        <IdCard className="h-5 w-5" />
+                      </span>
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2 mb-1">
                           <span className="font-mono text-sm font-semibold text-[var(--color-text-primary)]">
@@ -512,6 +615,15 @@ export default function OrdersPageClient({
                         <ChevronDown className="w-5 h-5 text-[var(--color-text-tertiary)] shrink-0" />
                       )}
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => setSheetOrder(order)}
+                      aria-label={tCommon('moreActions')}
+                      className="shrink-0 flex w-12 min-h-[44px] items-center justify-center text-[var(--color-text-tertiary)] hover:bg-[var(--color-surface-0)]/50 transition-colors"
+                    >
+                      <MoreVertical className="w-5 h-5" aria-hidden />
+                    </button>
+                    </div>
                     {expanded && (
                       <div className="px-4 pb-4 pt-0 border-t border-[var(--color-border-subtle)] space-y-3 text-sm">
                         <div>
@@ -623,6 +735,24 @@ export default function OrdersPageClient({
           ) : null}
         </div>
       </div>
+
+      <ActionSheet
+        open={sheetOrder != null}
+        onClose={() => setSheetOrder(null)}
+        title={
+          sheetOrder
+            ? tDetail('title', { ref: sheetOrder.id.replace(/-/g, '').slice(-8).toUpperCase() })
+            : ''
+        }
+        subtitle={
+          sheetOrder
+            ? `${formatNumber(sheetOrder.quantity, locale)} ${
+                sheetOrder.quantity === 1 ? tOrders('card') : tOrders('cards')
+              }`
+            : undefined
+        }
+        actions={sheetActions}
+      />
     </div>
   );
 }
