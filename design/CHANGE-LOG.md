@@ -105,6 +105,7 @@ If a row ever names one, that row is a mistake.
 | [#296](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/296) | `4c5e29b` | 2026-08-01 | `Center-Home §01` — Schedule section empty-state (balance card confirmed still blocked, not built); merged by Eyad directly, held for review per this file's history | `/{locale}/dashboard` | v42 |
 | [#297](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/297) | `aa8115d4` | 2026-08-01 | none — doc only (logged #296, closed out the Center-Home §01 investigation episode) | none | v42 |
 | [#298](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/298) | `(on merge)` | 2026-08-01 | `Center-Groups` — full re-survey + waitlist-integrity fix (stale entries never cleared, position-assignment race) | `/{locale}/groups` | v42 |
+| [#345](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/345) | `(on merge)` | 2026-08-04 | `Center-Orders §01` (hero card preview + New order CTA, row three-dot on the shared `ActionSheet`, `.oicon` tile), `§03` step 4 (order total, Paymob trust line), F29 residue in `CheckoutShell` | `/{locale}/orders`, `/orders/checkout/payment`, `/api/orders/history` | v45 → **v46** |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, `#214`'s by that
@@ -1658,3 +1659,48 @@ description:**
 description in each entry). `design/FILE-COMPLETION-TABLE.md` row 11 updated: ~3.1/5 → ~3.0/5, §04's
 sub-estimate corrected down, blocked-by list gains D31/D32, D2 marked closed (confirmed already-resolved
 by `#248`, never formally closed in this table before now).
+
+**Center-Orders (4 August 2026) — the instruction reversed, and the gaps got built.** The 31 July
+pass surveyed this file honestly and then logged almost everything rather than building it. This pass
+was told the opposite, and re-surveyed from the design rather than from that entry. Coverage, counted
+as design blocks drawn vs. present: **§01 2/4, §02 5/5, §03 4.5/6, §04 1/3 — 12.5/18 before,
+15/18 after.**
+
+| § | before → after | what changed |
+|---|---|---|
+| §01 Orders | 2/4 → **4/4** | the hero card-preview entry point, previously dismissed as "a presentation choice, not a missing capability" — that reading was wrong, it is a block the design draws and live did not have. Built by reusing `CardOrderStyleSampleMock` (three new optional props defaulting to its existing placeholders) rather than adding a second card mock. Plus the row three-dot on the shared `ActionSheet`, and the leading `.oicon` tile. |
+| §02 Order Detail | 5/5 → 5/5 | complete and richer than the design, and still **dark in production** — `loadCardOrderDetail.ts:29` selects `card_style`, which does not exist, so the page 404s unconditionally. A full section scoring 5/5 while being unreachable is the shape F28 warns about; the score is structural, not a statement that it works. |
+| §03 Checkout | 4.5/6 → **5/6** | step 4 drew no amount at all. It now echoes the order's stored `total_amount` verbatim from the poll that already runs — no recomputation, no new request — plus the "Secured by Paymob" line. The print toggles stay out (**F18**). |
+| §04 Coming Soon | 1/3 → 1/3 | unchanged. **D7** still has no destination table. |
+
+**Verified live before anything was queried, not taken from this ledger.** `public.card_orders` is
+**35** columns with **no `card_style`** — F28's corrected figure holds on a fresh dump. `tracking_number`
+*is* present, which is why the new "Track shipment" row action was allowed to exist at all; it was
+confirmed in `information_schema.columns` before being added to `/api/orders/history`'s select, and it
+is offered on a row only when that row's value is actually non-empty.
+
+**Three omissions, each naming its missing column rather than its missing effort:**
+- **§03 Customize print toggles** — `card_orders`/`card_order_carts` have `card_style` and
+  `vendor_notes` and nothing resembling `print_name` / `print_qr` / `print_photo` / `print_id_number`.
+  New columns, so it stops (**F18**).
+- **§03 Success "Est. delivery"** — the only estimate anywhere is
+  `bosta_shipments.estimated_delivery_date`, which does not exist until Bosta books the shipment, long
+  after this screen renders. A date here would have to be invented, so there is none.
+- **§04 notify-me and its confirmation** — **D7**, unchanged.
+
+**F28 deliberately not fixed, and worth being explicit about why**, since "it is a one-line delete"
+is the obvious objection: removing `card_style` from the checkout INSERT is not a neutral repair, it
+picks one arm of the two-way fork F26/F28 escalated (add the column vs. stop persisting it), and the
+arm it picks quietly deletes the card-colour choice from the order record while changing a money-path
+write. That is Eyad's call. The consequence is recorded plainly above rather than softened: checkout
+500s for every centre, and §02 404s, the moment anyone flips `card_orders_enabled` on.
+
+**One primitive finding, reported rather than forked.** `ExpandableRow` is the natural primitive for
+§01's order row and cannot take it: it has no slot for arbitrary expanded content, and this row's
+expanded body is a full detail panel (student lines, address, price breakdown, notes). Per the
+shared-primitive rule that is a signal to stop and say so, not to fork — so the quick menu the design
+actually draws was built on `ActionSheet` directly and the existing expand was left alone.
+
+**Also fixed:** two more of F29's literal-comma fallbacks, in `CheckoutShell.tsx` (the shipping line,
+in both the desktop card and the mobile sheet). The 31 July sweep named five in-territory files and
+missed this one.
