@@ -105,6 +105,7 @@ If a row ever names one, that row is a mistake.
 | [#296](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/296) | `4c5e29b` | 2026-08-01 | `Center-Home §01` — Schedule section empty-state (balance card confirmed still blocked, not built); merged by Eyad directly, held for review per this file's history | `/{locale}/dashboard` | v42 |
 | [#297](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/297) | `aa8115d4` | 2026-08-01 | none — doc only (logged #296, closed out the Center-Home §01 investigation episode) | none | v42 |
 | [#298](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/298) | `(on merge)` | 2026-08-01 | `Center-Groups` — full re-survey + waitlist-integrity fix (stale entries never cleared, position-assignment race) | `/{locale}/groups` | v42 |
+| [#338](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/338) | `(on merge)` | 2026-08-04 | `Teacher-Setup §01` (Verified chip on the Settings header), `§02` (owed hero rebuilt as the design's money hero with a This month / All time footer; page reordered into the design's order; proposal money as the three-cell Student rate / You earn / Center keeps row; counter gains "Their offer" + the offer-history strip) | `/{locale}/teacher/settings`, `/{locale}/teacher/centers` | v45 → **v46** |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, `#214`'s by that
@@ -1658,3 +1659,73 @@ description:**
 description in each entry). `design/FILE-COMPLETION-TABLE.md` row 11 updated: ~3.1/5 → ~3.0/5, §04's
 sub-estimate corrected down, blocked-by list gains D31/D32, D2 marked closed (confirmed already-resolved
 by `#248`, never formally closed in this table before now).
+
+**Teacher-Setup structural build (4 August 2026, PR #338)** — the instruction this pass ran under was
+the reverse of the last one: *build* the gaps rather than log them, and treat "logged a gap I could
+have built" as the failure. Surveyed `Merged-Teacher-Setup.html` section by section against a full
+re-read of the live code and independent `information_schema` queries against `lczmjpnbuhnsislcvzar`
+before writing a line.
+
+**Coverage moved 15/16 → 15/16 on the 16-item frame, and the frame itself needed correcting first.**
+The recorded position was **14/16 with V1 blocking two items**. That was one row stale: the
+collect-payments toggle *is* built — `CollectPaymentsRow` + `useVerificationState` landed with the
+Phase-4 verification branch (`e7f5dd20`, PR #322) and is wired into `teacher/(portal)/settings/page.tsx`
+today. So the true before-state was **15/16**, with the one genuine hole being the verified-state
+**Payout details** section. That hole did not close and correctly could not: `teacher_profiles` has
+**24 columns**, verified live this pass, and none of them is an IBAN, a bank, or an account holder
+(`payout_destination` jsonb exists and is dormant — see V4). New columns → the standing migration
+rule → stops with Eyad. The headline fraction therefore does not move; what moved is everything
+*inside* the fourteen items the coarse frame already scored as "present".
+
+**Built, all of it on columns confirmed live first.**
+- **§02 owed hero, rebuilt as the design's hero.** It now uses the shared `.money-hero` surface
+  (ADR 031, `--grad-money`, four existing adopters) instead of the pale mint card, and carries the
+  design's two-stat footer: **This month** and **All time**. The all-time figure is not a new query —
+  it is `earnedAllTime` from `/api/teacher/center-attendance`, already fetched on this page and until
+  now rendered as a duplicate tile below the hero. The page lifts it once and hands it down, so there
+  is exactly one fetch and one definition of the number. **When it has not arrived, the stat is not
+  drawn.** It is never defaulted to 0, because a fake zero here is indistinguishable from D16's real,
+  dormant zero and nobody would ever question it.
+- **§02 order is now the design's order** — owed hero → Your centers → Group proposals → Class times
+  → Join a center. It previously ran centers → earnings → join → my code → bring → proposals → slots.
+  The two live-only extras keep the neighbour they belong to: the attendance list sits with the
+  centers it itemises, "bring a group to a center" sits with the proposals it creates.
+- **§02 proposal money is now the design's three cells** — Student rate · You earn · Center keeps —
+  instead of a stack of label:value lines with the center's cut mislabelled as "Latest offer". All
+  three are the same flat-cut arithmetic already live on this screen (`fee_per_class`,
+  `group_proposal_offers.cut_egp`, both populated). With no standing offer, only the rate is drawn:
+  "You earn" and "Center keeps" need an offer to be true, and subtracting against an assumed cut
+  would be an invented number. The provenance line (whose offer, when) survives as its own caption.
+- **§02 counter gains the design's "Their offer" summary and its one-line offer-history strip**, both
+  phrased from the teacher's side ("You earn N per student", "{center} offered you N per student").
+- **§01 Settings header gains the design's `.vchip`** via the existing `VerificationBadge`, the same
+  component and the same state machine the teacher home already uses — so it reads whatever is
+  actually true, not an unconditional "Verified".
+
+**Not built, and exactly why.**
+- **§01 Payout details (account holder / bank / IBAN).** Missing columns, named:
+  `teacher_profiles` has no `iban`, no `bank_name`, no `account_holder`. Migration → Eyad. Also
+  `Merged-Teacher-Money` / `Merged-Verification-Payouts` territory, both protected.
+- **§02 proposal "Proposed: Saturdays, 2:00–3:30 PM, weekly".** Missing columns, named: `group_proposals`
+  has exactly **17 columns** (verified live) and not one is a day, a start time, an end time or a
+  schedule. The live scheduling table `group_slot_proposals` *does* carry `day_of_week` /
+  `start_time` / `end_time`, but it hangs off `group_id` — an already-attached group — with no
+  relation to a `group_proposals` row, so it cannot supply a time for a group that does not exist
+  yet. Migration → Eyad.
+- **§02 counter-offer stepper reframed as "you earn per student".** `CounterOfferForm` is shared
+  with the center console's `GroupProposalsTab` (two consumers, confirmed by grep), and the center
+  side's own design — `Merged-Center-Setup` — states the same control as **"Your counter · center's
+  cut"** expressed as a **percentage**. Flipping the shared form to the teacher's framing would break
+  the other screen against its own design, and the EGP-vs-percentage question is **D16**, still open.
+  Per the shared-primitive rule: the primitive cannot serve both framings, so this stops and says so
+  rather than being forked locally. The teacher-side wrappers around it (above) were buildable and
+  were built.
+- **D16 and D17 re-verified, both unchanged.** `select count(*) from transactions where kind='center_fee'`
+  → **0** (out of **3** transaction rows total, live). So every figure in the rebuilt hero, including
+  the newly-added All time, still reads 0.00 EGP for everyone — the hero is now the right *shape*
+  reading the same honestly-empty ledger. `/teacher/profile/[id]` still does not exist, so "Share your
+  profile" still leads to a 404.
+- **Centre count, for the record:** `centers` has **2** rows, both `is_test = true`, **0** non-test.
+
+Gates: `npm run typecheck` clean, `npm run lint` 0 errors (145 pre-existing warnings), `npm run test:unit`
+**1921 passed / 201 files**, `npm run verify:stabilization` all three green. `SW_VERSION` v45 → **v46**.
