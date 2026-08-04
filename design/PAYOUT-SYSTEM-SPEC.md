@@ -145,6 +145,110 @@ and picking the weaker one would hand payout initiation to staff accounts at cen
 owner-only, with no announcement. *Recommendation: unify on owner-only plus step-up auth, and treat
 `can_request_referral_payouts` as request-only — never release.*
 
+### 2.7.1 — Half of 2.7 is now fixed in code; the other half is still Eyad's to decide
+
+**Landed 4 August 2026** on `claude/payout-2-7-auth-symmetry`. **The pipelines were NOT unified** — that is
+Decision 1 and it is not an implementer's call. What landed is the half that needs no decision because it
+can only ever *remove* access: the weaker route was raised to the stronger route's floor.
+
+**Live re-verification, 4 August 2026, production catalog `lczmjpnbuhnsislcvzar`.** The "exactly 1 row"
+figure in 2.7 above was re-checked rather than repeated, and the re-check changed the conclusion:
+
+| fact | value |
+|---|---|
+| `public.users.can_request_referral_payouts` | exists — `boolean NOT NULL DEFAULT false` |
+| rows with the flag `true` | **1**, out of **4** `public.users` rows total |
+| the holder | `3150d66a-…`, role **`owner`**, center `fcd5c5ef-…` "Test Center 333", **`is_test = true`** |
+| rows with role `admin` or `assistant` anywhere | **0** |
+| functions in `pg_proc` referencing the permission | **0** — application code is the entire enforcement surface |
+| `payout_requests` / `withdrawal_requests` rows | 0 / 0 |
+| `admin_users` rows / of those with a `public.users` row | 2 / **0** |
+
+**The count is still 1, but the row is an owner — so the delegable permission currently authorises nobody
+who is not already an owner.** It has never granted access to a single non-owner account, because no
+non-owner centre-staff account exists in the database at all. Two things follow, and they point in
+opposite directions:
+
+- **The migration risk of choosing owner-only is zero today, not merely small.** The A15 concern — "nobody
+  would notice the semantics changed until it was used" — cuts the other way as well: nobody would notice
+  the permission being retired either, because it is doing no work.
+- **The 1-row figure should stop being cited as evidence that the delegation is in use.** It is a seed
+  artefact on a test centre (`is_test = true`), not a customer configuration.
+
+**What changed in code.** `POST /api/referrals/payout` moved off the generic `requirePermission` onto a new
+`requireMoneyRequestPermission` (`src/lib/centerPermissions.ts`). The gate is now:
+
+```
+pass ⇔ role = 'owner'                                  -- identical to /api/billing/withdrawal
+     ∨ (role ∈ {admin, assistant} ∧ flag = true)       -- an explicit, live, owner-granted delegation
+```
+
+Three arms that `requirePermission` allowed are closed:
+
+1. **`isSuperAdmin` alone.** `hasPermission` short-circuits on it, so a platform super-admin with no
+   `public.users` row — ZERO_PERMISSIONS, not an owner — could initiate a centre's payout request. The
+   sibling withdrawal route already rejected that identity (`auth.role` is `'super_admin'`, not `'owner'`).
+   Per §7.5 a `SUPER_ADMIN_PHONES` entry mints such an identity **with no database row at all**, so this
+   was a forensically anonymous initiation path. Verified live: 2 `admin_users` rows, **0** with a
+   `public.users` row; and the only caller of the route in `src/` is the centre-side
+   `ReferralWithdrawalPanel.tsx` — no admin or CEO surface calls it, so nothing in the product loses a
+   capability it was using.
+2. **Centre-less roles holding the flag.** The live `users_center_check` constraint is
+   `(role ∈ {owner,admin,assistant} ∧ center_id IS NOT NULL) ∨ (role ∈ {super_admin,teacher} ∧ center_id IS NULL)`,
+   so a `teacher` or `super_admin` row is never centre staff however it reached a centre context (a teacher
+   reaches one via `?center_id=` plus `teacher_center` membership). A flag on such a row is not a
+   delegation and no longer reads as one.
+3. **Ambiguity about which arm passed.** Owner and delegate are now separate arms, so "who may request" is
+   readable rather than inferred.
+
+**Behaviour for the one live holder is unchanged** — it is an owner row and passes on the owner arm either
+way.
+
+**Request-only is now asserted in code, not just in prose.** `REQUEST_ONLY_MONEY_PERMISSIONS` lists
+`can_request_referral_payouts`; `assertNotReleaseAuthority()` throws on it; and `hasPermission` /
+`requirePermission` **throw** when handed it, so the specific mistake this section warns about — a future
+approval path reaching for the familiar `requirePermission(auth, 'can_request_referral_payouts')` — fails
+loudly on the first call in every environment instead of silently granting. The type
+`ReleaseAuthorityPermission = Exclude<CenterPermission, RequestOnlyMoneyPermission>` makes it a compile
+error as well. `tests/unit/payoutRequestAuthority.test.ts` pins all of it, including a source scan that
+fails if any new file in `src/` references the permission or if any approval/release-shaped API path does.
+
+> ### ⚠ OPEN FOR EYAD — which gate survives the unification, and does the permission survive at all
+>
+> Decision 1's recorded answer is *"unify, on owner-only + step-up auth"*. The unification is **unbuilt**,
+> so the gate choice is still live at build time and is recorded here as an explicit item rather than left
+> as an implementation detail (which is exactly the failure A15 describes). Nothing above pre-empts it:
+> the landed change keeps two pipelines and only removes access from the weaker one.
+>
+> | option | what it means | evidence for | evidence against |
+> |---|---|---|---|
+> | **(A) Owner-only, retire the permission** | one gate, `role = 'owner'` + step-up; drop `can_request_referral_payouts` from the staff-permissions UI and eventually from `public.users` | **0 non-owner accounts hold it today**, so retirement is a no-op for every real centre; removes a `public.users` money-adjacent flag entirely, which is the same direction §7.1 forces for the release side; one gate, one control surface | a centre with an office manager who does the paperwork must hand out the owner login — a real operational cost that shows up the first time a centre has >1 staff member |
+> | **(B) Owner-only, keep the permission dormant** | ← **what is in the tree now**, extended to the unified route | preserves the delegation shape for later without granting anything today; zero migration | a dormant flag in the staff UI implies a capability that the unified route would refuse — a support ticket waiting to happen unless the UI hides it |
+> | **(C) Owner OR delegate, on the unified route** | the delegable arm survives and is extended to credit withdrawals | one consistent rule across both money types; the delegation is genuinely useful for larger centres | **this is the A15 widening.** Every centre whose credit withdrawals are owner-only today silently gains a non-owner path. It is invisible in the data precisely because no delegate exists to make it visible |
+>
+> **Recommendation: (A), and the live evidence strengthens it rather than merely permitting it.** The spec
+> already recommended owner-only plus step-up auth; the argument was risk-symmetry. The catalog now adds a
+> cost argument: the delegation **has never been used by a non-owner account**, so its entire present value
+> is optionality, and its cost is a money-adjacent boolean on `public.users` — the same table §7.1 rules out
+> for release authority, for a reason (`PATCH /api/settings/staff/[userId]/permissions` is owner-gated with
+> **no self-target check**, and `chq_prevent_user_escalation` fires on zero real grant paths because its
+> body is gated on `IF NEW.id = auth.uid()`, which is NULL under a service-role connection). Keeping a
+> money flag there costs a permanent exception to an invariant we are otherwise enforcing.
+>
+> **The one argument against (A) that is not weak** is the office-manager case, and it should be answered
+> deliberately rather than dismissed: if delegated *requesting* is wanted later, it belongs on the same
+> footing as delegated approval — an explicit, named, revocable grant with an audit trail — not a boolean
+> on the payee's own user row. That is a decision to take when a centre actually asks for it, on evidence,
+> and (A) does not foreclose it.
+>
+> **Not in scope for this decision, and already settled:** `can_request_referral_payouts` is request-only
+> under every option. None of (A)/(B)/(C) may authorise approval or release.
+>
+> **If (C) is chosen anyway, it is not free.** It needs, at minimum: an announcement to existing centres
+> before the semantics change, a default of `false` on every existing row (already true), and the same
+> step-up auth the owner arm gets — otherwise the weaker arm becomes the attack surface for both money
+> types at once.
+
 **✅ DECISION 2 — ANSWERED: yes, all seven.** Confirm all seven are in scope as prerequisites. If any is deferred, say which — each one
 independently can pay real money twice or strand it.
 
@@ -854,6 +958,12 @@ delegable `can_request_referral_payouts` wins, every center whose credit withdra
 silently gains a second, non-owner path to move money — and the permission is currently set on exactly one
 row, so nobody would notice the semantics changed until it was used. *Fix:* make the gate an explicit part
 of Decision 1 rather than an implementation detail; separate *request* from *release* authority.
+*Status 4 Aug 2026 — partially closed (§2.7.1).* The request/release separation is now asserted in code and
+tested, and the referral route no longer passes on `isSuperAdmin` alone or on a centre-less role holding the
+flag. The gate choice for the unification is recorded as an explicit open item in §2.7.1 rather than left to
+the implementer. Re-verified live: the single flag-holding row is an **owner** on a **test** centre, so the
+delegable permission authorises **zero** non-owner accounts — the widening this attack describes has no
+existing user to hide behind, in either direction.
 
 **A13 · Six months in, the question is unanswerable.** There is no per-period statement, no completeness
 proof, and no way to see anything never recorded. *Fix:* a `payout_reconciliation_periods` table — one
@@ -870,7 +980,7 @@ decided, not a set of open questions.
 
 | # | Decision | Answer |
 |---|---|---|
-| 1 | Unify referral + credit payouts — and, per §2.7, which authorization gate survives the merge? | ✅ **Unify, on owner-only + step-up auth.** `can_request_referral_payouts` is *request*-only, never *release* |
+| 1 | Unify referral + credit payouts — and, per §2.7, which authorization gate survives the merge? | ✅ **Unify, on owner-only + step-up auth.** `can_request_referral_payouts` is *request*-only, never *release*. ⚠ **The gate choice is still open at build time — see §2.7.1**, which asks whether the permission is retired (A), kept dormant (B) or extended to the unified route (C), with live evidence recommending (A) |
 | 2 | Are all seven §2 defects in scope as prerequisites? | ✅ **Yes — all seven** |
 | 3 | Append-only double-entry ledger, or extend the mutable-column pattern? | ✅ **Double-entry, this subsystem only** |
 | 4 | How to eliminate the credit dual-authority window? | ✅ **(a) migrate the spend path in the same PR** |
