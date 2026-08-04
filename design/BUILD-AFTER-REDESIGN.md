@@ -1114,7 +1114,7 @@ they were not dropped and nothing started writing or reading either since 31 Jul
 again for both names: still zero hits outside this document. Unchanged, still Eyad's drop-or-document
 call, not touched.
 
-## F26 · `branches`/`groups`/`rooms` i18n — eight live Arabic strings were English leftovers or
+## F28 · `branches`/`groups`/`rooms` i18n — eight live Arabic strings were English leftovers or
 grammatically backwards translations, fixed (no decision needed)
 - **What:** re-reading every EN/AR pair actually resolved by `useTranslations('groups')`,
   `useTranslations('rooms')` and `useTranslations('branches')` (the three real top-level namespaces
