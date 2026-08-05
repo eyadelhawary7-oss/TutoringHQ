@@ -592,6 +592,20 @@ whose core Add-branch flow sits on top of this unresolved billing question.
   `teacher_subscriptions.{plan_key,teacher_id}` — was checked directly against
   `information_schema.columns` on project `lczmjpnbuhnsislcvzar`; all present, no F26-class drift.
   D14 itself is unchanged: still Eyad's call, still the file's only real gap.
+- **Re-confirmed 5 August 2026 (Teacher-Insight build pass, PR #356).** All four columns this entry
+  rests on were re-queried against `information_schema.columns` on project `lczmjpnbuhnsislcvzar`,
+  not carried forward from the note above: `teacher_profiles.referral_code` (text),
+  `teacher_profiles.referred_by_teacher_id` (uuid), `teacher_subscriptions.free_months_credit`
+  (integer) and `teacher_subscriptions.referral_rewarded_at` (timestamptz) all still present. So the
+  flat one-time +1-free-month loop is still what exists, and §02's every figure — recurring-this-month,
+  next-month projection, lifetime earned, the 25/10/5% decay, per-referral monthly pay and days-to-drop
+  — is still a percentage of a subscription fee the live model never computes. **Explicitly considered
+  and rejected this pass:** shipping a `/teacher/referrals` route that renders the design's layout but
+  populated from the free-month model. That is not building §02, it is entrenching one answer to the
+  question D14 exists to ask, and it would put a money figure on a new screen without a decision behind
+  it. The withdraw-versus-credit half is verification-gated, which is `Verification-Payouts` —
+  protected — so even the shell could not ship whole. §02 stays at 0.1/1. §01 was taken to 1/1 in the
+  same PR and is now closed; D14 is the file's only remaining gap, unchanged.
 - **Drawn in:** `Merged-Teacher-Insight` §02.
 - **Touches:** money.
 

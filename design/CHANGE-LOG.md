@@ -105,6 +105,7 @@ If a row ever names one, that row is a mistake.
 | [#296](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/296) | `4c5e29b` | 2026-08-01 | `Center-Home §01` — Schedule section empty-state (balance card confirmed still blocked, not built); merged by Eyad directly, held for review per this file's history | `/{locale}/dashboard` | v42 |
 | [#297](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/297) | `aa8115d4` | 2026-08-01 | none — doc only (logged #296, closed out the Center-Home §01 investigation episode) | none | v42 |
 | [#298](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/298) | `(on merge)` | 2026-08-01 | `Center-Groups` — full re-survey + waitlist-integrity fix (stale entries never cleared, position-assignment race) | `/{locale}/groups` | v42 |
+| [#356](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/356) | `(on merge)` | 2026-08-05 | `Teacher-Insight §01` built to the drawn frame — Pro gate card, per-metric glyphs, "What you'll unlock" label; new `.panel-accent` surface in `globals.css`, so treat as **ALL screens** for that one class (no existing adopters). `§02` untouched, still D14 | `/{locale}/teacher/analytics` | v45 → **v46** |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, `#214`'s by that
@@ -1658,3 +1659,56 @@ description:**
 description in each entry). `design/FILE-COMPLETION-TABLE.md` row 11 updated: ~3.1/5 → ~3.0/5, §04's
 sub-estimate corrected down, blocked-by list gains D31/D32, D2 marked closed (confirmed already-resolved
 by `#248`, never formally closed in this table before now).
+
+**Teacher-Insight (5 August 2026, PR #356) — §01 built to the drawn frame; §02 held on D14.**
+Row 18 stood at §01 0.9/1, §02 0.1/1, ~50%, last touched by `#259` (31 July) and re-confirmed twice
+since without a build. Re-surveyed section by section against the live route before touching anything.
+
+**The survey held, and the residual 0.1 was shape, not content.** `Merged-Teacher-Insight.html` §01 is
+a single drawn frame, captioned in the design's own masthead as "the Pro-gated state a Standard teacher
+sees," in EN and AR. Its order is: intro line → teal gate card (brass `Pro` pill, lock tile, headline,
+one line of body, light CTA with a chevron) → a `What you'll unlock` label → five preview cards, each an
+icon tile plus title over a ghost strip holding a `Collecting data` pill. Live's `AnalyticsView.tsx`
+`standard` branch carried all of that content and none of that shape: the intro was present
+(`pageSubtitle`, and it does render for a Standard teacher, who has private access), but the gate was a
+plain brass strip with the body text loose underneath it, and the five cards — all five present, `#259`'s
+fix intact — shared one `CalendarDays` glyph between them and repeated `Collecting data` as both the
+section heading and the pill inside every card.
+
+**Built.** `ProGate` replaces the strip with one accent panel matching the drawn card. The five roadmap
+cards take the design's anatomy (30px icon tile, 13px title, ghost strip with the pill) and one glyph
+each — `TrendingDown` / `TrendingUp` / `Clock` / `Timer` / `BanknoteArrowDown`, in the design's order.
+The locked state's list is now labelled `unlockTitle` ("What you'll unlock" / "اللي هتفتحه"), leaving
+`Collecting data` to mean only what it means; the Pro state keeps the old heading, which is correct
+there. `collectingBody` went from repeated five times to once under the label. No copy claim changed:
+the gate reuses the existing `proOnly` / `proOnlyBody` / `upgradeCta` strings.
+
+**`.panel-accent` is new, and it is deliberately not `.money-hero`.** The gate needed the dark teal
+gradient. `globals.css` already defined `--gradient-accent-panel` and nothing in `src/` used it — grep
+confirmed zero adopters. It is now a signature surface beside `.money-hero` and `.panel-live`, because
+`.money-hero` is the *money* surface and an upsell gate carries no figure. The non-obvious half: light
+mode force-maps `.text-white` to ink (`html:not(.dark) .text-white`), exempting only `.money-hero` and
+`.panel-live`. Without adding `.panel-accent` to that exemption the new gate would have rendered dark
+ink on a dark gradient — a silent, gate-passing regression, since no check catches contrast.
+
+**Nothing was invented to fill the cards.** The five metrics stay honest placeholders because the design
+draws them as placeholders too — the mock's own `Collecting data` pills. One of them could not be built
+even if the design asked: `public.sessions` has 15 columns
+(`id, group_id, schedule_id, kind, scheduled_at, room, location, status, finished_at, billed, billed_at,
+created_by, created_at, center_id, started_at`), and neither `ended_at` nor `duration_minutes` is among
+them, so "Average session time" has no backing column at all. Checked against `information_schema.columns`
+on project `lczmjpnbuhnsislcvzar`, not inferred. No migration proposed here.
+
+**§02 stays blocked, and the reason was re-verified rather than carried forward.** All four columns D14
+rests on — `teacher_profiles.referral_code`, `teacher_profiles.referred_by_teacher_id`,
+`teacher_subscriptions.free_months_credit`, `teacher_subscriptions.referral_rewarded_at` — are still
+present in the live catalog, so the flat one-time +1-free-month loop is still what exists. Every figure
+§02 draws (recurring-this-month, next-month projection, lifetime earned, the 25/10/5% decay, per-referral
+monthly pay and days-to-drop) is a percentage of a subscription fee that the live model never computes,
+and the withdraw-versus-credit half is verification-gated, which is `Verification-Payouts` — protected.
+Building a `/teacher/referrals` route that showed the free-month model instead would not be building §02;
+it would be entrenching one side of the decision D14 exists to make. Unbuilt, logged.
+
+**Docs-sync note, not fixed here.** This log's PR table ends at `#298` while master is at `#337`. That
+gap predates this pass and is left alone rather than filled with rows for PRs nobody in this session
+read — the same reasoning the log applies to `(on merge)` SHAs. `#356`'s row is appended in place.
