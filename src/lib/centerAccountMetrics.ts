@@ -15,11 +15,28 @@ import type { SupabaseClient } from '@supabase/supabase-js';
  * right columns and zero rows; the real table is `student_groups`. Every column
  * check passed and the metric was dead on arrival.
  *
+ * **Branches ARE here now, and the earlier note saying they could not be was
+ * wrong about the data model, not about the table.** It read: "There is no
+ * `branches` table. `branch_user_assignments` exists but records which staff see
+ * which branch, not the branches themselves." Both sentences are literally true
+ * and together they miss the point: in this product a branch IS a `centers` row,
+ * and the thing that groups branches is `centers.organization_id`.
+ * `src/app/api/branches/route.ts` — live, and the only definition of a branch the
+ * product has — POSTs a new branch by INSERTing a `centers` row carrying the
+ * caller's `organization_id`, and GETs the branch list as
+ * `centers where organization_id = <org>`. So the count the design asks for is
+ * available from a column that physically exists; looking for a table by that
+ * name and stopping at its absence is what hid it. Confirmed live on 4 Aug 2026:
+ * `centers.organization_id` is a `uuid` column in `information_schema.columns`.
+ *
+ *  - **No `is_test` filter, deliberately, and against the usual house default.**
+ *    `/api/branches` applies none, so this count is whatever the centre's own
+ *    branch switcher shows its owner. An admin screen quietly disagreeing with
+ *    the owner about how many branches they have is worse than including a seed
+ *    row: the number's whole job is to describe that account's own structure.
+ *    This is a structural count, not a finance aggregate.
+ *
  * NOT here, and deliberately:
- *  - **Branches.** There is no `branches` table. `branch_user_assignments`
- *    exists but records which staff see which branch, not the branches
- *    themselves, so a count from it would be a different number wearing the
- *    design's label.
  *  - **Verified / National ID.** Still not here, and for two different reasons.
  *    Verification STATE no longer belongs in this module at all: it is decided
  *    by `src/lib/verificationState.ts` (the state machine) over
@@ -50,6 +67,8 @@ export interface CenterAccountMetrics {
   /** Percent 0–100, or null when the window held nothing to measure. */
   attendanceRatePct: number | null;
   attendanceWindowDays: number;
+  /** Branches in this centre's organisation, or null when the count failed. */
+  branchCount: number | null;
 }
 
 type SessionRow = { id: string; group_id: string | null };
@@ -100,6 +119,28 @@ export function centerAttendanceRate(
   return Math.round((attended / expected) * 1000) / 10;
 }
 
+/**
+ * How many branches the centre has, given its `organization_id` and how many
+ * `centers` rows carry that same org.
+ *
+ * A centre with **no** `organization_id` is not a centre with zero branches — it
+ * is a standalone centre, which is one branch: itself. `/api/branches` says the
+ * same thing in its own words, returning `{ branches: [thatCentre], plan:
+ * 'single' }` on exactly this case. Returning 0 here would render "Branches 0"
+ * on every ordinary single-site centre in the product, which is both wrong and
+ * the kind of wrong nobody re-checks once it is on screen.
+ *
+ * `null` is reserved for "the count did not come back", so the row can drop its
+ * figure instead of asserting one.
+ */
+export function resolveBranchCount(
+  organizationId: string | null | undefined,
+  orgCenterCount: number | null | undefined,
+): number | null {
+  if (!organizationId) return 1;
+  return orgCenterCount == null ? null : orgCenterCount;
+}
+
 /** How many paid add-ons the centre is on. Parent Pack is the only one today. */
 export function countAddOns(center: { parent_pack_enabled?: boolean | null }): number {
   return center.parent_pack_enabled ? 1 : 0;
@@ -108,12 +149,16 @@ export function countAddOns(center: { parent_pack_enabled?: boolean | null }): n
 export async function fetchCenterAccountMetrics(
   supabaseAdmin: SupabaseClient,
   centerId: string,
-  center: { parent_pack_enabled?: boolean | null },
+  center: { parent_pack_enabled?: boolean | null; organization_id?: string | null },
   invoiceCount: number,
 ): Promise<CenterAccountMetrics> {
   const since = new Date(Date.now() - ATTENDANCE_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString();
 
-  const [studentsRes, staffRes, groupsRes] = await Promise.all([
+  // `organization_id` comes off the centre row the caller already loaded, so the
+  // org query below only runs for a centre that actually belongs to one.
+  const organizationId = center.organization_id ?? null;
+
+  const [studentsRes, staffRes, groupsRes, orgCentersRes] = await Promise.all([
     supabaseAdmin
       .from('students')
       .select('id', { count: 'exact', head: true })
@@ -131,6 +176,15 @@ export async function fetchCenterAccountMetrics(
       .select('id')
       .eq('center_id', centerId)
       .eq('status', 'active'),
+    // A branch is a `centers` row sharing an `organization_id` — the same
+    // definition `/api/branches` GET uses, deliberately including its lack of an
+    // `is_test` filter so admin and the centre's own switcher cannot disagree.
+    organizationId
+      ? supabaseAdmin
+          .from('centers')
+          .select('id', { count: 'exact', head: true })
+          .eq('organization_id', organizationId)
+      : Promise.resolve({ count: null, error: null }),
   ]);
 
   const groupIds = ((groupsRes.data ?? []) as { id: string }[]).map((g) => g.id);
@@ -172,5 +226,11 @@ export async function fetchCenterAccountMetrics(
     addOnCount: countAddOns(center),
     attendanceRatePct,
     attendanceWindowDays: ATTENDANCE_WINDOW_DAYS,
+    branchCount: resolveBranchCount(
+      organizationId,
+      // An errored count arrives as null and stays null — the row drops its
+      // figure rather than reporting a zero the query never established.
+      orgCentersRes.error ? null : orgCentersRes.count,
+    ),
   };
 }

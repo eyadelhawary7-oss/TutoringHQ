@@ -14,6 +14,16 @@ import type { LucideIcon } from 'lucide-react';
 export interface SheetAction {
   id: string;
   label: string;
+  /**
+   * The design's `.al .s` — the second line under the action name. Every action
+   * in §04's frames carries one and it is never decorative: "Record payment /
+   * Owes 300 EGP", "Take attendance / 24 students", "Remove from center / Ends
+   * enrollment". It says either what the action will do or what the current
+   * value is, which is what lets someone pick without opening the record first.
+   * Optional because the primitive must not force a caller to invent one — an
+   * invented sub-line is worse than none.
+   */
+  sublabel?: string;
   icon: LucideIcon;
   onSelect: () => void;
   /** Renders the brass MANAGER tag. Presentational — does not gate anything. */
@@ -108,7 +118,14 @@ export default function ActionSheet({ open, onClose, title, subtitle, actions }:
                   }`}
                 >
                   <Icon className="h-5 w-5 shrink-0" aria-hidden />
-                  <span className="flex-1 text-base font-medium">{a.label}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-base font-medium">{a.label}</span>
+                    {a.sublabel && (
+                      <span className="mt-0.5 block text-sm text-[var(--color-muted)]">
+                        {a.sublabel}
+                      </span>
+                    )}
+                  </span>
                   {a.managerOnly && (
                     <span className="rounded-xs bg-[var(--color-sand)] px-2 py-1 text-xs font-bold uppercase tracking-wider text-[var(--color-brass)]">
                       MGR

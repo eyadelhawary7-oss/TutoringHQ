@@ -2,6 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
+import { ShieldCheck } from 'lucide-react';
+import { ListSkeleton } from '@/components/patterns';
+import { EmptyState } from '@/components/shared';
 import { supabase } from '@/lib/supabase';
 import { AdminSidebar } from '@/components/AdminSidebar';
 import PrivacyQueueHeader, {
@@ -194,10 +197,14 @@ export default function AdminPrivacyRequestsPage() {
           )}
 
           {loading ? (
-            <div className="text-sm text-[var(--color-text-secondary)]">{tc('loading')}</div>
+            /* §02 · the word "Loading" is not a loading state. This is a queue
+               of rows, so it takes the list skeleton. */
+            <ListSkeleton rows={4} />
           ) : visibleRows.length === 0 ? (
-            <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-6 text-center text-sm text-[var(--color-text-secondary)]">
-              {t('privacyRequestsEmpty')}
+            /* §01 quiet variant · an empty privacy queue is the good state and
+               nothing here creates a request, so no action and the muted tile. */
+            <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] py-4">
+              <EmptyState icon={ShieldCheck} title={t('privacyRequestsEmpty')} quiet />
             </div>
           ) : (
             <div className="overflow-x-auto rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)]">

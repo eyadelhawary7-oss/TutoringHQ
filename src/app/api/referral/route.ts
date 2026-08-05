@@ -3,6 +3,31 @@ import { requireCenterAuth } from '@/lib/centerAuth';
 import { getProcessingFeeConfig } from '@/lib/pricingConfig';
 import { resolveProcessingFeeAmount } from '@/lib/processingFee';
 
+import {
+  EARNED_STATUSES,
+  earnedBalance,
+  forfeitedBalance,
+  heldBalance,
+  paidBalance,
+  withdrawableBalance,
+} from '@/lib/referralCommissionStatus';
+
+interface CommissionRow {
+  id: string;
+  referral_id: string;
+  referred_center_id: string;
+  months_since_activation: number;
+  /** FRACTION, not percent: referral-automation writes 0.25 / 0.10 / 0.05. */
+  commission_rate: number;
+  referred_plan_fee: number;
+  commission_amount: number;
+  status: string;
+  hold_until: string | null;
+  paid_at: string | null;
+  period_month: string;
+  created_at: string;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const auth = await requireCenterAuth(request);
@@ -36,40 +61,48 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // referral_reward_records: monthly rewards (primary source)
-    const { data: rewardRecords } = await ctx.supabaseAdmin
-      .from('referral_reward_records')
-      .select('id, referral_id, referred_center_id, month_number, reward_percentage, base_amount, reward_amount, status, held_until, paid_at, period_month, created_at')
+    // `referral_commissions` — the canonical monthly commission ledger.
+    //
+    // D22: this read was `referral_reward_records`, whose only writer
+    // (POST /api/referrals/calculate-rewards) has no cron registration and no
+    // caller in src/, so every figure on this page was structurally 0.
+    // `referral_commissions` is written monthly by /api/cron/referral-automation
+    // — the only referral cron in vercel.json.
+    //
+    // Status vocabulary is the new table's: 'hold' | 'withdrawable' | 'paid' |
+    // 'forfeited'. The old table's 'pending' and 'held' both meant "not yet
+    // payable" and both map onto 'hold'; 'available' maps onto 'withdrawable'.
+    const { data: commissionRows } = await ctx.supabaseAdmin
+      .from('referral_commissions')
+      .select('id, referral_id, referred_center_id, months_since_activation, commission_rate, referred_plan_fee, commission_amount, status, hold_until, paid_at, period_month, created_at')
       .eq('referrer_center_id', centerId)
       .order('period_month', { ascending: false });
 
-    const records = rewardRecords || [];
-    const totalEarned = records.reduce(
-      (s: number, r: { reward_amount: number; status: string }) =>
-        s + (['available', 'held', 'paid', 'pending'].includes(r.status) ? Number(r.reward_amount ?? 0) : 0),
-      0
-    );
-    const available = records
-      .filter((r: { status: string }) => r.status === 'available')
-      .reduce((s: number, r: { reward_amount: number }) => s + Number(r.reward_amount ?? 0), 0);
-    const pending = records
-      .filter((r: { status: string }) => r.status === 'held' || r.status === 'pending')
-      .reduce((s: number, r: { reward_amount: number }) => s + Number(r.reward_amount ?? 0), 0);
-    const paidOut = records
-      .filter((r: { status: string }) => r.status === 'paid')
-      .reduce((s: number, r: { reward_amount: number }) => s + Number(r.reward_amount ?? 0), 0);
+    const records = (commissionRows || []) as CommissionRow[];
+
+    // Earned = what the centre holds or has been paid. 'forfeited' is explicitly
+    // NOT earned — it is commission lost when the referred centre failed to pay
+    // in full, and it is reported on its own line instead of being folded in.
+    const totalEarned = earnedBalance(records);
+    const available = withdrawableBalance(records);
+    const pending = heldBalance(records);
+    const paidOut = paidBalance(records);
+    const forfeited = forfeitedBalance(records);
 
     // Active referrals: group by referral
     const referralMap = new Map<string, { referred_center_id: string; status: string; months: number; monthlyReward: number; total: number }>();
     for (const ref of referrals || []) {
       const refId = ref.id as string;
       const refCenterId = ref.referred_center_id as string;
-      const refRecords = records.filter((r: { referral_id: string }) => r.referral_id === refId);
-      const monthCount = refRecords.length > 0 ? Math.max(...refRecords.map((r: { month_number: number }) => r.month_number)) : 0;
-      const monthlyReward = refRecords.length > 0
-        ? refRecords.reduce((s: number, r: { reward_amount: number }) => s + Number(r.reward_amount ?? 0), 0) / refRecords.length
-        : 0;
-      const total = refRecords.reduce((s: number, r: { reward_amount: number }) => s + Number(r.reward_amount ?? 0), 0);
+      const refRecords = records.filter((r) => r.referral_id === refId);
+      const monthCount = refRecords.length > 0 ? Math.max(...refRecords.map((r) => r.months_since_activation)) : 0;
+      // A forfeited month earned nothing (commission_amount 0), so it is excluded
+      // from the average rather than dragging the per-month figure down.
+      const earning = refRecords.filter((r) =>
+        (EARNED_STATUSES as readonly string[]).includes(r.status),
+      );
+      const total = earning.reduce((s, r) => s + Number(r.commission_amount ?? 0), 0);
+      const monthlyReward = earning.length > 0 ? total / earning.length : 0;
       referralMap.set(refId, {
         referred_center_id: refCenterId,
         status: ref.status as string,
@@ -92,17 +125,21 @@ export async function GET(request: NextRequest) {
         })
       : [];
 
-    // Reward history
-    const rewardHistory = records.map((r: { id: string; referred_center_id: string; referred_center_name?: string; month_number: number; reward_percentage: number; base_amount: number; reward_amount: number; status: string; held_until?: string; paid_at?: string; period_month: string }) => ({
+    // Commission history. Field names are the canonical column names — the old
+    // response used the retired table's names (month_number / reward_percentage /
+    // base_amount / reward_amount / held_until), which is exactly the dual
+    // vocabulary this change removes. Forfeited rows are RETAINED so the centre
+    // can see what it lost; the page renders them greyed as "expired".
+    const rewardHistory = records.map((r) => ({
       id: r.id,
       referred_center_id: r.referred_center_id,
       referred_center_name: centerNames[r.referred_center_id] ?? ',',
-      month_number: r.month_number,
-      reward_percentage: r.reward_percentage,
-      base_amount: r.base_amount,
-      reward_amount: r.reward_amount,
+      months_since_activation: r.months_since_activation,
+      commission_rate: r.commission_rate,
+      referred_plan_fee: r.referred_plan_fee,
+      commission_amount: r.commission_amount,
       status: r.status,
-      held_until: r.held_until,
+      hold_until: r.hold_until,
       paid_at: r.paid_at,
       period_month: r.period_month,
     }));
@@ -123,6 +160,7 @@ export async function GET(request: NextRequest) {
       available,
       pending,
       paidOut,
+      forfeited,
       processingFee,
       totalReferrals: referrals?.length ?? 0,
       activeReferrals,

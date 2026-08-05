@@ -22,7 +22,7 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import { KpiCard } from '@/components/shared';
+import { EmptyState, KpiCard } from '@/components/shared';
 import { QRCard } from '@/components/QRCard';
 import { PrintStatementModal } from '@/components/PrintStatementModal';
 import { AtRiskPanel } from '@/components/students/AtRiskPanel';
@@ -1427,37 +1427,42 @@ export default function StudentsPage() {
               </div>
             </div>
           ) : students.length === 0 ? (
-            /* §01 empty state: a 76×76 mint tile, an 18px title, a ~30ch body,
-               and the two buttons pinned below. The shared EmptyState cannot
-               produce this shape, so it is rendered inline in this branch only. */
-            <div className="flex min-h-[52vh] flex-col">
-              <div className="flex flex-1 flex-col items-center justify-center gap-2 px-8 text-center">
-                <div className="grid h-[76px] w-[76px] place-items-center rounded-3xl bg-[var(--color-mint)] text-[var(--color-accent-deep)]">
-                  <Users size={34} aria-hidden />
-                </div>
-                <h2 className="mt-2 text-lg font-semibold text-[var(--color-text-primary)]">
-                  {tEmpty('students.title')}
-                </h2>
-                <p className="max-w-[30ch] text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
-                  {tEmpty('students.description')}
-                </p>
-              </div>
-              <div className="flex flex-col gap-2.5 px-4 pb-4">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(true)}
-                  className="btn-lift flex h-[50px] w-full items-center justify-center gap-2 rounded-xl bg-teal-600 text-[15px] font-semibold text-white shadow-sm transition-all duration-150 hover:bg-teal-700 btn-press chq-focus"
-                >
-                  <UserPlus size={18} aria-hidden /> {tEmpty('students.action')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => router.push('/students/import')}
-                  className="btn-lift flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] text-[13px] font-semibold text-[var(--color-text-primary)] transition-all duration-150 btn-press chq-focus"
-                >
-                  <Upload size={18} aria-hidden /> {tEmpty('students.importAction')}
-                </button>
-              </div>
+            /* CROSS-FILE CONFLICT, resolved in favour of the pattern.
+               `Merged-Center-Students` §01 draws this tile at 76×76 / radius 24;
+               `Merged-Design-Patterns` §01 specifies 64×64 / radius 16. The
+               pattern file's masthead settles it outright: "SECTIONS 01 AND 02
+               ARE PATTERNS, NOT SCREENS … built once in the foundations pass and
+               reused everywhere. Do not reimplement them per screen." So the
+               per-screen redraw loses and the flagship roster uses the shared
+               component like everything else. The note this replaces claimed the
+               primitive "cannot produce this shape" — it can; the shape it could
+               not produce was the one the pattern file forbids. Both buttons are
+               kept because §01 allows exactly one primary plus one quiet
+               alternative, which is what import is. */
+            <div className="flex min-h-[52vh] flex-col justify-center">
+              <EmptyState
+                icon={Users}
+                title={tEmpty('students.title')}
+                description={tEmpty('students.description')}
+                action={
+                  <div className="flex flex-col gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setShowAddModal(true)}
+                      className="btn-lift flex h-[50px] w-full items-center justify-center gap-2 rounded-xl bg-teal-600 text-[15px] font-semibold text-white shadow-sm transition-all duration-150 hover:bg-teal-700 btn-press chq-focus"
+                    >
+                      <UserPlus size={18} aria-hidden /> {tEmpty('students.action')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => router.push('/students/import')}
+                      className="btn-lift flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] text-[13px] font-semibold text-[var(--color-text-primary)] transition-all duration-150 btn-press chq-focus"
+                    >
+                      <Upload size={18} aria-hidden /> {tEmpty('students.importAction')}
+                    </button>
+                  </div>
+                }
+              />
             </div>
           ) : (
             <div
@@ -1465,10 +1470,18 @@ export default function StudentsPage() {
               className={`transition-opacity duration-300 ${studentsStale ? 'opacity-70' : 'opacity-100'}`}
             >
               {filteredStudents.length === 0 ? (
-                <div className="card p-10 flex flex-col items-center gap-3 mt-4">
-                  <Users size={40} className="text-[var(--color-text-tertiary)]" aria-hidden />
-                  <p className="text-sm font-medium text-[var(--color-text-secondary)]">{ts('empty_title')}</p>
-                  <p className="text-xs text-[var(--color-text-tertiary)]">{ts('empty_subtitle')}</p>
+                /* §01 quiet variant · this is "your filter matched nothing",
+                   not "you have no students" — the roster is full, so it is not
+                   waiting on anyone and gets no action. Distinct copy from the
+                   real empty roster above, per §01's "do not reuse the same copy
+                   across screens". */
+                <div className="card mt-4">
+                  <EmptyState
+                    icon={Users}
+                    title={ts('empty_title')}
+                    description={ts('empty_subtitle')}
+                    quiet
+                  />
                 </div>
               ) : (
                 <>
@@ -2279,6 +2292,15 @@ export default function StudentsPage() {
           confirm affordance is a dead gesture. Only appears after a deliberate
           long-press (or the kebab's Select item). */}
       {bulkSelected.size > 0 ? (
+        /* NOT CONVERTED TO §05 `RecordActionBar`, and the reason is the
+           primitive's contract rather than effort. `RecordActionBar` requires
+           `onMore`, and §05's whole point is that More opens THE SAME sheet the
+           row's three-dot opens. A multi-select on this roster has exactly one
+           action — add the selected students to the card cart — so the More
+           button would open either nothing or a sheet of invented bulk actions.
+           Per the shared-primitive rule, that is a "the primitive cannot do what
+           this screen needs, say so" case, not a licence to fork it. Logged in
+           `design/PATTERN-ADOPTION-LEDGER.md`. */
         <div className="fixed start-0 end-0 bottom-[calc(56px+env(safe-area-inset-bottom,0px))] md:bottom-6 z-[70] flex justify-center px-4 pointer-events-none">
           <div className="pointer-events-auto flex items-center gap-3 rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] shadow-xl px-4 py-3 max-w-lg w-full">
             <span className="text-sm text-[var(--color-text-secondary)] flex-1 tabular-nums">

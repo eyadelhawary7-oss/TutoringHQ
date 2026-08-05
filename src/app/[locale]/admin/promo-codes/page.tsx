@@ -3,6 +3,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useRouter } from '@/i18n/routing';
+import { Ticket } from 'lucide-react';
+import { ListSkeleton } from '@/components/patterns';
+import { EmptyState } from '@/components/shared';
 import { supabase } from '@/lib/supabase';
 import { AdminSidebar } from '@/components/AdminSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
@@ -547,9 +550,13 @@ export default function AdminPromoCodesPage() {
               </h2>
               <div className="rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-1)] overflow-x-auto">
                 {loading ? (
-                  <p className="px-4 py-6 text-[var(--color-text-secondary)] text-sm">{tCommon('loading')}</p>
+                  /* §02 · a list is arriving; the skeleton shows its shape. */
+                  <div className="p-4"><ListSkeleton rows={3} /></div>
                 ) : requests.length === 0 ? (
-                  <p className="px-4 py-6 text-[var(--color-text-secondary)] text-sm">{t('promoRequestMyRequestsEmpty')}</p>
+                  /* §01 quiet variant · this admin has made no requests yet;
+                     the "request a code" control is the button above, so the
+                     empty state does not offer a second one. */
+                  <EmptyState icon={Ticket} title={t('promoRequestMyRequestsEmpty')} quiet />
                 ) : (
                   <table className="w-full text-sm min-w-[700px]">
                     <thead>
@@ -592,7 +599,9 @@ export default function AdminPromoCodesPage() {
               </h2>
               <div className="rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-1)] overflow-x-auto">
                 {pendingRequests.length === 0 ? (
-                  <p className="px-4 py-6 text-[var(--color-text-secondary)] text-sm">{t('promoRequestsEmpty')}</p>
+                  /* §01 quiet variant · an empty approval queue is the good
+                     state — nothing is waiting on the super-admin. */
+                  <EmptyState icon={Ticket} title={t('promoRequestsEmpty')} quiet />
                 ) : (
                   <table className="w-full text-sm min-w-[760px]">
                     <thead>
@@ -731,9 +740,12 @@ export default function AdminPromoCodesPage() {
           {!managerView ? (
             <section className="rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-1)] overflow-x-auto">
               {loading ? (
-                <p className="px-4 py-6 text-[var(--color-text-secondary)] text-sm">{tCommon('loading')}</p>
+                /* §02 · a list is arriving; the skeleton shows its shape. */
+                <div className="p-4"><ListSkeleton rows={4} /></div>
               ) : codes.length === 0 ? (
-                <p className="px-4 py-6 text-[var(--color-text-secondary)] text-sm">{t('promoCodesEmpty')}</p>
+                /* §01 quiet variant · the create-code control lives in this
+                   section's own header, so the empty state does not repeat it. */
+                <EmptyState icon={Ticket} title={t('promoCodesEmpty')} quiet />
               ) : (
                 <table className="w-full text-sm min-w-[700px]">
                   <thead>
