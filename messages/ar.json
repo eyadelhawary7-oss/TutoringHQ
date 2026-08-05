@@ -9172,7 +9172,14 @@
         "shareWhatsapp": "اشارك على واتساب",
         "waMessage": "انضم لمجموعة {group} على TutoringHQ: {url}",
         "note": "الطالب بيضغط الرابط ويتسجل لوحده."
-      }
+      },
+      "perClassLabel": "للحصة",
+      "statStudents": "الطلاب",
+      "statPerClass": "للحصة",
+      "headerSummary": "{count} طالب · {fee} للحصة",
+      "recentClasses": "آخر الحصص",
+      "seeAllClasses": "عرض الكل",
+      "presentCount": "{count} حاضر"
     },
     "groupTabs": {
       "tabOverview": "نظرة عامة",
@@ -9263,7 +9270,15 @@
       "contactStudent": "الطالب",
       "contactParent": "ولي الأمر",
       "callAction": "اتصال",
-      "messageAction": "رسالة واتساب"
+      "messageAction": "رسالة واتساب",
+      "joinedOn": "انضم {date}",
+      "enrolledHeading": "المسجلون · {count}",
+      "enrolledSub": "اضغط الاسم لعرض تفاصيله.",
+      "queueNote": "طلبوا الانضمام عبر رابط هذه المجموعة. الموافقة تضيفهم إلى {group} فقط.",
+      "queueOtherGroupsNote": "طلبات مجموعاتك الأخرى تبقى في مجموعاتها. كل رابط يملأ مجموعته وحدها.",
+      "more": "المزيد",
+      "openStudent": "فتح ملف الطالب",
+      "rowActions": "إجراءات {name}"
     },
     "notes": {
       "toggle": "ملاحظة خاصة",

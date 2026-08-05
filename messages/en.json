@@ -9172,7 +9172,14 @@
         "shareWhatsapp": "Share on WhatsApp",
         "waMessage": "Join the {group} group on TutoringHQ: {url}",
         "note": "Students tap the link, verify their number, and they're enrolled automatically."
-      }
+      },
+      "perClassLabel": "per class",
+      "statStudents": "Students",
+      "statPerClass": "Per class",
+      "headerSummary": "{count} students · {fee} per session",
+      "recentClasses": "Recent classes",
+      "seeAllClasses": "See all",
+      "presentCount": "{count} present"
     },
     "groupTabs": {
       "tabOverview": "Overview",
@@ -9263,7 +9270,15 @@
       "contactStudent": "Student",
       "contactParent": "Parent",
       "callAction": "Call",
-      "messageAction": "Message on WhatsApp"
+      "messageAction": "Message on WhatsApp",
+      "joinedOn": "Joined {date}",
+      "enrolledHeading": "Enrolled · {count}",
+      "enrolledSub": "Tap a name for their details.",
+      "queueNote": "These asked to join through this group's link. Approving adds them to {group} only.",
+      "queueOtherGroupsNote": "Requests for your other groups sit in those groups. Each link only ever fills the group it belongs to.",
+      "more": "More",
+      "openStudent": "Open student",
+      "rowActions": "Actions for {name}"
     },
     "notes": {
       "toggle": "Private note",
