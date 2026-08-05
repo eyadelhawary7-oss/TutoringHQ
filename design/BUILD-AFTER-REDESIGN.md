@@ -832,6 +832,45 @@ left for later, it is the deliberate final state unless a pause feature is separ
 - **Touches:** `src/app/[locale]/pricing/PricingPageClient.tsx`, `src/app/api/pricing/public-config/route.ts`, `src/hooks/usePublicWhatsappPackPrice.ts` — all built. The 5 remaining rows touch nothing yet.
 - **Blocked by:** Eyad's call on which of the remaining 5 add-ons ship as real, chargeable products.
 
+**Amended 5 August 2026 — the sibling half of this entry (the "What changes with size" rows) is now
+BUILT, partially, and this entry's own claim about it needed narrowing.** The prior wording said the
+diff rows "were also dropped for the identical reason." That was true of three of the five drawn rows
+and wrong about two. Re-checked live before touching anything, project `lczmjpnbuhnsislcvzar`:
+
+| drawn row | live source | this pass |
+|---|---|---|
+| Students a week (center) | `pricing_plans.weekly_student_limit` | **built** |
+| Active students a month (teacher) | `platform_config.teacher_subscription_plan*.student_limit` | **built** (relabelled from the design's "a week" — the live cap is a monthly active-student count, the same correction `capLabelTeacher` already carried) |
+| Advanced analytics (teacher) | `TeacherPlanDef.proFeatures`, enforced by `isProOrAbove()` in 14 files | **built** |
+| Branches (center) | none | withheld |
+| Team seats (center) | none | withheld |
+| WhatsApp notifications a month | none that is honoured | withheld |
+
+- **The two withheld center rows, verified live 5 Aug 2026 rather than inherited:** `pricing_plans`
+  has exactly nine columns (`id, plan_key, arabic_name, english_name, weekly_student_limit,
+  cost_per_student, setup_fee, is_active, all_in_price`), and a schema-wide
+  `information_schema.columns` search for `%seat%`, `%max_branch%`, `%branch_limit%`,
+  `%max_teacher%`, `%max_staff%`, `%notification_quota%`, `%message_limit%` and `%wa_limit%` returns
+  **zero rows** across all of `public`. **D8** independently confirms the seat side from the other
+  direction (`centers.max_teachers` does not exist; every center is invisibly capped at 2).
+- **The withheld WhatsApp row is the interesting one, because the data DOES exist and is still not
+  publishable.** `platform_config.teacher_subscription_plan_pro` and `_scale` both carry
+  `blast_credits_monthly: 100` (read live this pass), mirrored onto
+  `TeacherPlanDef.blastCreditsMonthly`. But `grep -rn "blastCreditsMonthly\|blast_credits_monthly"
+  src/` returns **four hits, all four inside `src/lib/teacherPlans.ts`'s own definition** — zero
+  readers, zero meters, zero enforcement. Printing "100 WhatsApp notifications a month" would
+  advertise an allowance nothing grants: the same class of claim as **D34**, not a display gap. This
+  is the one row where "the column exists" and "the section can honestly ship" come apart.
+- **One word changed from the design, deliberately:** the design's negative label for Advanced
+  analytics is `no: 'Add-on'` / `'إضافة'`, which asserts it is purchasable. It is not — **D13** is
+  closed "no purchase flow, parked until AI features ship" — so the negative reading renders as "Not
+  included" / "مش داخلة". Same single-word truthfulness correction already adjudicated for **F30**.
+- **Add-ons unchanged: still 1 of 6.** No new backing config appeared. Confirmed live 5 Aug:
+  `platform_config` holds no `branch_addon.monthly_price_egp` (the key `D31`'s add-branch notice
+  reads), no team-seat price, no standalone-analytics price and no instant-payout price; there is no
+  `pricing_addons` table. Extra branch stays blocked on **D23**, team seat on **D8**, standalone
+  analytics on **D13**, "WhatsApp packs from 200" on **D5**, instant payout on **V4**.
+
 ## D30 · A marketing claim the design's own header calls "banned by your own rules" is still live — CLOSED, PR #314; re-verified live 4 August 2026
 - **What:** `ComparisonTable`'s row8 (the default 8-row set rendered on `/center`) showed an unsourced "8–12 hours saved" admin-time claim. `Merged-Public-Marketing.html`'s own header copy for this section explicitly states this class of claim was removed as "banned by your own rules."
 - **Closed:** PR #314 deleted the old `ComparisonTable`/`LandingFAQ` components wholesale (`src/components/landing/ComparisonTable.tsx`, -217 lines) and replaced them with `landing.compare` (6 rows, `CentersClient.tsx`) and `teacherLanding.compare` (6 rows, `TeachersClient.tsx`), neither of which carries a time-savings row of any kind. **Re-verified live this pass, 4 August 2026:** read both compare objects in full from `messages/en.json` — 6 rows each (attendance, telling the parent, sending a way to pay, concurrent staff, backup, receipts) — and grepped `messages/en.json`/`ar.json` and every file under `src/app/[locale]/{page,SplashClient,centers,teachers,pricing,talk-to-us}*` and `src/components/marketing/` for "hour"/"ساعة" in a savings context: the only surviving "hours saved" string anywhere in the repo is `onboarding/page.tsx`'s `roiHoursSaved` — a different screen entirely (Center-Setup's Onboarding, `D28` territory, not a Public-Marketing file).
@@ -881,6 +920,44 @@ rather than deleted so nobody re-opens a layout question that already shipped.
 - **Found:** 4 August 2026, Public-Marketing re-survey (this pass).
 - **Touches:** `messages/en.json`/`messages/ar.json`'s `pricingPage.same.items[6]`. No schema. Overlaps the already-protected `Center-Money`/`Teacher-Money`/`Verification-Payouts` files and the already-logged **V4**.
 - **Blocked by:** V1, V3 (same blockers as V4) plus Eyad's call on what, if anything, truthfully replaces the claim in the meantime.
+
+**Amended 5 August 2026 — one supporting detail in this entry was wrong, and the claim reaches two
+more surfaces than it recorded. The conclusion survives both corrections; the reasoning does not.**
+
+- **Correction 1 — "zero readers/writers in `src/`" is false.** Re-ran the grep this entry cites
+  rather than trusting it: `payout_destination` has **10 hits across four files** in
+  `src/lib/collectionPayout/` (`enableCollection.ts` reads it from `teacher_profiles` at
+  `enableCollection.ts:152`; `requestPayout.ts` and `verificationGate.ts` carry it as a named refusal
+  cause). There is a whole built payout engine — `src/lib/collectionPayout/` (10 modules:
+  `payoutEngine`, `payoutStates`, `payoutCaps`, `payoutAging`, `collectionMath`, `money`, …), plus
+  `POST /api/payouts/request`, `/api/admin/payouts`, `/api/admin/center-payouts/[id]/approve` and
+  `/release`, `/api/webhooks/payout-provider` and a `payout-reconciliation` cron. The right
+  description is **built but switched off at one config point**, not **nonexistent**.
+- **Why the marketing claim is still untrue today, on evidence rather than on the old wording:** the
+  engine refuses at gate 1 before verification is even consulted.
+  `src/lib/collectionPayout/config.ts` — which its own header declares "THE ONE CONFIG POINT" and
+  which is the only module allowed to read these values — resolves six
+  `COLLECTION_PAYOUT_RAIL_*` credentials that ship as placeholders because Paymob Payouts onboarding
+  has not started, and the platform switch `digital_student_fee_collection.enabled`, **read live this
+  pass and holding `false`**. Gate 2 is verification (V1, dormant); gate 3 is a payout destination
+  (`teacher_profiles.payout_destination`, 0 rows populated). So no center and no teacher can withdraw
+  today, and the bullet still may not ship — but for a reason that is checkable, and that changes the
+  moment the credentials land rather than requiring a build.
+- **Correction 2 — the same claim is live on two further surfaces this entry never named**, both
+  outside `/pricing`:
+  - `landing.centerOnly.rows[3]` on **`/centers`** — "Teacher payouts · *Split to each teacher's own
+    account, or land in yours. Your call.*" This is a stronger claim than `/pricing`'s: it describes
+    a specific split-destination mechanism. That mechanism is **X1** (Center → teacher split payouts,
+    deferred), sitting on top of the same dormant rail, and on top of **D16**'s dormant center-class
+    commission engine — so even the *amount* to split is not computed today.
+  - `splash.pair.center.pills[2]` on **`/`** — a bare "Teacher payouts" pill. Weakest of the three
+    (it names a feature area rather than asserting a mechanism), but the same root.
+- **Not rewritten this pass, and the reason is the same one this entry already gives:** there is no
+  narrower true replacement to substitute, the wording that replaces it *is* the product call, and
+  all three surfaces describe money movement reserved to the protected `Center-Money` /
+  `Teacher-Money` / `Verification-Payouts` files. Three strings, one decision.
+- **Touches, amended:** `pricingPage.same.items[6]`, `landing.centerOnly.rows[3]`,
+  `splash.pair.center.pills[2]` in both `messages/en.json` and `messages/ar.json`.
 ## D33 · Analytics month-end forecast tile and projection bar have no decided extrapolation method
 - **What:** `Merged-Center-Insight` §01's EN-overview frame draws a `ktile.fc` "Projected · month-end" KPI (21,500 EGP, badged "forecast") and a dashed sixth bar on the revenue chart ("Jul*", "* projected from current pace") alongside the five actual months. Both are a month-end estimate derived from partial-month data, not a stored or historical figure.
 - **Found:** 4 August 2026, `Center-Insight` parity pass. Read `/api/analytics/revenue/route.ts` in full (all fields it returns: `mrr`, `outstanding_total`, `collection_rate`, `avg_payment_per_student`, `revenue_by_group`, `mrr_trend`, `payment_method_distribution`, `attendance_heatmap`, `aging_report`, `income_by_month`, `expenses_by_month`, `pnl_months`) and grepped the whole `analytics` route tree plus `(dashboard)/analytics/page.tsx` and every chart component it imports for `forecast`/`project` — zero matches anywhere. This is not a partially-built feature; no code path computes a projection today.

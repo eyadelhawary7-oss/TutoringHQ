@@ -49,6 +49,15 @@
     "teacherNotePro": "Advanced analytics is included at this size.",
     "teacherNoteScale": "The largest flat price. Past this it grows with you.",
     "teacherNoteScalePlus": "No ceiling. Every student you add costs less per head than the one before.",
+    "diffs": {
+      "heading": "What changes with size",
+      "studentsPerWeek": "Students a week",
+      "activeStudentsPerMonth": "Active students a month",
+      "noCeiling": "No ceiling",
+      "advancedAnalytics": "Advanced analytics",
+      "included": "Included",
+      "notIncluded": "Not included"
+    },
     "same": {
       "kick": "The same either way",
       "heading": "There is no cheaper version of the software.",
