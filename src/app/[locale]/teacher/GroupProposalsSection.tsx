@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Handshake, Loader2 } from 'lucide-react';
+import { ListSkeleton } from '@/components/patterns';
+import { EmptyState } from '@/components/shared';
 import { supabase } from '@/lib/supabase';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import { formatCurrency, formatDate, formatNumber } from '@/lib/formatNumber';
@@ -583,9 +585,13 @@ export default function GroupProposalsSection({
       )}
 
       {loading ? (
-        <div className="h-16 animate-pulse rounded-lg bg-[var(--color-surface-2)]" />
+        /* §02 · a list is arriving, so it takes the list skeleton rather than a
+           single grey bar that matches nothing that follows it. */
+        <ListSkeleton rows={2} />
       ) : proposals.length === 0 ? (
-        <p className="text-sm text-[var(--color-text-secondary)]">{t('empty')}</p>
+        /* §01 quiet variant · a proposal arrives from a center; the teacher
+           cannot create one here, so there is no action to offer. */
+        <EmptyState icon={Handshake} title={t('empty')} quiet />
       ) : (
         <ul className="flex flex-col gap-3">
           {proposals.map((p) => {
@@ -612,18 +618,6 @@ export default function GroupProposalsSection({
                         {t('attachBadge')}
                       </span>
                     )}
-                    <p className="mt-1 text-xs text-[var(--color-text-muted)]">
-                      {t('studentRate')}:{' '}
-                      <span className="font-mono font-semibold">{formatCurrency(p.feePerClass, locale)}</span>
-                    </p>
-                    {p.latestOffer && (
-                      <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">
-                        {t('youEarn')}:{' '}
-                        <span className="font-mono font-semibold text-[var(--color-teal-deep)]">
-                          {formatCurrency(p.feePerClass - p.latestOffer.cutEgp, locale)}
-                        </span>
-                      </p>
-                    )}
                     {p.targetGroupId && (
                       <p className="mt-1 text-xs text-[var(--color-text-muted)]">
                         {t('studentCountLabel')}:{' '}
@@ -646,14 +640,55 @@ export default function GroupProposalsSection({
                   </div>
                 </div>
 
+                {/* `Merged-Teacher-Setup` §02 draws the money on a proposal as
+                    THREE cells, not a stack of lines: the student rate, what
+                    the teacher earns, and what the center keeps. All three are
+                    the same live flat-cut arithmetic already used elsewhere on
+                    this screen (fee_per_class and group_proposal_offers.cut_egp
+                    are both populated) - no new field, no new endpoint.
+                    "You earn" and "Center keeps" need a standing offer to be
+                    true, so with no offer on the table only the rate is drawn
+                    rather than a subtraction against an assumed cut. */}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <div className="min-w-[92px] flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 py-2">
+                    <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--color-text-muted)]">
+                      {t('studentRate')}
+                    </p>
+                    <p className="num mt-1 text-sm font-bold text-[var(--color-text-primary)]">
+                      {formatCurrency(p.feePerClass, locale)}
+                    </p>
+                  </div>
+                  {p.latestOffer && (
+                    <>
+                      <div className="min-w-[92px] flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 py-2">
+                        <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--color-text-muted)]">
+                          {t('youEarn')}
+                        </p>
+                        <p className="num mt-1 text-sm font-bold text-[var(--color-teal-deep)]">
+                          {formatCurrency(p.feePerClass - p.latestOffer.cutEgp, locale)}
+                        </p>
+                      </div>
+                      <div className="min-w-[92px] flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 py-2">
+                        <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--color-text-muted)]">
+                          {t('centerKeeps')}
+                        </p>
+                        <p className="num mt-1 text-sm font-bold text-[var(--color-text-primary)]">
+                          {formatCurrency(p.latestOffer.cutEgp, locale)}
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
+                {/* Provenance of the figures above - who last moved and when.
+                    Kept as its own line: the three cells say what the numbers
+                    are, this says whose offer they came from. */}
                 {p.latestOffer && (
-                  <p className="mt-2 text-sm text-[var(--color-text-primary)]">
-                    {t('latestOffer')}:{' '}
-                    <span className="font-mono font-semibold">{formatCurrency(p.latestOffer.cutEgp, locale)}</span>{' '}
-                    <span className="text-xs text-[var(--color-text-muted)]">
-                      ({p.latestOffer.madeBy === 'teacher' ? t('byTeacher') : t('byCenter')},{' '}
-                      {formatDate(p.latestOffer.createdAt, locale)})
-                    </span>
+                  <p className="mt-1.5 text-xs text-[var(--color-text-muted)]">
+                    {t('latestOffer')}
+                    {': '}
+                    {p.latestOffer.madeBy === 'teacher' ? t('byTeacher') : t('byCenter')}
+                    {' · '}
+                    {formatDate(p.latestOffer.createdAt, locale)}
                   </p>
                 )}
                 {p.status === 'open' && (
@@ -729,6 +764,27 @@ export default function GroupProposalsSection({
 
                 {counterFor === p.id && p.status === 'open' && (
                   <>
+                    {/* `Merged-Teacher-Setup` §02's counter sheet opens on a
+                        "Their offer" summary stated in the teacher's own terms
+                        — what THEY earn, not the cut. Rendered around the
+                        shared CounterOfferForm, never inside it: that form is
+                        also the center console's (`GroupProposalsTab`), whose
+                        own design (`Merged-Center-Setup`) states the counter as
+                        the center's cut. See the PR note. */}
+                    {p.latestOffer?.madeBy === 'center' && (
+                      <div className="mt-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-4 py-3">
+                        <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--color-text-muted)]">
+                          {t('theirOffer')}
+                        </p>
+                        <p className="num mt-1 text-base font-bold text-[var(--color-text-primary)]">
+                          {t('youEarn')}{' '}
+                          {formatCurrency(p.feePerClass - p.latestOffer.cutEgp, locale)}{' '}
+                          <span className="text-xs font-medium text-[var(--color-text-muted)]">
+                            {t('perStudent')}
+                          </span>
+                        </p>
+                      </div>
+                    )}
                     <CounterOfferForm
                       counterCut={counterCut}
                       setCounterCut={setCounterCut}
@@ -744,6 +800,21 @@ export default function GroupProposalsSection({
                         {t('counterAutonote', {
                           fee: formatCurrency(p.feePerClass, locale),
                           keep: formatCurrency(Number(counterCut), locale),
+                        })}
+                      </p>
+                    )}
+                    {/* The design's one-line offer-history strip under the
+                        sheet, phrased from the teacher's side. */}
+                    {p.latestOffer?.madeBy === 'center' && (
+                      <p className="mt-3 flex items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-4 py-2.5 text-xs text-[var(--color-text-secondary)]">
+                        <span
+                          className="h-2 w-2 shrink-0 rounded-pill bg-[var(--color-brass)]"
+                          aria-hidden
+                        />
+                        {t('offeredYouLine', {
+                          center: p.centerName ?? t('thisCenter'),
+                          amount: formatCurrency(p.feePerClass - p.latestOffer.cutEgp, locale),
+                          date: formatDate(p.latestOffer.createdAt, locale),
                         })}
                       </p>
                     )}

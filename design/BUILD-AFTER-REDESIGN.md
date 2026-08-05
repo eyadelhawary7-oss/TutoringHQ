@@ -342,6 +342,8 @@ resolve — this entry describes a bug that was already fixed before it was logg
 - **Source:** `DATA-GAPS.md` §0.2. Marked absent, then present, then present-but-orphaned — **check the readers, not just the schema.**
 - **Re-confirmed, 31 July 2026 (Center-WhatsApp survey).** `center_message_templates` still has zero application-code references anywhere in `src` — grepped fresh, not assumed. The live `/whatsapp` route reads `wa_meta_templates` instead (a different table entirely — Meta's own approval mirror, `status` CHECK-constrained to PENDING/APPROVED/REJECTED/IN_REVIEW, no `enabled`/`auto_send` column at all). Still stuck exactly as described; nothing to build until this decision lands.
 - **Re-confirmed again, 4 August 2026 (Center-WhatsApp parity pass, live catalog query not repo grep this time).** `select count(*) from center_message_templates` → 0 rows, live, right now. `information_schema.columns` for `wa_meta_templates` confirms exactly `id, template_name, category, status, variables_count, created_at, updated_at` — still no `enabled`/`auto_send` anywhere on the table the screen actually reads. Nothing changed since 31 July; nothing built here this pass either.
+- **Re-confirmed a third time, 4 August 2026 (Center-WhatsApp §01 structure build, PR #347).** Same two live queries, same two answers — `center_message_templates` at 0 rows, `wa_meta_templates` at those seven columns and no others. **What changed is what D4 now blocks, precisely:** §01 was otherwise built out this pass, so D4 is no longer "the whole screen is stuck", it is exactly three drawn affordances — the topbar **`+` add-template** button, the row's **Edit** chip, and the preview sheet's **Send automatically** toggle. All three need a per-center, center-writable template row carrying `message_body` + `auto_send`; the table this screen reads has neither column. Everything else §01 draws is now on screen. The remaining decision is unchanged and still Eyad's: adopt the orphan table, or design the auto-send feature properly first.
+- **A related finding, not part of the decision but worth recording because it looks like free data.** `wa_meta_templates.variables_count` is a real column and is already selected by `whatsapp/page.tsx`, so it reads as a rendering opportunity. It is unreliable: live, `chq_parent_welcome` and `chq_parent_absence` both report `variables_count = 0` while their stored bodies each carry two `{{…}}` placeholders. It is deliberately still not rendered anywhere. If D4 ever lands, do not trust this column as the variable count — derive tokens from the body, which is what the preview sheet already does.
 
 ## D5 · WhatsApp Pack as a one-time top-up
 - **What:** Replace the per-parent monthly pack with a one-time credit that never expires.
@@ -351,6 +353,7 @@ resolve — this entry describes a bug that was already fixed before it was logg
 - **Blocks:** D6.
 - **Re-confirmed, 31 July 2026 (Center-WhatsApp survey), with the exact live numbers.** Subscription side: `PACK_PRICE_PER_PARENT = 12` EGP/parent/month (`src/lib/parentPack.ts:8`). Blast side: `BLAST_PRICE_PER_PARENT_INCLUSIVE = 9.8` EGP/parent per announcement, capped at 2/month (hardcoded independently in three places), gated by a plan-tiered monthly allowance (`ANNOUNCEMENT_CAPS`, nano 700 through top_centers 99999). None of it maps to the design's per-message credit tiers (200 msgs/200 EGP, 1,000/750, 5,000/2,500, custom by volume) or its "never expires, carries over" balance framing. §03 (Custom Flow) is the same model's custom-amount extension and is confirmed absent from live code by exhaustive grep — building it first would mean building the custom-amount UI for a pricing model (§02) that doesn't exist yet. Also found, independent of this decision: the announcement route's own stored audit breakdown (`base_amount` 6.72 × `service_fee` 6% × `vat` 14% ≈ 8.10) does not sum to the 9.8 actually charged — a pre-existing internal inconsistency in the current model, worth a look whenever D5 is decided either way.
 - **Re-confirmed, 4 August 2026 (Center-WhatsApp parity pass).** Re-read `WhatsAppPackClient.tsx` and `parentPack.ts` fresh rather than trusting the 31 July note: same two constants, same shape, still a monthly per-parent subscription plus a capped announcement blast with a single running `announcement_balance` column — nothing resembling the design's fixed-tier one-time top-up (§02) or its tap-to-custom-amount flow (§03) exists anywhere in `src`. Not built this pass, same reason as before.
+- **Re-confirmed against the live catalog, 4 August 2026 (Center-WhatsApp §01 structure build, PR #347) — this time by column list rather than by reading the client.** Every pack-adjacent column on `centers`, pulled live: `announcement_balance`, `announcement_balance_updated_at`, `announcement_cap`, `announcement_price_per_blast`, `credit_balance`, `credit_reserved`, `pack_approved_at`, `pack_custom_invoice_minimum`, `pack_disabled_at`, `pack_months_without_invoice`, `pack_pending_balance`, `pack_price_per_parent`, `pack_rejection_reason`, `pack_request_status`, `pack_requested_at`, `parent_pack_activated_at`, `parent_pack_active_parents`, `parent_pack_enabled`, `whatsapp_opted_in`. **There is no per-message credit balance column, in any flavour.** That is the specific thing §02 cannot be built without: its hero draws a *message count* remaining, and its segmented control draws **two** such counts that cannot be spent on each other. Neither exists, and neither does a per-message price — `announcement_price_per_blast` is per blast, `pack_price_per_parent` is per parent per month. Building §02's hero, its Notifications/Promotions split or its 200/1,000/5,000 tier list would mean inventing both a balance and a price, so §02 stayed at 0/5 and §03 (the same model's custom-amount extension) at 0/4 while §01 was built out around them. Unchanged decision: this is a change to what an existing customer is charged, and it is Eyad's.
 
 ## D6 · Teacher WhatsApp screen and message allowance
 - **What:** Balance, what used it, the template list, and a 3-tier pack purchase (200/1,000/5,000
@@ -517,6 +520,7 @@ resolve — this entry describes a bug that was already fixed before it was logg
 - **Build:** pick one table as canonical and repoint the other side. Repointing `/api/referral` and `/api/referrals/payout` at `referral_commissions` (matching the admin side and the live cron) is the smaller change; retiring `referral_reward_records` and `calculate-rewards` entirely is the alternative. Either way, R6's rate/countdown display should be built on top of whichever table survives this decision, not before.
 - **Touches:** money.
 - **Blocked by:** Eyad's decision on which table is canonical.
+- **Re-verified live, 5 August 2026, `Center-Insight` BUILD pass — unchanged, and §03 was therefore built nothing.** Two independent checks, both run this pass rather than trusted from above: (a) `src/app/api/referral/route.ts` still selects `.from('referral_reward_records')` — the read that feeds every figure on `/{locale}/referrals`; (b) live row counts against project `lczmjpnbuhnsislcvzar`: `referrals` **0**, `referral_commissions` **0**, `referral_reward_records` **0**, `payout_requests` **0** — the same all-zero picture as 31 July, so nothing has started flowing that would force the decision. §01 and §02 were built out substantially in this pass; §03 was left exactly as it stands, because every remaining design element on it (the recurring-income hero, the per-referral rate/countdown cards, the referral-detail rate schedule) hangs off this table. R6's own note — "adding a rate/countdown display on top of a permanently-empty table would dress up a broken pipe as a working feature" — is the reason, and it was re-read before deciding, not after.
 
 ## D23 · Adding a branch silently clones the parent's full plan price — there is no "extra branch" add-on
 - **What:** `Merged-Center-Groups` §04 draws "Extra branch · 199 EGP/mo · billed via Paymob" as a flat add-on charge.
@@ -643,6 +647,8 @@ whose core Add-branch flow sits on top of this unresolved billing question.
 - **Build:** pick one commission model for center-run classes — the live flat-cut negotiation model (`fee_per_class − center_cut_egp`, already surfaced in proposals) or a percentage-split model (matching the unused `teacher_net` / `snap_teacher_pct` / `teacher_split_pct` columns) — and wire a real finish-and-bill path for `kind = 'center'` sessions. Until decided, the hero and tiles are left exactly as they are: honestly reading real (zero) data rather than being restyled to look more finished than the product is.
 - **Touches:** money.
 - **Blocked by:** Eyad's decision on which commission model to build and wire.
+- **Reconfirmed 4 August 2026 (Teacher-Setup structural build, PR #344), with the hero now rebuilt around it.** `select count(*) from transactions where kind='center_fee'` → **0**, against **3** transaction rows in the whole table; `centers` has **2** rows, both `is_test = true`, **0** non-test. Unchanged since 29 July. The §02 hero was rebuilt this pass to the design's shape — the shared `.money-hero` surface plus the design's This month / All time footer — because the *shape* was a real structural gap and the *arithmetic* is not this entry's blocker to resolve. The all-time stat is fed from the already-live `earnedAllTime` on `/api/teacher/center-attendance`, and is **omitted entirely rather than defaulted to 0** while unknown, precisely so it cannot be confused with the genuine zero this entry describes. Net effect for Eyad: the hero is now correctly shaped and still correctly empty. Nothing here narrows the decision — it is still flat-cut vs percentage-split.
+- **One extra consequence, surfaced by this pass and worth naming before the decision is made:** the same open question blocks a purely cosmetic-looking fix elsewhere. `Merged-Teacher-Setup` §02's counter sheet states the teacher's counter as **"you earn per student" in EGP**; `Merged-Center-Setup`'s Requests tab states the same control as **"Your counter · center's cut" in percent**. Both are rendered by one shared component (`src/components/group-proposals/CounterOfferForm.tsx`, two consumers, confirmed by grep), which today uses EGP-cut for both. Whichever commission model wins here also decides which of those two framings the shared control should carry — so the counter-sheet redesign is not an independent restyle and was deliberately not forked locally.
 
 ## D17 · `JoinCenterCard`'s "Share your profile" tab links to a page that does not exist
 - **What:** the "Share your profile" tab renders a link and QR code at `https://tutoringhq.app/teacher/profile/<teacherId>` for a center owner to open and add the teacher directly.
@@ -652,6 +658,28 @@ whose core Add-branch flow sits on top of this unresolved billing question.
 - **Build:** a public, unauthenticated teacher-profile page a center owner can open from the link or QR. A new page, not a restyle — same class of hole as R9 (Teacher Link Rejection).
 - **Touches:** none to build the page itself; once it exists, whatever "add this teacher" action it offers touches account state and comes back to Eyad then.
 - **Blocked by:** Eyad's decision on whether/when to build the page. Left as-is in the meantime — it matches the design, and hiding a designed feature is itself a decision beyond restyle scope.
+- **Reconfirmed 4 August 2026 (Teacher-Setup structural build, PR #344).** Re-read `JoinCenterCard.tsx` directly: `PROFILE_BASE` is still the literal `'https://tutoringhq.app/teacher/profile'` and the share tab still renders both a copyable link and a QR at `${PROFILE_BASE}/${teacherId}`. Re-globbed the whole app-router tree: still no `teacher/profile/[…]` page anywhere under `src/app/[locale]/`. Unchanged, still a 404, still Eyad's call.
+
+## D36 · The verified-state Payout details section needs three columns `teacher_profiles` does not have
+- **What:** `Merged-Teacher-Setup` §01's verified frame replaces "Payment details" (where parents pay the teacher directly) with **"Payout details"** — Account holder ("Matches your verified ID"), Bank, and IBAN, plus the Thursday-cycle explainer. This is the file's one remaining structural hole, and the only reason its coverage is 15/16 rather than 16/16.
+- **Drawn in:** `Merged-Teacher-Setup` §01, verified frame (EN and AR).
+- **Found:** 29–31 July 2026 as the un-itemised half of the "0/2" V1 gap; **promoted to its own entry 4 August 2026** (PR #344) because its sibling half — the collect-payments toggle — has since shipped (`e7f5dd20`, PR #322) and the two no longer share a blocker. The toggle needed Valify state; this needs schema.
+- **Evidence, live:** `select column_name from information_schema.columns where table_schema='public' and table_name='teacher_profiles'` returns **24 columns**, listed in full in the PR. There is **no `iban`, no `bank_name`, no `account_holder`, no `payout_name_matches`**. The nearest thing is `payout_destination` (jsonb) — which is entirely dormant (V4: zero readers, zero writers, `grep -rl "payout_destination" src/` returns nothing) and is a *destination channel*, not the three labelled fields the design draws.
+- **Exactly what is needed:** three columns on `teacher_profiles` — an account-holder name, a bank identifier, and an IBAN — or a decision to model them inside the existing `payout_destination` jsonb instead. **Not written, not applied**, per the standing rule that anything needing a new column stops here.
+- **Why it is not just a schema question:** these are payout rails. `Merged-Teacher-Money` and `Merged-Verification-Payouts` are both **protected files**, and an IBAN is regulated personal data that wants the same column-level-REVOKE treatment `verification_records` already got for the national ID (see `DECISION-national-id-2026-07-26.md`) rather than sitting on a table four `select('*')` call sites already read.
+- **Touches:** money, account state, personal data.
+- **Blocked by:** Eyad — the migration, and the decision on where the IBAN is allowed to live.
+
+## D35 · The proposal card's proposed-schedule line has no backing column anywhere
+- **What:** `Merged-Teacher-Setup` §02 draws a schedule line on the group-proposal card itself — *"Proposed: Saturdays, 2:00–3:30 PM, weekly"* — so a teacher can judge an offer on its time as well as its money before accepting.
+- **Drawn in:** `Merged-Teacher-Setup` §02, the proposal card (EN and AR).
+- **Found:** 4 August 2026, structural build of `Merged-Teacher-Setup` (PR #344). Not previously itemised: the coarse 16-item frame scored "group proposals" as one present section, which hid this.
+- **Evidence, live:** `group_proposals` has exactly **17 columns** (`id, teacher_id, center_id, subject, grade_level, fee_per_class, status, accepted_offer_id, expires_at, opening_message, responded_by, responded_at, created_at, updated_at, initiated_by, target_group_id, carries_link`). None is a day, a start time, an end time, a recurrence or a schedule blob. `group_proposal_offers` (6 columns) has none either.
+- **The near-miss that is not a fix:** `group_slot_proposals` **does** carry `day_of_week` / `start_time` / `end_time` / `note` / `status`, and it is what the live "Class times" section reads. But it hangs off **`group_id`** — an already-existing, already-attached group — with no relation to a `group_proposals` row. A proposal for a group that does not exist yet cannot have a row in it. Reading it here would attach some *other* group's booked time to an unrelated offer, which is worse than omitting the line.
+- **Exactly what is needed:** either schedule columns on `group_proposals` (day / start / end / recurrence), or a nullable `proposal_id` on `group_slot_proposals` so a time can be proposed alongside an offer and promoted on accept. Both are migrations. **Not written, not applied.**
+- **Also a product question, not only a schema one:** if a time rides along with the offer, "Accept" starts meaning "accept the money *and* the slot", and the slot has to survive the accept into a real `schedule_slots` row — which touches the center-side confirmation loop that currently owns booking.
+- **Touches:** account state (what accepting an offer commits the teacher to).
+- **Blocked by:** Eyad — the migration, and whether a proposal should carry a time at all.
 
 ## D18 · §03's "manual approval" premise doesn't happen — every enrollment auto-activates today
 - **What:** `Merged-Teacher-Groups` §03 draws a request-review screen: a pending student waits for the teacher to Approve/Decline, with request detail (grade, school, a note from the requester, how they found the group).
@@ -664,6 +692,7 @@ whose core Add-branch flow sits on top of this unresolved billing question.
 - **Touches:** account state (who gets to join a teacher's group, and when).
 - **Blocked by:** Eyad's decision on which behaviour is correct.
 - **Reconfirmed 4 Aug 2026** (structural-parity survey pass, `claude/parity-teacher-groups-w2`): still live and unchanged. `information_schema.columns` for `enrollments` (project `lczmjpnbuhnsislcvzar`) confirms the exact column set from the original finding, no `note` column anywhere on it; `students` has no `school`/`school_name` column either. Read `verify-otp/route.ts` directly again — the `apply_enrollment_transition(..., 'active', ...)` auto-activate call after `create_enrollment` is still there, still unconditional, still commented as intentional ("a verified self-enroll should not wait for the teacher's manual approval"). The live roster UI (`groups/[groupId]/page.tsx`) does have a working Approve/Decline pair for whatever rarely stays `pending`, and now also surfaces `grade_level` per D18's own note — neither changes the core finding that the design's "approval is always manual" premise is false for the self-link path. No action taken; still Eyad's call.
+- **Reconfirmed 4 Aug 2026** (build pass, PR #346, `claude/teacher-groups-build-w3`). Re-queried `information_schema.columns` live on project `lczmjpnbuhnsislcvzar`: `students` has **39** columns and **0** matching `school` / `school_name` / `school_id`; `enrollments` has **9** and **0** matching `note` / `notes` / `message` / `request_note`. Both request-detail fields therefore stay unbuilt, and the exact missing columns are named in a comment at the queue in `groups/[groupId]/page.tsx` — adding them is a migration, and migrations come to Eyad. **What was built this pass is everything else §03 draws off columns that do exist**: the queue's two explanatory notes, `Joined <date>` from `enrollments.joined_at` (already returned by the roster API, discarded by the UI until now), the group summary line, and the requests themselves moved onto the shared `ExpandableRow` — oldest open, Approve/Decline inline, More chip — with one shared `ActionSheet` behind both the pending and the enrolled rows. The gate's *behaviour* is untouched and still auto-activates; the queue is drawn honestly for the rows that do stay pending, and no copy claims review is protecting the roster.
 
 ## D19 · Private-lesson commission columns are never populated — Teacher Analytics revenue reads 0.00 EGP, live, today
 - **What:** `finish_class_and_bill` (the ACTIVE, correctly-called function for finishing a teacher's own private-group session — not to be confused with `finish_center_class_and_bill` in D16) inserts every `kind = 'lesson'` charge without `teacher_commission_amt`, `teacher_net`, `platform_gross` or `platform_net` — all four stay at their `NOT NULL DEFAULT 0`.
@@ -688,6 +717,7 @@ whose core Add-branch flow sits on top of this unresolved billing question.
 - **Touches:** money (write, once either fix is chosen), and account state (which page teachers actually use to run a class).
 - **Blocked by:** Eyad's decision on which surface is canonical and whether to wire the missing collect paths.
 - **Reconfirmed 4 Aug 2026** (structural-parity survey pass, `claude/parity-teacher-groups-w2`): re-read `SlotActionSheet.tsx` PHASE 3 top to bottom — still strictly read-only, no mark-collected control anywhere in it. Re-read `mark-paid/route.ts` — `MANUAL_METHODS` is still `{cash, instapay, vodafone_cash, other}`, live and already audited, exactly as the original finding says. To size the decision for Eyad: the fix is mechanically small — call the existing `mark-paid` endpoint from `SlotActionSheet`'s recorded phase the same way `GroupClassesTab` already does, and add a third `vodafone_cash` button to `GroupClassesTab`'s existing collect popover. A working version of both was prototyped this pass to confirm feasibility, then **reverted and not shipped** — this entry's own "Blocked by" line, written by an earlier, more careful pass on this exact file, already named this a money-state-write decision analogous to D15's, and it is not this pass's call to override that. Left exactly as found; the two candidate diffs are small enough that either resolution is a same-day build once the surface/wiring decision is made.
+- **Reconfirmed 4 Aug 2026** (build pass, PR #346, `claude/teacher-groups-build-w3`). This pass was told to build every gap it could and still did not touch §04, for one reason worth writing down: **extending either surface is answering D20 by stealth.** Adding the design's summary block, "View in group" link, select-all or live timer to the orphaned session page makes a page nothing navigates to slightly better; adding them to `SlotActionSheet` asserts that `SlotActionSheet` won. Neither is a restyle. Everything §04 draws stays unbuilt until the surface question has an answer. One factual correction to a neighbouring entry while here: **F10 says "no `sessions.started_at`-equivalent timestamp" exists — the column does exist.** `information_schema.columns` for `sessions` (live, this pass) lists `started_at timestamptz NULL`. F10's real content is unchanged (nothing selects it and no UI counts on it), but the schema claim in its wording was wrong.
 
 ## D21 · The self-enroll join link uses the full group UUID, not the design's 6-character code
 - **What:** the design draws `tutoringhq.app/j/7K2M9P`, a short code. Live, `GroupJoinLinkCard.tsx` builds `https://tutoringhq.app/ar/join/g/<full-UUID>`.
@@ -696,6 +726,7 @@ whose core Add-branch flow sits on top of this unresolved billing question.
 - **Touches:** none directly; a URL scheme change on an already-live, already-shared link is worth flagging before touching regardless.
 - **Blocked by:** Eyad's decision on whether the short code is worth building, given the full-UUID link already works and is already shared via QR/WhatsApp.
 - **Reconfirmed 4 Aug 2026** (structural-parity survey pass, `claude/parity-teacher-groups-w2`), with one new piece of live evidence: a `group_join_links` table already exists in the live catalog (`id, group_id, token, max_uses, expires_at, active, created_at` — a `token` short-code column is right there). But it has **zero rows** and `grep -rn "group_join_links" src/` returns nothing — no code anywhere reads or writes it. It looks like scaffolding for exactly this feature that was never wired up, not a ready-made fix: there's still no generator, no collision handling, no rotation policy, and no decision on whether the live full-UUID links already shared via QR/WhatsApp should keep resolving. Surfacing this for Eyad's decision, not building against it.
+- **Reconfirmed 4 Aug 2026** (build pass, PR #346). `select count(*) from group_join_links` → **0**, live, unchanged. Still zero readers in `src/`. The link card was left on the full UUID; nothing in this pass's §03 work depends on the short form.
 
 ## D24 · `students.is_active` is both the pending-signup gate and a directly-editable "paused" toggle — the roster leak can't be silently filtered
 - **What:** `Merged-Center-Students` §01 (roster) draws only active, already-approved students; the design's Pending queue (§04) is a separate screen. Live, `students/page.tsx`'s roster query has no `is_active` filter at all, so students still awaiting sign-up approval (`is_active=false`, inserted by the public join flow, e.g. `src/app/api/join/[center_code]/[group_id]/route.ts`) show up mixed into the main roster before anyone has approved them.
@@ -837,6 +868,45 @@ left for later, it is the deliberate final state unless a pause feature is separ
 - **Touches:** `src/app/[locale]/pricing/PricingPageClient.tsx`, `src/app/api/pricing/public-config/route.ts`, `src/hooks/usePublicWhatsappPackPrice.ts` — all built. The 5 remaining rows touch nothing yet.
 - **Blocked by:** Eyad's call on which of the remaining 5 add-ons ship as real, chargeable products.
 
+**Amended 5 August 2026 — the sibling half of this entry (the "What changes with size" rows) is now
+BUILT, partially, and this entry's own claim about it needed narrowing.** The prior wording said the
+diff rows "were also dropped for the identical reason." That was true of three of the five drawn rows
+and wrong about two. Re-checked live before touching anything, project `lczmjpnbuhnsislcvzar`:
+
+| drawn row | live source | this pass |
+|---|---|---|
+| Students a week (center) | `pricing_plans.weekly_student_limit` | **built** |
+| Active students a month (teacher) | `platform_config.teacher_subscription_plan*.student_limit` | **built** (relabelled from the design's "a week" — the live cap is a monthly active-student count, the same correction `capLabelTeacher` already carried) |
+| Advanced analytics (teacher) | `TeacherPlanDef.proFeatures`, enforced by `isProOrAbove()` in 14 files | **built** |
+| Branches (center) | none | withheld |
+| Team seats (center) | none | withheld |
+| WhatsApp notifications a month | none that is honoured | withheld |
+
+- **The two withheld center rows, verified live 5 Aug 2026 rather than inherited:** `pricing_plans`
+  has exactly nine columns (`id, plan_key, arabic_name, english_name, weekly_student_limit,
+  cost_per_student, setup_fee, is_active, all_in_price`), and a schema-wide
+  `information_schema.columns` search for `%seat%`, `%max_branch%`, `%branch_limit%`,
+  `%max_teacher%`, `%max_staff%`, `%notification_quota%`, `%message_limit%` and `%wa_limit%` returns
+  **zero rows** across all of `public`. **D8** independently confirms the seat side from the other
+  direction (`centers.max_teachers` does not exist; every center is invisibly capped at 2).
+- **The withheld WhatsApp row is the interesting one, because the data DOES exist and is still not
+  publishable.** `platform_config.teacher_subscription_plan_pro` and `_scale` both carry
+  `blast_credits_monthly: 100` (read live this pass), mirrored onto
+  `TeacherPlanDef.blastCreditsMonthly`. But `grep -rn "blastCreditsMonthly\|blast_credits_monthly"
+  src/` returns **four hits, all four inside `src/lib/teacherPlans.ts`'s own definition** — zero
+  readers, zero meters, zero enforcement. Printing "100 WhatsApp notifications a month" would
+  advertise an allowance nothing grants: the same class of claim as **D34**, not a display gap. This
+  is the one row where "the column exists" and "the section can honestly ship" come apart.
+- **One word changed from the design, deliberately:** the design's negative label for Advanced
+  analytics is `no: 'Add-on'` / `'إضافة'`, which asserts it is purchasable. It is not — **D13** is
+  closed "no purchase flow, parked until AI features ship" — so the negative reading renders as "Not
+  included" / "مش داخلة". Same single-word truthfulness correction already adjudicated for **F30**.
+- **Add-ons unchanged: still 1 of 6.** No new backing config appeared. Confirmed live 5 Aug:
+  `platform_config` holds no `branch_addon.monthly_price_egp` (the key `D31`'s add-branch notice
+  reads), no team-seat price, no standalone-analytics price and no instant-payout price; there is no
+  `pricing_addons` table. Extra branch stays blocked on **D23**, team seat on **D8**, standalone
+  analytics on **D13**, "WhatsApp packs from 200" on **D5**, instant payout on **V4**.
+
 ## D30 · A marketing claim the design's own header calls "banned by your own rules" is still live — CLOSED, PR #314; re-verified live 4 August 2026
 - **What:** `ComparisonTable`'s row8 (the default 8-row set rendered on `/center`) showed an unsourced "8–12 hours saved" admin-time claim. `Merged-Public-Marketing.html`'s own header copy for this section explicitly states this class of claim was removed as "banned by your own rules."
 - **Closed:** PR #314 deleted the old `ComparisonTable`/`LandingFAQ` components wholesale (`src/components/landing/ComparisonTable.tsx`, -217 lines) and replaced them with `landing.compare` (6 rows, `CentersClient.tsx`) and `teacherLanding.compare` (6 rows, `TeachersClient.tsx`), neither of which carries a time-savings row of any kind. **Re-verified live this pass, 4 August 2026:** read both compare objects in full from `messages/en.json` — 6 rows each (attendance, telling the parent, sending a way to pay, concurrent staff, backup, receipts) — and grepped `messages/en.json`/`ar.json` and every file under `src/app/[locale]/{page,SplashClient,centers,teachers,pricing,talk-to-us}*` and `src/components/marketing/` for "hour"/"ساعة" in a savings context: the only surviving "hours saved" string anywhere in the repo is `onboarding/page.tsx`'s `roiHoursSaved` — a different screen entirely (Center-Setup's Onboarding, `D28` territory, not a Public-Marketing file).
@@ -886,12 +956,51 @@ rather than deleted so nobody re-opens a layout question that already shipped.
 - **Found:** 4 August 2026, Public-Marketing re-survey (this pass).
 - **Touches:** `messages/en.json`/`messages/ar.json`'s `pricingPage.same.items[6]`. No schema. Overlaps the already-protected `Center-Money`/`Teacher-Money`/`Verification-Payouts` files and the already-logged **V4**.
 - **Blocked by:** V1, V3 (same blockers as V4) plus Eyad's call on what, if anything, truthfully replaces the claim in the meantime.
+
+**Amended 5 August 2026 — one supporting detail in this entry was wrong, and the claim reaches two
+more surfaces than it recorded. The conclusion survives both corrections; the reasoning does not.**
+
+- **Correction 1 — "zero readers/writers in `src/`" is false.** Re-ran the grep this entry cites
+  rather than trusting it: `payout_destination` has **10 hits across four files** in
+  `src/lib/collectionPayout/` (`enableCollection.ts` reads it from `teacher_profiles` at
+  `enableCollection.ts:152`; `requestPayout.ts` and `verificationGate.ts` carry it as a named refusal
+  cause). There is a whole built payout engine — `src/lib/collectionPayout/` (10 modules:
+  `payoutEngine`, `payoutStates`, `payoutCaps`, `payoutAging`, `collectionMath`, `money`, …), plus
+  `POST /api/payouts/request`, `/api/admin/payouts`, `/api/admin/center-payouts/[id]/approve` and
+  `/release`, `/api/webhooks/payout-provider` and a `payout-reconciliation` cron. The right
+  description is **built but switched off at one config point**, not **nonexistent**.
+- **Why the marketing claim is still untrue today, on evidence rather than on the old wording:** the
+  engine refuses at gate 1 before verification is even consulted.
+  `src/lib/collectionPayout/config.ts` — which its own header declares "THE ONE CONFIG POINT" and
+  which is the only module allowed to read these values — resolves six
+  `COLLECTION_PAYOUT_RAIL_*` credentials that ship as placeholders because Paymob Payouts onboarding
+  has not started, and the platform switch `digital_student_fee_collection.enabled`, **read live this
+  pass and holding `false`**. Gate 2 is verification (V1, dormant); gate 3 is a payout destination
+  (`teacher_profiles.payout_destination`, 0 rows populated). So no center and no teacher can withdraw
+  today, and the bullet still may not ship — but for a reason that is checkable, and that changes the
+  moment the credentials land rather than requiring a build.
+- **Correction 2 — the same claim is live on two further surfaces this entry never named**, both
+  outside `/pricing`:
+  - `landing.centerOnly.rows[3]` on **`/centers`** — "Teacher payouts · *Split to each teacher's own
+    account, or land in yours. Your call.*" This is a stronger claim than `/pricing`'s: it describes
+    a specific split-destination mechanism. That mechanism is **X1** (Center → teacher split payouts,
+    deferred), sitting on top of the same dormant rail, and on top of **D16**'s dormant center-class
+    commission engine — so even the *amount* to split is not computed today.
+  - `splash.pair.center.pills[2]` on **`/`** — a bare "Teacher payouts" pill. Weakest of the three
+    (it names a feature area rather than asserting a mechanism), but the same root.
+- **Not rewritten this pass, and the reason is the same one this entry already gives:** there is no
+  narrower true replacement to substitute, the wording that replaces it *is* the product call, and
+  all three surfaces describe money movement reserved to the protected `Center-Money` /
+  `Teacher-Money` / `Verification-Payouts` files. Three strings, one decision.
+- **Touches, amended:** `pricingPage.same.items[6]`, `landing.centerOnly.rows[3]`,
+  `splash.pair.center.pills[2]` in both `messages/en.json` and `messages/ar.json`.
 ## D33 · Analytics month-end forecast tile and projection bar have no decided extrapolation method
 - **What:** `Merged-Center-Insight` §01's EN-overview frame draws a `ktile.fc` "Projected · month-end" KPI (21,500 EGP, badged "forecast") and a dashed sixth bar on the revenue chart ("Jul*", "* projected from current pace") alongside the five actual months. Both are a month-end estimate derived from partial-month data, not a stored or historical figure.
 - **Found:** 4 August 2026, `Center-Insight` parity pass. Read `/api/analytics/revenue/route.ts` in full (all fields it returns: `mrr`, `outstanding_total`, `collection_rate`, `avg_payment_per_student`, `revenue_by_group`, `mrr_trend`, `payment_method_distribution`, `attendance_heatmap`, `aging_report`, `income_by_month`, `expenses_by_month`, `pnl_months`) and grepped the whole `analytics` route tree plus `(dashboard)/analytics/page.tsx` and every chart component it imports for `forecast`/`project` — zero matches anywhere. This is not a partially-built feature; no code path computes a projection today.
 - **Why it's a decision, not a display fix:** a month-end projection needs a chosen method before it can be built at all — naive linear scale-up from day-of-month elapsed (`mrr_trend`'s current-month figure ÷ days elapsed × days in month), a trailing-average pace, or something that accounts for known non-linearity in the business (e.g. tuition due-dates clustering early in the month, so linear scaling overstates months that front-load collection). Each produces a materially different number for the same underlying data, and whichever ships becomes a number owners act on. Building one silently forecloses the others.
 - **Touches:** money (a projected, not actual, figure — the kind of thing this codebase has previously been burned by inferring, e.g. the "Paid" clock-comparison state and the invented-date findings called out in this pass's brief).
 - **Blocked by:** Eyad's call on the extrapolation method. Not attempted this pass — the KPI grid and revenue chart ship without the forecast tile/dashed bar, same as before, rather than picking a method unilaterally.
+- **Re-verified 5 August 2026, `Center-Insight` BUILD pass, before deciding to leave it alone again.** Re-read `/api/analytics/revenue/route.ts` end to end and re-grepped the analytics route tree and `(dashboard)/analytics/page.tsx` for `forecast`/`project*` — still zero matches, no code path computes a projection. The rest of §01's chart was rebuilt this pass (area chart → the design's monthly bars with the current month emphasised) and the projection bar was **deliberately left out of that rebuild**: the bar is trivial to draw and the number behind it is not, so drawing it would have shipped a method by accident. The chart is now one bar short of the design, on purpose, and stays that way until this is decided.
 **Re-verified 4 August 2026, independently, before trusting this entry's own wording.** The phrase
 "there was never a manual alternative" in this entry's own title reads as stronger than what the
 body actually says — re-reading `groups/page.tsx` fresh (PR #313 is already on master), the design's
@@ -979,6 +1088,36 @@ Nothing in this section can start until V1 lands. Ordered so that V1 unblocks th
 - **Blocked by:** **Adsero.** The routes and layout exist; only the text is missing.
 - **Drawn in:** `Merged-Public-Legal` §01.
 - **Touches:** none. This is the only external blocker with no money or auth attached, so it can land the moment the text arrives.
+- **Re-measured, 5 August 2026 (Public-Legal second parity pass).** "Only the text is missing" is
+  still right, but it was being read as *all* the text, which stopped being true when **#311**
+  (`81639a14`) landed. The accurate size is **10 of 23 sections**, not 23:
+
+  | Document | Contents entries | Drafted | Pending |
+  |---|---|---|---|
+  | Privacy Policy | 6 | 1, 3, 5 | **2** How we use it · **4** How long we keep it · **6** Contact our DPO |
+  | Terms and Conditions | 6 | 1, 2, 3, 4 | **5** Acceptable use · **6** Liability |
+  | Cookie Policy | 5 | 2, 3, 4 | **1** What cookies are · **5** How to control them |
+  | Data Processing Agreement | 6 | 1, 3, 5 | **2** What we process · **4** Sub-processors · **6** Deletion |
+
+  The 13 drafted sections are live in both languages. The 10 pending ones keep their contents
+  entry and their `#sN` anchor and render one explicit "Pending Adsero draft." line — deliberately,
+  so a reader who clicks "4 · How long we keep it" lands somewhere instead of on a dead anchor.
+  This is a **known deviation from the design**, which simply omits the undrafted sections from the
+  reader body while still listing them in the contents; the design can afford a dead anchor because
+  its contents entries are not links. Do not "restore parity" by deleting the pending sections.
+
+  **Why the remaining 10 stay unbuilt, stated once so it is not re-litigated:** these are PDPL
+  (Law 151/2020) commitments — retention periods, the sub-processor list, the DPO contact point,
+  the erasure procedure. Unlike a wrong figure, a wrong sentence here is *binding on the company*.
+  Drafting them from the surrounding text would be fabrication in the most expensive place it
+  could happen. They become real copy with an edit to `legalContent.ts` and nothing else.
+
+  **Now guarded.** `tests/unit/legalCorpusParity.test.ts` derives the contents lists and the
+  drafted/pending split from `design/Merged-Public-Legal.html` at test time and asserts
+  `legalContent.ts` matches, in both languages and in order. It fails in both directions: on
+  invented copy appearing under a pending heading, and on a pending section being deleted to make
+  the file look finished. When Adsero's text lands, update the design file and `legalContent.ts`
+  together and it goes green — that is the intended workflow, not a test to edit around.
 
 ## X5 · Self-enrollment and the minor-consent question
 - **Blocked by:** **Adsero** for the consent question, **Meta** for the template.
@@ -1341,6 +1480,7 @@ grammatically backwards translations, fixed (no decision needed)
 - **Build:** add an origin/source column to `pending_enrollments`, stamp it at both insert sites, surface it as the badge/detail-row the design already draws.
 - **Blocked by:** nothing technical; out of scope for a display-only pass (needs a migration).
 - **Re-confirmed live, 4 August 2026, Center-Students parity pass.** Fresh `information_schema.columns` read against project `lczmjpnbuhnsislcvzar`: `pending_enrollments` still has exactly `id, center_id, group_id, student_name, student_phone, parent_phone, notes, status, created_at, student_id` — no origin-like column, unchanged from the original finding. Also checked the request-detail sub-screen's other two fields the design draws with no live source ("Grade", "School" in §04's expanded request-detail frame) — `students/pending/page.tsx` correctly renders neither; it only surfaces `student_name`, `student_phone`, `parent_phone`, `notes` and a relative "asked" timestamp, the fields that actually exist. No fabricated Grade/School/origin data found anywhere on this screen — the honest-state rule is being followed here, not violated.
+- **Re-confirmed live again, 5 August 2026, and widened by one column.** `pending_enrollments` is still exactly `id, center_id, group_id, student_name, student_phone, parent_phone, notes, status, created_at, student_id` — ten columns, no origin. This pass also checked the design's other two request-detail fields against the **whole schema**, not just this table: a `column_name ilike '%school%'` sweep across every table in `public` returns **zero rows**, so "School" has no source anywhere in the database, not merely no source on this table; and `grade_level` exists on `students`, `group_proposals` and `teacher_profiles` but **not** on `pending_enrollments`, so a request's grade is unavailable until the row becomes a student. `/students/pending` was rebuilt onto `ExpandableRow`/`ActionSheet` this pass and the origin badge slot the design draws on every row was deliberately left empty — the omission is now carried as a comment on the list itself, next to the code that would render it, rather than only in this ledger.
 
 ## F13 · `students.grade_level` has zero writers — the display added this pass will stay blank until something writes it
 - **What:** the roster and student-detail screens now show a "Grade {n}" line when `grade_level` is set (this pass). Live, no code path (add-student, edit-student, `/students/import`) ever writes it — confirmed 0 of 4 live students have a non-null value, and grepping every students-table insert/update site for `grade_level` returns none.
@@ -1515,6 +1655,41 @@ grammatically backwards translations, fixed (no decision needed)
   with no per-invoice "next due" fact; still needs a product decision on what "next due" means under
   that model — unaffected by the item-1 correction. Items 3–4 (ID card tile, import inline Fix)
   re-verified still present and working, see the code citations under F22 above.
+- **Item 1 — half of it removed rather than decided, 5 August 2026 (Center-Students build pass).**
+  The mismatch was never that either number was wrong; it was that "N active · M branches" put a
+  center-scoped count next to an org-scoped one in the same sentence. §03 (design line 846) pairs
+  the headcount with **who is behind** instead of with a branch count, and §03 is the later frame of
+  this same screen — so the roster's title meta now reads `{active} active · {behind} behind`, both
+  clauses derived from the same center-scoped `studentsList`/`standingRows` fold, and the mixed-scope
+  sentence is gone. The behind clause is dropped, never zeroed, while `behindSummary` is null (before
+  the fold resolves and when it fails). **This does not close item 1.** The KPI tile below still
+  renders "across {branchCount} branches" beside a center-scoped "Active students" value — same
+  mismatch, one element lower — and that one is left alone deliberately, because removing the branch
+  figure from the screen entirely is the RLS-scope question (should one roster view ever sum students
+  across sibling `center_id`s) that item 1 says is Eyad's. What changed is that the mismatch no longer
+  sits in the page's title.
+- **Item 2 — the ledger was stale; both sub-lines are BUILT at `master`, 5 August 2026.** The
+  4 August note above says item 2 is "still open" and needs a product decision. Read the component
+  instead of the ledger and it is already there, in `students/[id]/page.tsx`: the owing state renders
+  `tDetail('overdueSince', { days, date })` from `standing.oldestUnpaidDays` / `standing.oldestUnpaidAt`
+  (the FIFO fold in `getStudentStandings`, not the running aggregate the old note assumed was the only
+  source), and the settled state renders `nextDue` / `nextDueWithAmount` from the earliest future
+  `sessions` row for a group this student belongs to, priced at that group's
+  `student_groups.fee_per_class`. Both clauses drop out entirely when their source is absent — no
+  placeholder date, no invented amount. The old note's reasoning ("`getStudentBalances()` is a running
+  aggregate, so there is no oldest-unpaid fact") was correct about `getStudentBalances` and wrong about
+  the screen, which uses a different helper for exactly this.
+  **One real caveat, verified live rather than assumed:** the Next-due half depends on `sessions`, and
+  `select kind, status, count(*) from sessions group by 1,2` returns 4 rows total, **all**
+  `kind='private'` (3 finished, 1 scheduled) — F17's finding, still true. So the mechanism is built and
+  correct, and for a center student it will render nothing until something writes center session rows.
+  Built-and-empty, not built-and-wrong; recorded here so the next pass does not "re-open" item 2 after
+  looking at a screen where the line is legitimately absent.
+- **Item 5 (new, this pass) — closed.** §03's Attendance card draws two facts, "This term 22 of 24"
+  **and** "Last attended 20/07". Only the ratio existed. The last-attended date now renders on the
+  same tile, taken from the first non-absent row of `scans` (already fetched, already ordered
+  `scanned_at DESC`, so the first such row *is* the last attendance — no second query and no
+  client-side re-sort to get wrong). Absent, with no placeholder, for a student never scanned present.
 
 ## F23 · Two dashboard CTAs link to `/students` query params the page never reads — CLOSED, 4 August 2026
 - **What:** `Merged-Center-Home` §01's unpaid-alert banner "Review" button links to `/students?filter=unpaid`, and the dashboard's "Add student" quick action links to `/students?action=add`. `src/app/[locale]/students/page.tsx` has zero `useSearchParams`/`searchParams` handling anywhere — both links silently land on the plain, unfiltered/unprompted roster instead of doing what they promise.
@@ -1752,6 +1927,68 @@ The same applies to any post-apply verification query written into a migration: 
 
 ---
 
+## F39 · Two of the three per-student notification flags are written by the UI and read by nothing — a paid-WhatsApp opt-out that only works for one channel
+
+*(F-number picked by grepping `^## F[0-9]+` across `refs/remotes/origin` — all 206 refs, not just
+`master`, per F31's warning. Claimed across every branch as of 5 August: F1–F37 with no gaps above
+F25. F39 is the lowest free number: master ends at F35, #348 claimed F36 and F37, and #349 claimed F38 while this branch was in flight.)*
+
+- **What:** `students` carries three per-student notification booleans — `notify_on_scan`,
+  `notify_on_absence`, `notify_on_balance` — all confirmed present in
+  `information_schema.columns` for project `lczmjpnbuhnsislcvzar` this pass, all `boolean`,
+  all nullable. Two of the three gate nothing.
+  - **The only send-path reader in the codebase** is `src/lib/whatsapp/flows/parentNotifications.ts`
+    line 82: `if (!s.parent_phone || !s.parent_consent_given || s.notify_on_scan === false)`.
+    That is `notify_on_scan`, and only `notify_on_scan`.
+  - `src/app/api/cron/parent-absence-alerts/route.ts` selects
+    `students(id, name, parent_phone, parent_pack_opted_in, is_active)` and gates with
+    `if (!s.parent_pack_opted_in) continue;` — it never selects `notify_on_absence` and never
+    tests it.
+  - `src/app/api/cron/parent-balance-alerts/route.ts` selects `id, name, parent_phone, center_id`
+    filtered `.eq('parent_pack_opted_in', true)` — it never selects `notify_on_balance` and never
+    tests it.
+  - The only other read anywhere is `src/app/api/ceo/financials/route.ts` line 174, an
+    `.or('notify_on_scan.eq.true,notify_on_absence.eq.true,notify_on_balance.eq.true')` used for a
+    CEO-side count. A reporting filter, not a send gate.
+  - Writers, by contrast, are plural and live: `PATCH /api/students/[id]` allow-lists all three,
+    `PATCH /api/whatsapp-pack/student/[studentId]` writes all three, and both
+    `api/teacher/private/schedule/sessions/route.ts` and its
+    `[sessionId]/attendance/route.ts` sibling insert all three as `false` on student creation.
+- **Why this is not cosmetic:** these flags sit on a **paid** WhatsApp surface. Turning
+  `notify_on_absence` or `notify_on_balance` off is a request to stop paying for those messages,
+  and the request is stored and then ignored — the parent still gets the message and the center is
+  still charged. Nothing errors; the write succeeds and the column is faithfully wrong.
+- **Instance eight of the F16 shape**, on the write side rather than the read side: a column that
+  looks authoritative to every caller, is maintained by three separate writers, and is consulted by
+  none of the jobs it names. F16 catalogues readers preferring a frozen column over the live helper;
+  this is the mirror — writers maintaining a column no reader consults.
+- **Why it is NOT fixed here:** wiring the two flags into their crons changes **who receives a paid
+  WhatsApp message**. That is the identical axis **D25** is already open on for
+  `parent-balance-alerts` targeting, and it is money behaviour under the standing stop rule. Logged,
+  not touched. Note also that flipping them on today would *reduce* sends, never increase them, so
+  the fix direction is safe — but "safe direction" is not the same as "mine to decide".
+- **What it cost this pass, concretely.** `Merged-Center-Students` §03 draws a **"Who receives
+  what"** section — two rows plus a bottom sheet — and it is the one whole block of that section
+  left unbuilt. Both halves are blocked, each for its own named reason:
+  1. **The WHO has no column.** `students` is 39 columns live (read in full this pass); none of them
+     is a per-channel recipient. `phone` and `parent_phone` are contact fields, not a selector —
+     nothing records *which* of them a payment link goes to. The design's "Payment links · One
+     person only → Parent" needs a new column (e.g. `students.payment_link_recipient`), and its
+     sheet's third option, "Another number · Add a different contact", needs somewhere to store
+     that number as well. **New column ⇒ stops here under the migration rule.**
+  2. **The WHAT could not be substituted honestly.** The obvious near-miss was to back the
+     "Reminders and updates · Session, absence, receipts" row with the three `notify_on_*` flags,
+     whose names line up almost exactly with that sub-label. This entry is why that was rejected:
+     a three-way control where two switches do nothing is a fabricated control, and a fabricated
+     control on a screen about who gets charged for messages is worse than an absent section.
+- **Found:** 5 August 2026, `Merged-Center-Students` build pass, while checking whether §03's
+  "Who receives what" had any live backing. Found by reading the two crons, not by trusting the
+  column names.
+- **Build:** decide (D25) what the balance/absence targeting model is, then either honour the two
+  flags in their crons or drop the columns and their writers. Until one of those happens, do not
+  put a UI on them.
+- **Blocked by:** D25, and the standing money-behaviour stop.
+
 # Appendix · Tenant-isolation route audit, 29 July 2026
 
 **Scope:** every API route touching `students`, `student_groups`, `student_group_members`,
@@ -1787,3 +2024,91 @@ findings.** Check the helper before believing the grep.
 convention, not a constraint: a new route that forgets the filter is caught by no policy, no test and
 no type error. The durable fix is a test that asserts cross-tenant denial per route family, or moving
 the remaining service-role reads behind RLS. Neither exists today. Logged, not built.
+
+---
+
+## F36 · `Merged-Center-Insight` §01's collection-rate month-over-month delta has no backing column anywhere
+
+- **What:** §01's EN-overview frame badges the Collection-rate KPI tile `+4%` and repeats it under the
+  gauge as "Up 4% on May". Both are a comparison against the PREVIOUS month's collection rate.
+- **Found:** 5 August 2026, `Center-Insight` build pass, while wiring everything else on §01 that was buildable.
+- **Evidence, live, not inferred:** `select table_name, column_name from information_schema.columns
+  where table_schema='public' and column_name ilike '%collection%rate%'` returns **zero rows** —
+  project `lczmjpnbuhnsislcvzar`, run this pass. No table stores a collection rate, historical or
+  current. The figure the screen shows is computed per request in `/api/analytics/revenue`
+  (`collectedThisMonth / expectedThisMonth`), and `expectedThisMonth` is built from
+  `getStudentBalances(...)`, a **running** balance across active students with no as-of-date variant.
+  There is therefore nothing to reconstruct last month's denominator from.
+- **Why it is not "just add a delta":** the MRR tile's delta is honest because `mrr_trend` stores six
+  months of actual collected totals. Collection rate has no equivalent series. Any month-over-month
+  figure would have to invent a second, different denominator methodology for the prior month and
+  present the difference between two incompatible bases as a trend — the same class of error as D33,
+  arrived at from the other direction.
+- **Built this pass:** nothing. The tile and the gauge card ship without the delta.
+- **Blocked by:** needs a stored monthly collection-rate series (a snapshot table or a
+  `month_end_expected` column), i.e. **a migration** — so it stops here under the standing rule rather
+  than being written.
+
+## F37 · §01's P&L "Teacher cuts" line has no backing column — only the centre's half of the split is stored
+
+- **What:** §01's P&L card breaks expenses into two named lines, "Teacher cuts" (−6,900) and
+  "Rent + costs" (−3,200). The live `PnLCard` has the second (`center_expenses.rent/salaries/
+  utilities/other`) and not the first.
+- **Found:** 5 August 2026, same pass, checked before assuming it was unbuildable.
+- **Evidence, live:** a catalog scan for `%teacher_cut%`, `%teacher_share%`, `%commission%` and
+  `%center_cut%` across `information_schema.columns` returns, for the centre-class side, exactly one
+  relevant column: **`student_groups.center_cut_egp`** — the CENTRE's flat cut, not the teacher's.
+  `transactions.teacher_commission_amt` exists but belongs to the payment-provider ledger, not the
+  centre's own P&L. There is no stored teacher-cut amount per group, per session or per payment.
+- **Why the obvious derivation is refused:** teacher cut *could* be inferred as (group fee −
+  `center_cut_egp`) × students. That inference IS the open flat-cut-versus-percentage-split question,
+  **D16**, and D16's own entry records the centre-class commission engine as dormant — every teacher's
+  "Owed" figure reads 0.00 today. Deriving a P&L expense line from a dormant engine would put a
+  confident money figure on screen that no other surface in the product agrees with.
+- **Built this pass:** nothing. P&L keeps its existing income / expenses / net shape.
+- **Blocked by:** **D16**, plus a stored per-group teacher-cut amount, i.e. a migration.
+
+## F45 · A real aging report needs per-invoice allocation, which does not exist — the bands are a FEATURE, not a gap — proposed 5 August 2026
+
+- **What the design asks for.** `Merged-Center-Insight` §01's "Aging · outstanding" card (L326-331) draws three age bands — `0–30`, `31–60` (`watch`), `60+` (`overdue`) — each with that band's outstanding total. That is a genuine aging distribution: **one student's balance splits ACROSS bands** according to when each unpaid charge fell due.
+- **Why it cannot be built on today's data.** Two independent reasons, both read in the code rather than inferred:
+  - `amount` is `balances.get(id).balance` from `getStudentBalances(...)` (`src/app/api/analytics/revenue/route.ts:159-168`) — **one running total per student**. It carries no internal structure, so there is nothing to split.
+  - `days_overdue` is **one proxy age per student**: `Math.max(0, (now − (lastConfirmedPayment + 30d)) / day)`, falling back to the first of the current Cairo month when the student has never paid (`route.ts:272-283`). One age per student cannot describe a balance that accumulated over several months.
+- **It was built once, and that was the defect.** An earlier version of this pass grouped the API rows on `days_overdue` and summed `amount` per band. The result asserted a distribution the data cannot produce: **a student five months in arrears who paid anything 20 days ago had their entire balance rendered under `0–30`.** It was also degenerate in production, not merely imprecise — `select count(*) from payments` returns **0**, so every student takes the first-of-month fallback, every balance lands in `0–30`, and `31–60` and `60+` printed **EGP 0 unconditionally, for every centre**. Caught in adversarial re-verification of PR #348 and reversed.
+- **Eyad's call, 5 August 2026, verbatim:** *"Aging card: empty state. Not a relabel, not the current chart. A relabel keeps a distribution the data can't produce."* And: *"Zero rendering unconditionally in two bands is worse than nothing, because zero reads as a fact."*
+- **Built this pass:** an honest empty state in the card's position — the section title and one line saying age bands are not available and why, **with no figure of any kind**. A zero here would be a claim about the world ("nothing is that old"), not about the data. The per-student table below is untouched: it predates the pass and is real per-student data.
+- **What would unblock it — this is the migration to approve.** Aging needs a per-charge ledger with a due date and a remaining amount, so a payment can be allocated against specific charges oldest-first and the residue aged by charge. The minimum shape:
+
+```sql
+-- PROPOSED, NOT APPLIED. Rule 5: Eyad applies by hand, then the code deploys.
+create table public.student_charges (
+  id           uuid primary key default gen_random_uuid(),
+  center_id    uuid not null references public.centers(id) on delete cascade,
+  student_id   uuid not null references public.students(id) on delete cascade,
+  amount       numeric(12,2) not null check (amount > 0),
+  due_on       date not null,                    -- the date the band is measured from
+  paid_amount  numeric(12,2) not null default 0 check (paid_amount >= 0),
+  source       text not null,                    -- 'group_fee' | 'manual' | ...
+  created_at   timestamptz not null default now(),
+  constraint student_charges_not_overpaid check (paid_amount <= amount)
+);
+create index student_charges_aging_idx
+  on public.student_charges (center_id, due_on)
+  where paid_amount < amount;
+
+alter table public.student_charges enable row level security;
+-- RLS ships in the same migration, per the tenancy rule: scope by center_id
+-- derived from the caller's users row, never from a caller-supplied value.
+```
+
+  Plus an allocation path (a payment consumes open charges oldest-first) and a backfill decision for the balances that already exist. **None of that is written.** This entry exists so the card is understood as an unbuilt feature with a known cost, not as a parity hole someone can close with a client-side `groupBy`.
+- **Blocked by:** the migration above, plus a decision on how existing running balances are apportioned into charges at cutover.
+
+## F46 · The analytics revenue window was the SERVER's calendar month while its header said Cairo — FIXED, 5 August 2026
+
+- **What:** `/api/analytics/revenue` built every window from `new Date()` — `new Date(now.getFullYear(), now.getMonth(), 1)` for the month start, the same for the six trend buckets (`route.ts:210-213`) and for the aging fallback (`route.ts:267`). That is the **server's** calendar month, and the server is **UTC on Vercel**. Meanwhile `analytics/page.tsx` labelled that same window with `formatCalendarMonthYyyyMmInCairo()`.
+- **Why it is a defect and not a naming quibble:** Cairo is UTC+2/+3, so it enters a new month two or three hours before UTC does. **From 22:00/23:00 UTC on the last day of a Cairo month until 00:00 UTC, the header read the NEW month while `mrr`, the trend's emphasised final bar and the aging fallback were all still computing the OLD one.** A payment taken at 00:30 Cairo on the 1st was excluded from the month the header claimed to be showing.
+- **The comment asserted the opposite of the code.** `analytics/page.tsx` carried "Cairo month, per the standing rule — the API windows on the server's calendar month and this label must not disagree with it by a timezone", which describes the bug as though it were the rule. Corrected in place.
+- **Fix:** new Cairo month helpers in `src/lib/cairo/day.ts` — `cairoMonthKey`, `cairoMonthKeyPlusMonths`, `startOfUtcInstantForCairoMonth`, `cairoMonthUtcBounds` — sitting alongside the existing day helpers and reusing their binary search, so a **DST transition inside a boundary stays correct** rather than assuming a fixed offset. `/api/analytics/revenue` now takes its month start, its six trend keys, its per-payment bucketing and its aging fallback from those. Bounds are half-open `[start, endExclusive)`; the old `monthEnd` was the last day at `23:59:59`, which silently dropped anything in that final second.
+- **Pinned by a test that would have failed before:** `tests/unit/cairoMonthWindow.test.ts`, 12 assertions, all **absolute values rather than re-derivations**. The suite runs `TZ=UTC` — the exact environment where this bug is invisible to a naive test — and it asserts that `2026-07-31T22:30:00Z` is Cairo **August**, that a 23:30-Cairo payment on the 31st stays in that month, that adjacent months meet exactly with no gap or overlap, and that Cairo October spans `31 × 24 + 1` hours because the autumn DST shift falls inside it. A fixed-offset reimplementation returns 744 and fails that last one.
+- **Found:** 5 August 2026, adversarial re-verification of PR #348.

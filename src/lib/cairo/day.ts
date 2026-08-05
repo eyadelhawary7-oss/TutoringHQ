@@ -129,3 +129,47 @@ export function isPaidAtWithinCairoDayOfInstant(paidAt: Date | string | number, 
   const iso = typeof paidAt === 'string' ? paidAt : new Date(paidAt).toISOString();
   return iso >= startIso && iso < endExclusiveIso;
 }
+
+// ---------------------------------------------------------------------------
+// Cairo calendar MONTHS
+//
+// Added 5 August 2026 for the analytics revenue window, which built every
+// bucket from `new Date()` — i.e. the SERVER's calendar month, which is UTC on
+// Vercel — while the screen labelled those buckets with a Cairo month. Mixing
+// the two is not cosmetic: from 22:00/23:00 UTC on the last day of a month
+// until 00:00 UTC, Cairo is already in the next month and the server is not,
+// so the header read one month while every figure underneath was the previous
+// one. CLAUDE.md's standing rule is Cairo, not UTC, for any user-visible
+// calendar window; these are the month-level equivalents of the day helpers
+// above.
+// ---------------------------------------------------------------------------
+
+/** `YYYY-MM` in Africa/Cairo for the given instant. */
+export function cairoMonthKey(d: Date = new Date()): string {
+  return cairoDateKey(d).slice(0, 7);
+}
+
+/** Shift a `YYYY-MM` key by whole calendar months (negative shifts backwards). */
+export function cairoMonthKeyPlusMonths(monthKey: string, deltaMonths: number): string {
+  const [y, m] = monthKey.split('-').map(Number);
+  const zeroBased = y * 12 + (m - 1) + deltaMonths;
+  return `${Math.floor(zeroBased / 12)}-${pad2((zeroBased % 12) + 1)}`;
+}
+
+/**
+ * First UTC instant belonging to Cairo calendar month `YYYY-MM`.
+ *
+ * Reuses the day-level binary search rather than assuming a fixed offset, so
+ * it stays correct across a DST transition inside the boundary.
+ */
+export function startOfUtcInstantForCairoMonth(monthKey: string): Date {
+  return startOfUtcInstantForCairoCalendarDay(`${monthKey}-01`);
+}
+
+/** Half-open UTC range `[start, endExclusive)` for Cairo calendar month `YYYY-MM`. */
+export function cairoMonthUtcBounds(monthKey: string): { start: Date; endExclusive: Date } {
+  return {
+    start: startOfUtcInstantForCairoMonth(monthKey),
+    endExclusive: startOfUtcInstantForCairoMonth(cairoMonthKeyPlusMonths(monthKey, 1)),
+  };
+}
