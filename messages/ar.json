@@ -601,6 +601,7 @@
     "loadCommissionsError": "تحميل العمولات خطأ",
     "loadError": "تحميل خطأ",
     "loadingRetry": "جاري التحميل إعادة",
+    "stillWorking": "أبطأ من المعتاد. لسه بنستنى الاتصال.",
     "login": "تسجيل الدخول",
     "logoToastError": "Logo Toast خطأ",
     "logoToastSuccess": "Logo Toast نجاح",

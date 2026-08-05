@@ -601,6 +601,7 @@
     "loadCommissionsError": "Load Commissions Error",
     "loadError": "Load Error",
     "loadingRetry": "Loading Retry",
+    "stillWorking": "Slower than usual. Still waiting for the connection.",
     "login": "Login",
     "logoToastError": "Logo Toast Error",
     "logoToastSuccess": "Logo Toast Success",

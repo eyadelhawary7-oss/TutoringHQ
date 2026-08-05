@@ -1,6 +1,8 @@
 'use client';
 
 import { useLocale, useTranslations } from 'next-intl';
+import { UserCheck } from 'lucide-react';
+import { EmptyState } from '@/components/shared';
 import { formatDate, formatNumber } from '@/lib/formatNumber';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 
@@ -41,9 +43,10 @@ export default function InactiveList({ students, period, onPeriodChange }: Inact
         ))}
       </div>
       {students.length === 0 ? (
-        <p className="text-center text-[var(--text-secondary)] py-8 text-sm">
-          {t('noInactiveStudents')}
-        </p>
+        /* §01 quiet variant · "nobody has gone quiet" is the good state, not a
+           task — §01's "empty because it is early gets the muted icon and no
+           button" applied to its other case, empty because all is well. */
+        <EmptyState icon={UserCheck} title={t('noInactiveStudents')} quiet />
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">

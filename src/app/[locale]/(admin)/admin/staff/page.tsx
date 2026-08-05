@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { useRouter } from '@/i18n/routing'
 import { Users, Plus, Edit2, UserX, MapPin } from 'lucide-react'
+import { ListSkeleton } from '@/components/patterns'
+import { EmptyState } from '@/components/shared'
 import { supabase } from '@/lib/supabase'
 import { AdminSidebar } from '@/components/AdminSidebar'
 import { AdminHeader } from '@/components/admin/AdminHeader'
@@ -414,31 +416,40 @@ export default function StaffPage() {
 
         <div className="bg-[var(--color-surface-1)] border border-[var(--color-border)] rounded-xl overflow-hidden overflow-x-auto">
           {loading ? (
-            <div className="p-12 text-center text-slate-500">
-              {tCommon('loading')}
-            </div>
+            /* §02 · the word "Loading" centred in a box is not a loading state;
+               this is a staff table, so the list skeleton stands in for it. */
+            <div className="p-4"><ListSkeleton rows={4} /></div>
           ) : staff.length === 0 ? (
-            <div className="p-12 text-center rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] space-y-4 max-w-lg mx-auto">
-              <p className="text-[var(--color-text-secondary)] text-sm leading-relaxed">{t('staff.empty_explainer')}</p>
-              {isSuperAdmin ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    resetForm()
-                    setEditingMember(null)
-                    setShowAddModal(true)
-                  }}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-semibold transition-colors"
-                >
-                  <Plus className="w-4 h-4" aria-hidden />
-                  {t('staff.empty_cta')}
-                </button>
-              ) : null}
+            /* §01 · a super-admin IS waiting to add the first staff member, so
+               this keeps the mint tile and the one action, full-width per
+               `.es-act`. Everyone else sees the same state with no button — §01
+               allows an empty state with no action when there is genuinely
+               nothing the reader can do, and inventing one for a non-super-admin
+               would offer work they cannot perform. */
+            <div className="mx-auto max-w-lg py-6">
+              <EmptyState
+                icon={Users}
+                title={t('staff.empty_explainer')}
+                action={isSuperAdmin ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      resetForm()
+                      setEditingMember(null)
+                      setShowAddModal(true)
+                    }}
+                    className="flex w-full items-center justify-center gap-2 px-5 py-4 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-semibold transition-colors"
+                  >
+                    <Plus className="w-4 h-4" aria-hidden />
+                    {t('staff.empty_cta')}
+                  </button>
+                ) : undefined}
+              />
             </div>
           ) : filtered.length === 0 ? (
-            <div className="p-12 text-center text-slate-500 border border-[var(--color-border)] rounded-xl bg-[var(--color-surface-1)]">
-              {t('staff.filter_empty')}
-            </div>
+            /* §01 quiet variant · the filter matched nothing; the table is not
+               empty, so no action and distinct copy from the state above. */
+            <EmptyState icon={Users} title={t('staff.filter_empty')} quiet />
           ) : (
             <table className="w-full text-sm min-w-[800px]">
               <thead className="border-b border-slate-200 bg-slate-50">
