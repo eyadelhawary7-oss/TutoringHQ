@@ -39,18 +39,81 @@ flagged file when its own row comes up again.
 
 ## Summary
 
-| Primitive | Real adopters | Denominator | Fraction |
-|---|---|---|---|
-| `EmptyState` (`shared/EmptyState.tsx`) | 11 files (13 call sites) | 72 | **15.3%** |
-| Loading states (`ListSkeleton`/`RecordSkeleton`/`StillWorking`/`ActionSpinner`) | 1 file (`ListSkeleton` only) | 137 | **0.7%** |
-| `ListRow` | 5 | 14 | **35.7%** |
-| `ActionSheet` | 0 | 3 | **0%** |
-| `RecordActionBar` | 0 | 4 | **0%** |
-| `ExpandableRow` | 0 | 1 | **0%** |
+**Re-measured live on 4 August 2026 (adoption pass).** The 31 July figures below are kept in the
+right-hand columns because the point of this ledger is the trend, not a snapshot. Every number in both
+columns comes from a grep of the actual import identifiers across `src/`, run on the day it is dated —
+none is carried forward from a changelog claim.
 
-`RecordSkeleton`, `StillWorking`, `ActionSpinner`, `ActionSheet`, `RecordActionBar`, and `ExpandableRow` —
-six of the ten primitives/sub-primitives shipped in #220 — have **zero adopters anywhere in the
-codebase**, confirmed by grepping the exact identifiers outside `src/components/patterns/` itself.
+| Primitive | 31 Jul adopters | 4 Aug adopters | Denominator | 31 Jul | 4 Aug |
+|---|---|---|---|---|---|
+| `EmptyState` (`shared/EmptyState.tsx`) | 11 files | **37 files** | 72 | 15.3% | **51.4%** |
+| Loading states (`ListSkeleton`/`RecordSkeleton`/`StillWorking`/`ActionSpinner`) | 1 file | **11 files** | 137 | 0.7% | **8.0%** |
+| `ListRow` | 5 | **6** | 14 | 35.7% | **42.9%** |
+| `ActionSheet` | 0 | 4 | 5 | 0% | 80% |
+| `RecordActionBar` | 0 | 1 | 5 | 0% | 20% |
+| `ExpandableRow` | 0 | 1 | 2 | 0% | 50% |
+| **Composite** | 23 | **60** | 235 | **9.8%** | **25.5%** |
+
+**Two corrections to the 31 July table, both found by re-running its own greps rather than reading it.**
+(a) `ActionSheet`, `RecordActionBar` and `ExpandableRow` were no longer at zero before this pass began —
+`rooms/page.tsx`, `groups/page.tsx`, `schedule/page.tsx` and `(dashboard)/branches/page.tsx` had adopted
+them in the per-file sweeps that ran after 31 July, and the denominators grew accordingly (a file that
+adopts a primitive it was never listed as a candidate for still belongs in the fraction). (b) The
+`EmptyState` section below lists `students/page.tsx` as a real adopter "migrated 31 Jul, #292" — it was
+not one. The file had no `EmptyState` import at all when this pass opened it; its empty branch was
+hand-rolled inline with a note claiming the primitive could not produce the shape. It is a real adopter
+now, from this pass.
+
+`ActionSpinner` remains the one primitive with **zero adopters anywhere**, confirmed by grepping the exact
+identifier outside `src/components/patterns/`. `LoadingButton` (`ui/LoadingButton.tsx`) is the competing
+component that occupies its job; which of the two survives is a real decision and is not made here.
+
+### What this pass built (4 August 2026)
+
+- **26 new `EmptyState` adopters**, all screen- or card-level states, each keeping its existing i18n
+  strings — no empty state was given invented copy.
+- **10 new loading-state adopters**, including the three primitives that had never been imported:
+  `RecordSkeleton` (`teacher/AnalyticsView.tsx`) and `StillWorking` (`charts/ChartCard.tsx`).
+- **`charts/ChartCard.tsx`** — the single highest-leverage item on this ledger, called out as such by its
+  own cross-cutting findings section. Its centred CSS spinner violated §02's "never a spinner in the
+  middle of an empty screen" on six screens at once (`ceo`, `dashboard`, `(dashboard)/branches`, `admin`,
+  `admin/analytics`, `(dashboard)/analytics`). It now draws the shape of the chart that is coming and
+  escalates to `StillWorking` after six seconds.
+- **`globals.css` reduced-motion branch.** §02's rules block says "Respect reduced motion. The sweep
+  already switches off under `prefers-reduced-motion` and must stay that way." It did not — neither
+  `.chq-skeleton` nor `.skeleton` nor Tailwind's `animate-pulse` carried a reduced-motion branch, so every
+  skeleton in the app swept regardless of the OS setting. This is a §02 rule the design believed was
+  already honoured; it is honoured now, on every screen at once.
+- **Two primitives completed against their own design sheets**: `EmptyState` gained §01's `.es-ic.quiet`
+  variant (`#F2EEE5` on `#80827A`, the "empty because it is early gets the muted icon and no button" case,
+  which had no expression in the component at all), and `SheetAction` gained §04's `.al .s` sub-label line,
+  which every action in §04's frames carries. `ListRow` gained `href` and `icon`.
+
+### Not converted, with the reason (these are blocks, not backlog)
+
+- **`students/page.tsx` bulk bar → `RecordActionBar`.** The primitive requires `onMore`, and §05's whole
+  point is that More opens the same sheet the row's three-dot opens. A roster multi-select has exactly one
+  action (add the selected students to the card cart), so More would open nothing or a sheet of invented
+  bulk actions. This is the shared-primitive rule's own "if the primitive cannot do what the screen needs,
+  stop and say so" case.
+- **`students/page.tsx` row kebab → `ActionSheet`.** Blocked on behaviour, not shape. The menu carries the
+  per-student **parent-pack opt-in**, a paid-WhatsApp entitlement toggle rendered as a `menuitemcheckbox`
+  with a checked indicator and two disabled-reason tooltips. `SheetAction` has no checked state, and the
+  action itself is an entitlement write — protected-behaviour, so it goes to Eyad rather than being
+  restyled around.
+- **`admin/centers/page.tsx` → `ActionSheet` + `RecordActionBar`**, the last named `ActionSheet` candidate.
+  Its row menu is suspend / blacklist / reactivate / change-plan — `Lifecycle` behaviour wherever it lives,
+  so protected. Unchanged, logged.
+- **The 11 route-level `loading.tsx` files.** The 31 July entry called these "a fourth distinct ad hoc
+  convention". Reading them shows the opposite: each is deliberately shaped to mirror its own page's
+  in-page skeleton, with a doc comment explaining that any difference between the two is a visible flash of
+  one skeleton being replaced by another. Swapping them for `ListSkeleton` would re-introduce exactly the
+  defect they were written to fix, and would break §02's own first rule ("a skeleton that matches the real
+  row height means nothing jumps"). They are correct as they stand; the convention count was the wrong
+  measure for them.
+- **Money-file empty states** (`payments`, `BillingPageClient`, `IncomeView`, `BillingHistory`,
+  `admin/withdrawals`, `admin/billing`, `admin/health`, `AdminFinanceClient`, `admin/payouts`,
+  `admin/referral-rewards`, `AdminCardOrderDetailClient`). Protected files. Untouched.
 
 ---
 

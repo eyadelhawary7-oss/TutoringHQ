@@ -20,19 +20,26 @@ type EmbedCenter = {
   plan?: string | null;
 } | null;
 
+/**
+ * One row of `referral_commissions` (D22: was `referral_reward_records`).
+ * `commission_rate` is a FRACTION (0.25) — the retired table stored a PERCENT
+ * (25) in `reward_percentage`, while this page has always multiplied by 100,
+ * so the rate column used to render 2500%. Repointing corrects it.
+ */
 interface RewardRecord {
   id: string;
   referrer_center_id: string;
   referred_center_id: string;
-  month_number: number;
-  reward_percentage: number | string;
-  base_amount: number | string;
-  reward_amount: number | string;
+  months_since_activation: number;
+  commission_rate: number | string;
+  referred_plan_fee: number | string;
+  commission_amount: number | string;
   status: string;
-  held_until: string | null;
+  hold_until: string | null;
   paid_at: string | null;
   period_month: string;
   created_at: string;
+  referred_paid_in_full?: boolean | null;
   referrer?: EmbedCenter | EmbedCenter[];
   referred?: EmbedCenter | EmbedCenter[];
 }
@@ -42,6 +49,7 @@ interface ReferrerTotal {
   center_name: string;
   pending: number;
   paid: number;
+  forfeited: number;
   total_records: number;
 }
 
@@ -51,10 +59,15 @@ function relCenter(x: EmbedCenter | EmbedCenter[] | null | undefined): EmbedCent
   return x;
 }
 
+/**
+ * Outstanding commission only. 'paid' cannot be paid twice and 'forfeited' is
+ * commission the centre lost — never payable. A 'hold' row becomes selectable
+ * once its hold window has elapsed. The server re-checks this on PATCH.
+ */
 function canSelectForPay(r: RewardRecord): boolean {
-  if (r.status === 'pending' || r.status === 'available') return true;
-  if (r.status === 'held' && r.held_until) {
-    return new Date(r.held_until).getTime() <= Date.now();
+  if (r.status === 'withdrawable') return true;
+  if (r.status === 'hold') {
+    return r.hold_until ? new Date(r.hold_until).getTime() <= Date.now() : true;
   }
   return false;
 }
@@ -198,16 +211,16 @@ export default function ReferralRewardsPage() {
   };
 
   const statusLabel = (s: string) => {
-    if (s === 'pending') return t('referralRewards.status_pending');
-    if (s === 'held') return t('referralRewards.status_held');
-    if (s === 'available') return t('referralRewards.status_available');
+    if (s === 'hold') return t('referralRewards.status_held');
+    if (s === 'withdrawable') return t('referralRewards.status_available');
     if (s === 'paid') return t('referralRewards.status_paid');
+    if (s === 'forfeited') return t('referralRewards.status_forfeited');
     return s;
   };
 
   const statusChipClass = (s: string) => {
     if (s === 'paid') return 'bg-emerald-600 text-white';
-    if (s === 'available') return 'bg-teal-600 text-white';
+    if (s === 'withdrawable') return 'bg-teal-600 text-white';
     return 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)] border border-[var(--color-border)]';
   };
 
@@ -298,7 +311,7 @@ export default function ReferralRewardsPage() {
         ) : null}
 
         <div className="flex flex-wrap items-center gap-3">
-          {(['all', 'pending', 'held', 'paid'] as const).map((s) => (
+          {(['all', 'pending', 'hold', 'paid', 'forfeited'] as const).map((s) => (
             <button
               key={s}
               type="button"
@@ -349,6 +362,7 @@ export default function ReferralRewardsPage() {
                     <th className="px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('referralRewards.col_referrer')}</th>
                     <th className="px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('referralRewards.col_total_pending')}</th>
                     <th className="px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('referralRewards.col_total_paid')}</th>
+                    <th className="px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('referralRewards.col_total_forfeited')}</th>
                     <th className="px-4 py-3 text-xs font-semibold tracking-widest uppercase text-[var(--color-text-secondary)]">{t('referralRewards.col_total_records')}</th>
                   </tr>
                 </thead>
@@ -368,6 +382,9 @@ export default function ReferralRewardsPage() {
                       </td>
                       <td className="px-4 py-3 text-[var(--color-text-secondary)] font-mono">
                         {formatNumber(Number(row.paid), locale)} {t('staff.currency_suffix')}
+                      </td>
+                      <td className="px-4 py-3 text-[var(--color-text-muted)] font-mono">
+                        {formatNumber(Number(row.forfeited), locale)} {t('staff.currency_suffix')}
                       </td>
                       <td className="px-4 py-3 text-[var(--color-text-muted)] font-mono">
                         {formatNumber(row.total_records, locale)}
@@ -417,7 +434,7 @@ export default function ReferralRewardsPage() {
                 {records.map((r, rowIdx) => {
                   const ref = relCenter(r.referrer);
                   const rec = relCenter(r.referred);
-                  const pct = Number(r.reward_percentage) * 100;
+                  const pct = Number(r.commission_rate) * 100;
                   const selectable = isSuperAdmin && canSelectForPay(r);
                   return (
                     <tr
@@ -448,16 +465,16 @@ export default function ReferralRewardsPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3 font-mono text-[var(--color-text-secondary)]">
-                        {formatNumber(r.month_number, locale)}
+                        {formatNumber(r.months_since_activation, locale)}
                       </td>
                       <td className="px-4 py-3 font-mono text-[var(--color-text-secondary)]">
                         {formatPercent(pct, locale)}
                       </td>
                       <td className="px-4 py-3 font-mono text-[var(--color-text-secondary)]">
-                        {formatNumber(Number(r.base_amount), locale)} {t('staff.currency_suffix')}
+                        {formatNumber(Number(r.referred_plan_fee), locale)} {t('staff.currency_suffix')}
                       </td>
                       <td className="px-4 py-3 font-mono text-teal-600 font-medium">
-                        {formatNumber(Number(r.reward_amount), locale)} {t('staff.currency_suffix')}
+                        {formatNumber(Number(r.commission_amount), locale)} {t('staff.currency_suffix')}
                       </td>
                       <td className="px-4 py-3 text-[var(--color-text-secondary)]">{r.period_month}</td>
                       <td className="px-4 py-3">
@@ -466,8 +483,8 @@ export default function ReferralRewardsPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-xs text-[var(--color-text-muted)]">
-                        {r.held_until
-                          ? formatDateTime(r.held_until, locale, {
+                        {r.hold_until
+                          ? formatDateTime(r.hold_until, locale, {
                               dateStyle: 'short',
                               timeStyle: 'short',
                             })
