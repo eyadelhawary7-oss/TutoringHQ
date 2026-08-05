@@ -5,11 +5,27 @@ import { useTranslations, useLocale } from 'next-intl';
 import { useRouter, Link } from '@/i18n/routing';
 import { useUser } from '@/contexts/UserContext';
 import { PageHeader } from '@/components/shared';
-import { MessageCircle, ChevronRight, Mail, ScrollText } from 'lucide-react';
+import { MessageCircle, ChevronRight, Mail, ScrollText, Shield } from 'lucide-react';
 import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
 import { getSupportWhatsAppDisplayLabel, getSupportWhatsAppWaMeBase } from '@/lib/supportWhatsApp';
 import { SITE } from '@/config/site';
+import { SettingsGroup, SettingsGroupLabel, SettingsRow } from '@/components/settings/SettingsRows';
 
+/**
+ * `Merged-Center-Setup` §05, Support half — GET IN TOUCH / HELP / ABOUT as
+ * labelled groups of hairline-divided rows.
+ *
+ * NOT drawn here, and why (F32, re-confirmed by grep on this branch):
+ *   · "Help center", "Report a problem", "Request a feature". No route, page,
+ *     handler or ticket queue exists anywhere in `src/` for any of the three.
+ *     A row that goes nowhere, or that silently re-points at the WhatsApp and
+ *     email rows two lines above it, is worse than no row.
+ *   · "App version" under ABOUT. No app-version value reaches the client —
+ *     there is no `NEXT_PUBLIC_APP_VERSION` and `package.json`'s `version` is
+ *     never surfaced — so there is no number to print that would not be made
+ *     up. The ABOUT group therefore carries only Terms and Privacy, which are
+ *     real pages.
+ */
 export default function SupportSettingsPage() {
   const t = useTranslations('settings');
   const tBilling = useTranslations('billing');
@@ -26,6 +42,9 @@ export default function SupportSettingsPage() {
     }
   }, [currentUser, hasPermission, router]);
 
+  const waHref = getSupportWhatsAppWaMeBase();
+  const waLabel = getSupportWhatsAppDisplayLabel();
+
   return (
     <div className="min-h-screen w-full bg-[var(--color-surface-0)] page-enter" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
@@ -40,70 +59,50 @@ export default function SupportSettingsPage() {
           </Link>
         </div>
 
-        <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow">
-          <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
-            <div className="p-2 bg-teal-100 rounded-xl shrink-0">
-              <MessageCircle className="w-4 h-4 text-teal-600" aria-hidden />
-            </div>
-            <div className="min-w-0">
-              <h3 className="font-semibold text-[var(--color-text-primary)]">{tBilling('whatsappSupport')}</h3>
-              <p className="text-sm text-[var(--color-text-muted)] mt-0.5">{tBilling('contactSupportViaWhatsapp')}</p>
-            </div>
+        <div className="space-y-5">
+          <div>
+            <SettingsGroupLabel>{t('groupGetInTouch')}</SettingsGroupLabel>
+            <SettingsGroup>
+              {waHref && (
+                <SettingsRow
+                  icon={MessageCircle}
+                  label={t('chatOnWhatsapp')}
+                  value={t('supportFastest')}
+                  externalHref={waHref}
+                  description={tBilling('contactSupportViaWhatsapp')}
+                />
+              )}
+              <SettingsRow
+                icon={Mail}
+                iconClassName="bg-[var(--color-tile)] text-[var(--color-mid)]"
+                label={t('emailSupportTitle')}
+                description={SITE.supportEmail}
+                externalHref={`mailto:${SITE.supportEmail}`}
+              />
+            </SettingsGroup>
+            {waLabel && (
+              <p className="mt-2 px-1 text-xs text-[var(--color-muted)]" dir="ltr">
+                {waLabel}
+              </p>
+            )}
           </div>
-          <div className="p-6">
-            <p className="text-sm text-[var(--color-text-secondary)] mb-3" dir="ltr">
-              {t('supportContact', {
-                email: SITE.supportEmail,
-                phone: getSupportWhatsAppDisplayLabel() || ',',
-              })}
-            </p>
-            <div className="flex flex-wrap items-center gap-3">
-              {getSupportWhatsAppWaMeBase() ? (
-                <a
-                  href={getSupportWhatsAppWaMeBase()}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-teal-600 hover:bg-teal-700 text-white rounded-lg px-4 py-2 text-sm font-medium flex items-center gap-2 transition-colors btn-lift w-fit"
-                >
-                  <MessageCircle className="w-4 h-4 shrink-0" aria-hidden />
-                  {t('chatOnWhatsapp')}
-                </a>
-              ) : null}
-              <a
-                href={`mailto:${SITE.supportEmail}`}
-                className="border border-[var(--color-border-default)] hover:bg-[var(--color-surface-0)] text-[var(--color-text-primary)] rounded-lg px-4 py-2 text-sm font-medium flex items-center gap-2 transition-colors w-fit"
-              >
-                <Mail className="w-4 h-4 shrink-0" aria-hidden />
-                {t('emailSupportTitle')}
-              </a>
-            </div>
-          </div>
-        </div>
 
-        <div className="mt-4 bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow">
-          <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
-            <div className="p-2 bg-teal-100 rounded-xl shrink-0">
-              <ScrollText className="w-4 h-4 text-teal-600" aria-hidden />
-            </div>
-            <div className="min-w-0">
-              <h3 className="font-semibold text-[var(--color-text-primary)]">{t('legalTitle')}</h3>
-            </div>
-          </div>
-          <div className="divide-y divide-[var(--color-border-subtle)]">
-            <Link
-              href="/legal/terms"
-              className="flex items-center justify-between gap-3 px-6 py-4 text-sm font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-0)] transition-colors"
-            >
-              {tTerms('title')}
-              <DirectionalIcon icon={ChevronRight} className="w-4 h-4 text-[var(--color-text-muted)] shrink-0" />
-            </Link>
-            <Link
-              href="/legal/privacy"
-              className="flex items-center justify-between gap-3 px-6 py-4 text-sm font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-0)] transition-colors"
-            >
-              {tPrivacy('title')}
-              <DirectionalIcon icon={ChevronRight} className="w-4 h-4 text-[var(--color-text-muted)] shrink-0" />
-            </Link>
+          <div>
+            <SettingsGroupLabel>{t('groupAbout')}</SettingsGroupLabel>
+            <SettingsGroup>
+              <SettingsRow
+                icon={ScrollText}
+                iconClassName="bg-[var(--color-tile)] text-[var(--color-mid)]"
+                label={tTerms('title')}
+                href="/legal/terms"
+              />
+              <SettingsRow
+                icon={Shield}
+                iconClassName="bg-[var(--color-tile)] text-[var(--color-mid)]"
+                label={tPrivacy('title')}
+                href="/legal/privacy"
+              />
+            </SettingsGroup>
           </div>
         </div>
       </div>

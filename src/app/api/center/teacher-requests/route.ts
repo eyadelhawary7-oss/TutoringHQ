@@ -80,5 +80,18 @@ export async function GET(request: NextRequest) {
     name: g.name,
   }));
 
-  return NextResponse.json({ requests, groups });
+  // The centre's own join code — `Merged-Center-Setup` §09's Add tab draws it so
+  // the owner can share it with a teacher, who types it into the teacher-side
+  // "bring a group to a centre" form (which posts `center_code`). Read from the
+  // caller's own centre row on an owner/admin-gated route; `centers.center_code`
+  // is a real column, confirmed against information_schema.
+  const { data: centerRow, error: centerErr } = await ctx.supabaseAdmin
+    .from('centers')
+    .select('center_code')
+    .eq('id', ctx.centerId)
+    .single();
+  if (centerErr) return fail('center_code', centerErr);
+  const centerCode = (centerRow as { center_code: string | null } | null)?.center_code ?? null;
+
+  return NextResponse.json({ requests, groups, centerCode });
 }

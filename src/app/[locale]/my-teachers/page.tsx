@@ -1,11 +1,15 @@
 'use client';
 
 import { useLocale, useTranslations } from 'next-intl';
-import { useRef, useState } from 'react';
-import MyTeachersPanel, { type MyTeachersPanelHandle } from '@/components/teachers/MyTeachersPanel';
+import { useCallback, useRef, useState } from 'react';
+import MyTeachersPanel, {
+  type MyTeachersPanelHandle,
+  type MyTeachersStats,
+} from '@/components/teachers/MyTeachersPanel';
 import AddTeacherPanel from '@/components/teachers/AddTeacherPanel';
 import GroupProposalsTab from '@/components/teachers/GroupProposalsTab';
 import GroupSlotsTab from '@/components/teachers/GroupSlotsTab';
+import { formatNumber } from '@/lib/formatNumber';
 
 type Tab = 'myTeachers' | 'addTeacher' | 'requests' | 'slots';
 
@@ -22,6 +26,11 @@ export default function MyTeachersPage() {
   const isRTL = locale === 'ar' || locale.startsWith('ar-');
   const [tab, setTab] = useState<Tab>('myTeachers');
   const monitorRef = useRef<MyTeachersPanelHandle>(null);
+  // §09's header line, "5 teachers · 8 groups". Real counts, reported by the
+  // monitor panel from the same payload it renders — null until it has loaded,
+  // so the header never shows a placeholder number.
+  const [stats, setStats] = useState<MyTeachersStats | null>(null);
+  const handleStats = useCallback((next: MyTeachersStats) => setStats(next), []);
 
   // A group created/attached on accept, or a new link, changes the monitor -
   // refresh it so the owner sees it immediately when they switch back.
@@ -41,7 +50,14 @@ export default function MyTeachersPage() {
     >
       <div>
         <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">{t('title')}</h1>
-        <p className="mt-0.5 text-sm text-[var(--color-text-secondary)]">{t('subtitle')}</p>
+        <p className="mt-0.5 text-sm text-[var(--color-text-secondary)]">
+          {stats
+            ? t('headerCounts', {
+                teachers: formatNumber(stats.teachers, locale),
+                groups: formatNumber(stats.groups, locale),
+              })
+            : t('subtitle')}
+        </p>
       </div>
 
       <div className="flex w-fit gap-1 rounded-lg bg-[var(--color-surface-2)] p-1">
@@ -61,7 +77,7 @@ export default function MyTeachersPage() {
         ))}
       </div>
 
-      {tab === 'myTeachers' && <MyTeachersPanel panelRef={monitorRef} />}
+      {tab === 'myTeachers' && <MyTeachersPanel panelRef={monitorRef} onStats={handleStats} />}
       {tab === 'requests' && <GroupProposalsTab onChanged={refreshMonitor} />}
       {tab === 'slots' && <GroupSlotsTab onChanged={refreshMonitor} />}
       {tab === 'addTeacher' && <AddTeacherPanel />}

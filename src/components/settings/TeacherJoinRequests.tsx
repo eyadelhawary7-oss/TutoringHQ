@@ -25,7 +25,16 @@ type Group = { id: string; name: string | null };
  * requests and lets the owner accept (optionally assigning the teacher to a
  * center group) or decline.
  */
-export default function TeacherJoinRequests() {
+export default function TeacherJoinRequests({
+  onCenterCode,
+}: {
+  /**
+   * The centre's own join code, which this component's endpoint already
+   * returns. Surfaced through a callback rather than a second fetch so the
+   * §09 Add tab can draw it without calling the same route twice.
+   */
+  onCenterCode?: (code: string | null) => void;
+} = {}) {
   const t = useTranslations('settings.joinRequests');
   const locale = useLocale();
   const toast = useToast();
@@ -55,15 +64,16 @@ export default function TeacherJoinRequests() {
         setLoadError(true);
         return;
       }
-      const json = (await res.json()) as { requests: Req[]; groups: Group[] };
+      const json = (await res.json()) as { requests: Req[]; groups: Group[]; centerCode?: string | null };
       setRequests(json.requests ?? []);
       setGroups(json.groups ?? []);
+      onCenterCode?.(json.centerCode ?? null);
     } catch {
       setLoadError(true);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [onCenterCode]);
 
   useEffect(() => {
     load();

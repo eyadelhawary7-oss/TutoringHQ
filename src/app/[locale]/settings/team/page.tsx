@@ -10,6 +10,9 @@ import { EmptyState, PageHeader, RoleBadge } from '@/components/shared';
 import PasswordConfirmModal from '@/components/PasswordConfirmModal';
 import { StaffMemberCard, SIX_NEW_FLAGS } from '@/components/settings/StaffMemberCard';
 import TeacherJoinRequests from '@/components/settings/TeacherJoinRequests';
+import TeamMemberCard from '@/components/settings/TeamMemberCard';
+import { ActionSheet, type SheetAction } from '@/components/patterns';
+import { SettingsGroupLabel } from '@/components/settings/SettingsRows';
 import type { CenterPermission } from '@/lib/centerPermissions';
 import {
   BookOpen,
@@ -96,6 +99,7 @@ export default function TeamSettingsPage() {
   const [editingPermissionsId, setEditingPermissionsId] = useState<string | null>(null);
   const [permissionPrompt, setPermissionPrompt] = useState<{ targetId: string; key: string; enabled: boolean } | null>(null);
   const [permissionPromptError, setPermissionPromptError] = useState('');
+  const [actionSheetFor, setActionSheetFor] = useState<TeamMember | null>(null);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteName, setInviteName] = useState('');
   const [invitePhone, setInvitePhone] = useState('');
@@ -383,6 +387,20 @@ export default function TeamSettingsPage() {
   const isOwner = (member: TeamMember) => member.role === 'owner' || member.role === 'admin';
   const canEditPermissions = (member: TeamMember) => !isOwner(member) && member.id !== userId;
 
+  /**
+   * The design's `.mperm` line — "Money · students · attendance · messages".
+   * Built from the member's REAL granted flags, never from their role: two
+   * people with the same role can hold different permissions, and printing a
+   * role-shaped guess would be a claim about access that isn't true.
+   */
+  const permissionSummary = (member: TeamMember): string => {
+    if (member.is_active === false) return t('pausedNoAccess');
+    if (isOwner(member)) return t('fullAccess');
+    const granted = assistantPermissions[member.id] ?? {};
+    const labels = PERMISSION_KEYS.filter(({ key }) => granted[key] === true).map(({ labelKey }) => t(labelKey));
+    return labels.length ? labels.join(' · ') : t('noPermissionsGranted');
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen w-full bg-[var(--color-surface-0)]">
@@ -449,14 +467,24 @@ export default function TeamSettingsPage() {
               <div className="flex items-center justify-between flex-wrap gap-2 mb-6">
                 <div>
                   <h2 className="text-2xl font-bold text-[var(--color-text-primary)]">{t('teamMembers')}</h2>
-                  {limits && (
-                    <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">
-                      {t('teamMembersCount', {
-                        current: formatNumber(teamMembers.length, locale),
-                        max: formatNumber(limits.maxTeachers, locale),
-                      })}
-                    </p>
-                  )}
+                  {/* The design draws a seat meter — "3 of 5 seats used", a
+                      progress bar, and a per-extra-seat price. It is NOT built,
+                      and the denominator this screen used to print has been
+                      dropped rather than restyled, because it was not a real
+                      number: `/api/settings/limits` selects
+                      `max_teachers, max_students` from `centers` and NEITHER
+                      COLUMN EXISTS in the live catalog (re-confirmed this pass:
+                      0 matching rows in information_schema.columns). The route
+                      404s, the client falls back to a hardcoded 2, and every
+                      centre — whatever its plan — was being told it had 2 seats
+                      (F19.3 / D8). The member count below is real; the cap was
+                      invented, so only the real half is shown. The invite
+                      button's disabled state is left exactly as it was — that
+                      is an entitlement gate, not a label, and changing it is
+                      Eyad's call. */}
+                  <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">
+                    {t('teamMembersCountOnly', { current: formatNumber(teamMembers.length, locale) })}
+                  </p>
                 </div>
                 <button
                   onClick={() => {
@@ -486,153 +514,115 @@ export default function TeamSettingsPage() {
                 </div>
               )}
 
-              <div className="bg-[var(--color-surface-1)] rounded-2xl overflow-hidden border border-[var(--color-border-subtle)] card-shadow">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm min-w-[840px]">
-                    <thead>
-                      <tr className="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
-                        <th className="px-4 py-3 text-start text-xs font-semibold text-[var(--color-text-secondary)] uppercase">{t('inviteName')}</th>
-                        <th className="px-4 py-3 text-start text-xs font-semibold text-[var(--color-text-secondary)] uppercase">{t('teamMemberPhone')}</th>
-                        <th className="px-4 py-3 text-start text-xs font-semibold text-[var(--color-text-secondary)] uppercase">{t('role')}</th>
-                        <th className="px-4 py-3 text-start text-xs font-semibold text-[var(--color-text-secondary)] uppercase">{t('permissions')}</th>
-                        <th className="px-4 py-3 text-start text-xs font-semibold text-[var(--color-text-secondary)] uppercase">{tCommon('status')}</th>
-                        <th className="px-4 py-3 text-start text-xs font-semibold text-[var(--color-text-secondary)] uppercase">{tCommon('actions')}</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[var(--color-border-subtle)]">
-                      {teamMembers.map((member) => {
-                        const isSelf = member.id === userId;
-                        const isPermReadOnly = isOwner(member) || isSelf;
-                        const permChecked = (k: string) => (isOwner(member) ? true : assistantPermissions[member.id]?.[k] ?? false);
-                        const PERM_CHIPS: {
-                          key: string;
-                          emoji: string;
-                          labelKey: 'canScan' | 'canViewPayments' | 'canViewDashboard' | 'canManageStudents' | 'canManageGroups' | 'canViewSettings';
-                        }[] = [
-                          { key: 'can_scan', emoji: '📷', labelKey: 'canScan' },
-                          { key: 'can_view_payments', emoji: '💳', labelKey: 'canViewPayments' },
-                          { key: 'can_view_dashboard', emoji: '📊', labelKey: 'canViewDashboard' },
-                          { key: 'can_manage_students', emoji: '👥', labelKey: 'canManageStudents' },
-                          { key: 'can_manage_groups', emoji: '📚', labelKey: 'canManageGroups' },
-                          { key: 'can_view_settings', emoji: '⚙️', labelKey: 'canViewSettings' },
-                        ];
-                        return (
-                          <tr key={member.id} className={member.is_active === false ? 'opacity-60' : ''}>
-                            <td className="px-4 py-3 font-medium text-[var(--color-text-primary)]">
-                              {member.name || tCommon('notAvailable')}
-                              {isSelf && <span className="text-xs text-[var(--color-text-secondary)] ms-1">({t('you')})</span>}
-                            </td>
-                            <td className="px-4 py-3 text-[var(--color-text-secondary)] font-mono" dir="ltr">{member.phone}</td>
-                            <td className="px-4 py-3"><RoleBadge role={member.role} /></td>
-                            <td className="px-4 py-3">
-                              {editingPermissionsId === member.id ? (
-                                <div className="space-y-2">
-                                  <div className="flex flex-wrap gap-x-3 gap-y-1">
-                                    {PERMISSION_KEYS.map(({ key, labelKey }) => (
-                                      <label
-                                        key={key}
-                                        className={`flex items-center gap-1.5 text-xs select-none ${isPermReadOnly ? 'cursor-default opacity-75' : 'cursor-pointer text-[var(--color-text-primary)]'}`}
-                                      >
-                                        <input
-                                          type="checkbox"
-                                          checked={permChecked(key)}
-                                          onChange={(e) => !isPermReadOnly && handlePermissionToggle(member.id, key, e.target.checked)}
-                                          disabled={isPermReadOnly}
-                                          className="w-3.5 h-3.5 rounded accent-teal-600"
-                                        />
-                                        {t(labelKey)}
-                                      </label>
-                                    ))}
-                                  </div>
-                                  <div className="mt-3 pt-3 border-t border-[var(--color-border-subtle)]">
-                                    <p className="text-xs font-semibold text-[var(--color-text-secondary)] mb-2 uppercase tracking-wide">{t('sensitivePermissions')}</p>
-                                    <StaffMemberCard
-                                      userId={member.id}
-                                      role={member.role}
-                                      permissions={(assistantPermissions[member.id] as Partial<Record<CenterPermission, boolean>>) ?? {}}
-                                      visibleFlags={SIX_NEW_FLAGS}
-                                      onUpdate={(flag, value) =>
-                                        setAssistantPermissions((prev) => ({
-                                          ...prev,
-                                          [member.id]: { ...prev[member.id], [flag]: value },
-                                        }))
-                                      }
-                                    />
-                                  </div>
-                                  <button type="button" onClick={() => setEditingPermissionsId(null)} className="text-xs text-teal-600 hover:underline">{tCommon('cancel')}</button>
-                                </div>
-                              ) : (
-                                <div className="flex flex-wrap gap-1">
-                                  {PERM_CHIPS.map(({ key, emoji, labelKey }) => (
-                                    <span
-                                      key={key}
-                                      className={`px-1.5 py-0.5 rounded text-xs font-medium ${permChecked(key) ? 'bg-teal-100 text-teal-800' : 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)]'}`}
-                                      title={t(labelKey)}
-                                    >
-                                      {emoji}
-                                    </span>
-                                  ))}
-                                  {canEditPermissions(member) && (
-                                    <button type="button" onClick={() => setEditingPermissionsId(member.id)} className="text-teal-600 hover:underline text-xs ms-1">
-                                      {t('editPermissions')}
-                                    </button>
-                                  )}
-                                </div>
-                              )}
-                            </td>
-                            <td className="px-4 py-3">
-                              <span
-                                className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${member.is_active !== false ? 'bg-teal-100 text-teal-800' : 'bg-red-100 text-red-700'}`}
+              {/* §07 MEMBERS — the design's `.mcard` list. Replaces the
+                  840px-min-width table this screen used to draw, which on a
+                  phone (the width every frame in the design is drawn at) could
+                  only be read by scrolling sideways. Same data, same actions,
+                  same handlers — the three-dot now opens the shared
+                  `ActionSheet` from `src/components/patterns/` instead of two
+                  bare icon buttons in a table cell. */}
+              <SettingsGroupLabel>{t('groupMembers')}</SettingsGroupLabel>
+              <div className="space-y-3">
+                {teamMembers.map((member) => {
+                  const isSelf = member.id === userId;
+                  const ownerRow = isOwner(member);
+                  const isPermReadOnly = ownerRow || isSelf;
+                  const permChecked = (k: string) => (ownerRow ? true : assistantPermissions[member.id]?.[k] ?? false);
+                  return (
+                    <TeamMemberCard
+                      key={member.id}
+                      member={member}
+                      isSelf={isSelf}
+                      isOwnerRow={ownerRow}
+                      permissionSummary={permissionSummary(member)}
+                      onActions={!isSelf && !ownerRow ? () => setActionSheetFor(member) : undefined}
+                      onEditPermissions={
+                        canEditPermissions(member) && editingPermissionsId !== member.id
+                          ? () => setEditingPermissionsId(member.id)
+                          : undefined
+                      }
+                      onToggleActive={
+                        !isSelf && !ownerRow && member.is_active === false
+                          ? () => handleToggleActive(member)
+                          : undefined
+                      }
+                    >
+                      {editingPermissionsId === member.id && (
+                        <div className="mt-3 space-y-2 border-t border-[var(--color-hairline)] pt-3">
+                          <div className="flex flex-wrap gap-x-3 gap-y-1">
+                            {PERMISSION_KEYS.map(({ key, labelKey }) => (
+                              <label
+                                key={key}
+                                className={`flex items-center gap-1.5 text-xs select-none ${isPermReadOnly ? 'cursor-default opacity-75' : 'cursor-pointer text-[var(--color-text-primary)]'}`}
                               >
-                                {member.is_active !== false ? t('activeStatus') : t('deactivatedStatus')}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3">
-                              {!isSelf && !isOwner(member) && (
-                                <div className="flex items-center gap-1">
-                                  <button
-                                    type="button"
-                                    onClick={() => setEditingPermissionsId(member.id)}
-                                    className="p-1.5 hover:bg-[var(--color-surface-2)] rounded-lg transition-colors text-[var(--color-text-secondary)]"
-                                    title={t('editPermissions')}
-                                  >
-                                    <Pencil className="w-4 h-4" />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleToggleActive(member)}
-                                    className="p-1.5 hover:bg-red-50 rounded-lg transition-colors text-[var(--color-text-secondary)] hover:text-red-600"
-                                    title={member.is_active !== false ? t('deactivate') : t('activate')}
-                                  >
-                                    <UserX className="w-4 h-4" />
-                                  </button>
-                                </div>
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                      {pendingInvites.map((inv, idx) => (
-                        <tr key={`pending-${idx}`} className="border-b border-[var(--color-border-subtle)]">
-                          <td className="px-4 py-3 text-[var(--color-text-secondary)]">-</td>
-                          <td className="px-4 py-3 font-mono text-[var(--color-text-secondary)]" dir="ltr">{inv.phone}</td>
-                          <td className="px-4 py-3"><RoleBadge role={inv.role} /></td>
-                          <td className="px-4 py-3">-</td>
-                          <td className="px-4 py-3">
-                            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">{t('pendingInvite')}</span>
-                          </td>
-                          <td className="px-4 py-3">-</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {teamMembers.length === 0 && pendingInvites.length === 0 && (
-                    /* §01 quiet variant · the invite control is this card's
-                       own header button, so the empty state does not repeat it
-                       — §01's "one action, never two of equal weight". */
-                    <EmptyState icon={Users} title={t('noTeamMembers')} quiet />
-                  )}
-                </div>
+                                <input
+                                  type="checkbox"
+                                  checked={permChecked(key)}
+                                  onChange={(e) => !isPermReadOnly && handlePermissionToggle(member.id, key, e.target.checked)}
+                                  disabled={isPermReadOnly}
+                                  className="w-3.5 h-3.5 rounded accent-teal-600"
+                                />
+                                {t(labelKey)}
+                              </label>
+                            ))}
+                          </div>
+                          <div className="mt-3 pt-3 border-t border-[var(--color-border-subtle)]">
+                            <p className="text-xs font-semibold text-[var(--color-text-secondary)] mb-2 uppercase tracking-wide">
+                              {t('sensitivePermissions')}
+                            </p>
+                            <StaffMemberCard
+                              userId={member.id}
+                              role={member.role}
+                              permissions={(assistantPermissions[member.id] as Partial<Record<CenterPermission, boolean>>) ?? {}}
+                              visibleFlags={SIX_NEW_FLAGS}
+                              onUpdate={(flag, value) =>
+                                setAssistantPermissions((prev) => ({
+                                  ...prev,
+                                  [member.id]: { ...prev[member.id], [flag]: value },
+                                }))
+                              }
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setEditingPermissionsId(null)}
+                            className="text-xs text-teal-600 hover:underline"
+                          >
+                            {tCommon('cancel')}
+                          </button>
+                        </div>
+                      )}
+                    </TeamMemberCard>
+                  );
+                })}
+
+                {pendingInvites.map((inv, idx) => (
+                  <div
+                    key={`pending-${idx}`}
+                    className="flex flex-wrap items-center gap-3 rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 card-shadow"
+                  >
+                    <span className="font-mono text-base text-[var(--color-text-secondary)]" dir="ltr">
+                      {inv.phone}
+                    </span>
+                    <RoleBadge role={inv.role} />
+                    <span className="ms-auto rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
+                      {t('pendingInvite')}
+                    </span>
+                  </div>
+                ))}
+
+                {teamMembers.length === 0 && pendingInvites.length === 0 && (
+                  /* §01 quiet variant · the invite control is this card's own
+                     header button, so the empty state does not repeat it —
+                     §01's "one action, never two of equal weight".
+
+                     Carried over from #340's adoption pass, which added this to
+                     the <table> version of this list. #352 replaced the table
+                     with cards, so a plain "take one side" merge would have
+                     silently dropped the primitive and left the hand-rolled <p>
+                     that #340 existed to remove. Both changes are kept. */
+                  <EmptyState icon={Users} title={t('noTeamMembers')} quiet />
+                )}
               </div>
             </>
           )}
@@ -767,6 +757,42 @@ export default function TeamSettingsPage() {
             </div>
           </div>
         )}
+
+        {/* §07's three-dot. One sheet, one gesture — the shared primitive from
+            `src/components/patterns/`, not a local menu. Both actions are the
+            page's existing handlers, unchanged. */}
+        <ActionSheet
+          open={actionSheetFor !== null}
+          onClose={() => setActionSheetFor(null)}
+          title={actionSheetFor?.name || actionSheetFor?.phone || ''}
+          subtitle={actionSheetFor ? t('permissions') : undefined}
+          actions={
+            actionSheetFor
+              ? ([
+                  {
+                    id: 'edit-permissions',
+                    label: t('editPermissions'),
+                    icon: Pencil,
+                    onSelect: () => {
+                      setEditingPermissionsId(actionSheetFor.id);
+                      setActionSheetFor(null);
+                    },
+                  },
+                  {
+                    id: 'toggle-active',
+                    label: actionSheetFor.is_active !== false ? t('deactivate') : t('activate'),
+                    icon: UserX,
+                    destructive: actionSheetFor.is_active !== false,
+                    onSelect: () => {
+                      const target = actionSheetFor;
+                      setActionSheetFor(null);
+                      handleToggleActive(target);
+                    },
+                  },
+                ] satisfies SheetAction[])
+              : []
+          }
+        />
 
         <PasswordConfirmModal
           isOpen={!!permissionPrompt}

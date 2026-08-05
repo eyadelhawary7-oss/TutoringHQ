@@ -6,6 +6,7 @@ import { ChevronDown, ChevronUp, GraduationCap, Users } from 'lucide-react';
 import { EmptyState } from '@/components/shared';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency, formatNumber } from '@/lib/formatNumber';
+import { ListSkeleton } from '@/components/patterns';
 
 type MonitorGroup = {
   id: string;
@@ -31,6 +32,9 @@ type MonitorTeacher = {
 
 export type MyTeachersPanelHandle = { reload: () => void };
 
+/** Real counts for §09's "5 teachers · 8 groups" header line. */
+export type MyTeachersStats = { teachers: number; groups: number };
+
 /**
  * VIEW-ONLY monitor: every teacher linked to this center, their center groups
  * here and the money to date (scoped to this center). No mutating actions live
@@ -38,8 +42,11 @@ export type MyTeachersPanelHandle = { reload: () => void };
  */
 export default function MyTeachersPanel({
   panelRef,
+  onStats,
 }: {
   panelRef?: React.Ref<MyTeachersPanelHandle>;
+  /** Reports the real teacher/group counts up to §09's header. */
+  onStats?: (stats: MyTeachersStats) => void;
 }) {
   const t = useTranslations('teachersSection');
   const locale = useLocale();
@@ -65,13 +72,18 @@ export default function MyTeachersPanel({
         return;
       }
       const json = (await res.json()) as { teachers: MonitorTeacher[] };
-      setTeachers(json.teachers ?? []);
+      const list = json.teachers ?? [];
+      setTeachers(list);
+      onStats?.({
+        teachers: list.length,
+        groups: list.reduce((sum, tc) => sum + tc.groups.length, 0),
+      });
     } catch {
       setLoadError(true);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [onStats]);
 
   useImperativeHandle(panelRef, () => ({ reload: load }), [load]);
 
@@ -79,8 +91,10 @@ export default function MyTeachersPanel({
     load();
   }, [load]);
 
+  // §09 draws a loading skeleton frame of its own — the shared `ListSkeleton`
+  // from `src/components/patterns/`, not a single grey bar.
   if (loading) {
-    return <div className="h-24 animate-pulse rounded-lg bg-[var(--color-surface-2)]" />;
+    return <ListSkeleton rows={3} />;
   }
   if (loadError) {
     return (
@@ -89,6 +103,8 @@ export default function MyTeachersPanel({
       </p>
     );
   }
+  // §09 draws an empty frame with a title, an explanation of the split, and the
+  // invite CTA. Uses the shared `EmptyState` (Merged-Design-Patterns §01).
   if (teachers.length === 0) {
     return (
       /* §01 · this panel is read-only for the owner ("viewOnlyNote"), so it

@@ -18,6 +18,9 @@ interface UserProfile {
     logo_url?: string;
     name?: string;
     plan?: string;
+    /** Already returned by /api/me's centers select — declared here so the
+     *  settings hub can show it without a second fetch. */
+    governorate?: string;
     parent_pack_enabled?: boolean;
     parent_pack_active_parents?: number;
     card_orders_enabled?: boolean;

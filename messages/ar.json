@@ -5553,7 +5553,12 @@
     "errorCodeNotFound": "لا يوجد معلم بهذا الكود.",
     "errorAlreadyMember": "هذا المعلم مرتبط بسنترك بالفعل.",
     "errorAlreadyPending": "يوجد طلب معلق لهذا المعلم بالفعل.",
-    "errorGeneric": "حدث خطأ ما. حاول مرة أخرى."
+    "errorGeneric": "حدث خطأ ما. حاول مرة أخرى.",
+    "shareCenterCodeTitle": "شارك كود مركزك",
+    "shareCenterCodeHint": "يُدخل المدرّس هذا الكود ليضمّ مجموعة إلى مركزك. أنت من يوافق على الرسوم وحصة المركز قبل تفعيلها.",
+    "centerCodeCopy": "نسخ",
+    "centerCodeCopied": "تم النسخ",
+    "headerCounts": "{teachers} مدرّس · {groups} مجموعة"
   },
   "groups": {
     "title": "المجموعات",
@@ -6863,8 +6868,24 @@
       "notificationsDesc": "الملخص اليومي ووضع الصيف",
       "billingMoneyDesc": "إنستاباي، طلب الكروت، الخطة والفواتير",
       "supportDesc": "تواصل معنا عبر واتساب",
-      "accountDesc": "تغيير الرمز السري، تسجيل الخروج"
-    }
+      "accountDesc": "تغيير الرمز السري، تسجيل الخروج",
+      "referralsDesc": "كود الإحالة، المراكز المدعوّة والمكافآت"
+    },
+    "groupCenter": "المركز",
+    "groupYou": "حسابك",
+    "groupPlan": "الخطة",
+    "groupHelp": "المساعدة",
+    "groupGetInTouch": "تواصل معنا",
+    "groupAbout": "عن التطبيق",
+    "supportFastest": "الأسرع",
+    "groupMembers": "الأعضاء",
+    "groupTeachers": "المدرّسون",
+    "ownerKeepsEveryPermission": "المالك يحتفظ بكل الصلاحيات",
+    "reactivate": "إعادة تفعيل",
+    "fullAccess": "صلاحية كاملة",
+    "pausedNoAccess": "موقوف · بلا وصول",
+    "noPermissionsGranted": "لا توجد صلاحيات ممنوحة",
+    "teamMembersCountOnly": "{current} من أعضاء الفريق"
   },
   "setPin": {
     "header": "اختر رمزك السري",
