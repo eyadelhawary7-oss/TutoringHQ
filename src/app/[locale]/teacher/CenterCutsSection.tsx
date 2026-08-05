@@ -36,8 +36,25 @@ type CenterCutsData = {
  * Center-cut tracker (FREE zone). Visible to EVERY teacher regardless of
  * subscription - fetches /api/teacher/center-cuts (requireTeacherAuth, no
  * private gate), independently of the private-engine income view.
+ *
+ * `Merged-Teacher-Setup` §02 draws this as ONE hero: the owed headline, the
+ * "from N centers - settled monthly" caption, and a two-stat footer reading
+ * This month / All time. The all-time figure is NOT fetched here - it is the
+ * already-live `earnedAllTime` from /api/teacher/center-attendance, handed down
+ * by the page so the design's single hero is assembled without a second query
+ * or a second definition of the same number. When it has not arrived (or the
+ * sibling fetch failed) the stat is NOT DRAWN. It is never defaulted to 0: a
+ * zero here is indistinguishable from D16's real, dormant zero, and a made-up
+ * one would be unnoticeable and permanent.
  */
-export default function CenterCutsSection({ canDetach = false }: { canDetach?: boolean }) {
+export default function CenterCutsSection({
+  canDetach = false,
+  allTimeEarned = null,
+}: {
+  canDetach?: boolean;
+  /** All-time center cut, from the sibling center-attendance fetch. Null = unknown, not zero. */
+  allTimeEarned?: number | null;
+}) {
   const t = useTranslations('teacherPortal.centerCuts');
   const tPortal = useTranslations('teacherPortal');
   const locale = useLocale();
@@ -181,21 +198,39 @@ export default function CenterCutsSection({ canDetach = false }: { canDetach?: b
 
       <CenterRequestsTracker />
 
-      {/* Headline: what centers owe me (total outstanding). Teal identity. */}
-      <div className="mb-4 rounded-[var(--radius-card)] border border-[var(--color-teal)]/40 bg-[var(--color-teal-soft)] p-5">
-        <div className="mb-1 flex items-center gap-2 text-sm text-[var(--color-teal-deep)]">
+      {/* Headline: what centers owe me (total outstanding), drawn as the
+          design's money hero - the shared `.money-hero` surface (ADR 031), not
+          a local gradient. */}
+      <div className="money-hero mb-4 rounded-[var(--radius-card)] p-5">
+        <div className="mb-1 flex items-center gap-2 text-sm text-[var(--color-teal-soft)]">
           <HandCoins size={16} aria-hidden />
           {t('totalOutstanding')}
         </div>
-        <p className="num text-3xl font-bold text-[var(--color-teal-deep)]">
-          {formatCurrency(data.totalOutstanding, locale)}
-        </p>
-        <p className="num mt-1 text-sm text-[var(--color-teal-deep)]/80">
-          {t('collectedThisMonth', { amount: formatCurrency(data.totalCollectedThisMonth, locale) })}
-        </p>
-        <p className="mt-1 text-xs text-[var(--color-teal-deep)]/70">
+        <p className="num text-3xl font-bold">{formatCurrency(data.totalOutstanding, locale)}</p>
+        <p className="mt-1 text-xs text-[var(--color-teal-soft)]/80">
           {t('fromCentersCaption', { count: data.centers.length })}
         </p>
+
+        {/* The design's two-stat footer. "All time" appears only once the real
+            figure is in hand - see the component note on never defaulting it. */}
+        <div className="mt-3 flex gap-4 border-t border-white/15 pt-3">
+          <div className="flex-1">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--color-teal-soft)]">
+              {t('statThisMonth')}
+            </p>
+            <p className="num mt-1 text-sm font-bold">
+              {formatCurrency(data.totalCollectedThisMonth, locale)}
+            </p>
+          </div>
+          {allTimeEarned != null && (
+            <div className="flex-1">
+              <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--color-teal-soft)]">
+                {t('statAllTime')}
+              </p>
+              <p className="num mt-1 text-sm font-bold">{formatCurrency(allTimeEarned, locale)}</p>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="mb-2 flex items-baseline justify-between gap-2">
