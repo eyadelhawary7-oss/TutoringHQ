@@ -105,6 +105,7 @@ If a row ever names one, that row is a mistake.
 | [#296](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/296) | `4c5e29b` | 2026-08-01 | `Center-Home §01` — Schedule section empty-state (balance card confirmed still blocked, not built); merged by Eyad directly, held for review per this file's history | `/{locale}/dashboard` | v42 |
 | [#297](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/297) | `aa8115d4` | 2026-08-01 | none — doc only (logged #296, closed out the Center-Home §01 investigation episode) | none | v42 |
 | [#298](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/298) | `(on merge)` | 2026-08-01 | `Center-Groups` — full re-survey + waitlist-integrity fix (stale entries never cleared, position-assignment race) | `/{locale}/groups` | v42 |
+| [#351](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/351) | `(on merge)` | 2026-08-05 | `Center-Home §01` (schedule row `.tm` leading column, Attendance fabricated-0% fix), `§02` (four-tint reconciliation, href fallback) — plus `formatTime` and `ListRow`, both **shared**, so treat as ALL screens reading a wall-clock time or a list row | `/{locale}/dashboard`, `/{locale}/notifications`, and every screen calling `formatTime` with an `HH:MM` string (`/schedule`, `/groups`, teacher slot surfaces) | v45 → **v46** |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, `#214`'s by that
@@ -1658,3 +1659,70 @@ description:**
 description in each entry). `design/FILE-COMPLETION-TABLE.md` row 11 updated: ~3.1/5 → ~3.0/5, §04's
 sub-estimate corrected down, blocked-by list gains D31/D32, D2 marked closed (confirmed already-resolved
 by `#248`, never formally closed in this table before now).
+
+**Center-Home parity (5 August 2026, PR #351) — the file came back around with the instruction
+reversed: build the gaps rather than log them. The honest answer was that §01's one remaining gap is
+still genuinely unbuildable, and that the real work was three live wrong values sitting inside the
+sections already marked "built".**
+
+That distinction is the finding. Four separate passes (`#245`/`#247`/`#280`/`#296`) had each scored
+§01's schedule and KPI sections as present and correct. They were present. Two of them were printing
+the wrong number, and a fraction that counts sections cannot see that — the same shape as the F17
+addendum, where three passes confirmed the right table and none checked how populated it was.
+
+**`formatTime` shifted every bare `HH:MM` by the device's timezone offset (F36).** The wall-clock
+branch anchored the digits in the DEVICE's zone and then rendered them with `timeZone: CAIRO_TZ`,
+applying an offset to a value that never had one. `formatTime('14:00','en')` returns `"4:00 PM"` under
+`TZ=UTC` and `"2:00 PM"` under `TZ=Africa/Cairo` — measured directly, same build, only `TZ` changed.
+A 2pm class was announced as 4pm. It survived because the two cancel on a Cairo device, so every real
+Egyptian phone was right and nobody could reproduce it; Vercel's UTC runtime made it a hydration
+hazard as well. Fixed by anchoring and rendering in UTC so no offset exists in either direction —
+Cairo output is byte-identical to before, verified rather than assumed, so nothing real users see
+today changes and only the off-Cairo and SSR cases move.
+
+**How it was found is the part worth keeping.** Not by reading the design, and not by reading the
+helper — by writing the first unit test `formatTime` has ever had, for §01's schedule row, and
+letting the suite's `TZ=UTC` do exactly what CLAUDE.md's Cairo-time rule set it up to do. It failed
+on the first run. The instinct at that moment is to assume the test's expectation is wrong and
+soften it; the expectation *was* wrong about ICU's separator, and also right about the hour, and
+telling those two apart took a direct `TZ=UTC` vs `TZ=Africa/Cairo` comparison rather than a
+judgement call. **No existing test had pinned the buggy behaviour**, so nothing had to be edited to
+land the fix — 202 files / 1931 tests green, up from 201 / 1921.
+
+**The Attendance tile printed a fabricated `0%` for nearly every centre (F38).** It divides
+scans-today by expected-today and fell back to a literal `0` when there was no denominator.
+`schedule_slots` holds one row in the entire production database, so almost no centre has an expected
+headcount for today — a centre that scanned fifty students was told its attendance was zero. This is
+the exact failure the no-fabrication rule names: a plausible figure nobody questions afterwards. Now
+`null`, rendered as an em dash with the real scan count and an `aria-label` explaining why. Digital
+share deliberately keeps its `0%` — it prints its own denominator beside it, so that zero is a fact.
+
+**Every href-less notification opened the card-orders page (F37)** — fine while the one live writer
+was the card-order one, wrong the moment D26 wires a second.
+
+**Built to the design:** §01's schedule rows now use the drawn three-part `.sess` layout, with the
+start time as a 52px two-line leading column. That needed a slot the shared `ListRow` did not have,
+so the **primitive was extended** with an optional `leading` prop in the `.av` position rather than a
+local row being rolled — the rule is that the shared thing is mandatory, and extending it is how that
+rule is honoured when the design asks for something it cannot yet do. §02's icon tints were
+reconciled with the design's four *real* tints (it declares six classes; two pairs are byte-identical),
+which surfaced that `.i-danger` was missing entirely — the one row §02 singles out as destructive was
+rendering as a soft brass warning.
+
+**The balance card stays unbuilt, and this pass finally names what is missing instead of gesturing at
+it.** "No `payouts`/`center_balances`/`wallets` table" was true but not actionable. The precise
+artifacts: RPC `public.payout_available_minor` does not exist, and table `public.center_payouts` does
+not exist. What is new is that `src/lib/collectionPayout/` and `GET /api/collection/status` are
+already built, already honest — the route's own contract says a `sourced: false` zero is UNKNOWN, not
+EMPTY, and that rendering it without the reason is fabricating a balance — and have **zero consumers**.
+So this is not a source the dashboard is ignoring; it is plumbing waiting on a ledger that needs a
+migration. Three independent reasons the card stays out, any one sufficient: no source for the
+headline, no source for two of the other three figures, and a redefinition Eyad explicitly declined
+on 1 August.
+
+**D26 was not pre-empted.** Its own do-not-improve-away note says a type firing from one of several
+call sites looks broken rather than honestly sparse, so no write-triggers were added. What was done
+is display-only, so the feed renders correctly whenever the decision lands rather than needing a
+second pass. **F39** closes a loop the 1 August audit left open: §02's `.topbtn` is the global
+`MobileTopBar` hamburger appearing inside a full-phone frame, not a missing page element — building
+it would have put a second hamburger three lines below the real one.
