@@ -23,7 +23,24 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 type Summary = {
   displayName: string | null;
-  centersOutstanding: number;
+  /**
+   * null means "we could not read it", NOT "it is zero".
+   *
+   * This used to be `Number(cuts?.totalOutstanding) || 0`, so a failed or
+   * non-OK `/api/teacher/center-cuts` rendered a confident **0 EGP** on the
+   * Centers tile — a fabricated figure, and the one kind of wrong number
+   * nobody questions afterwards. The income and groups tiles beside it already
+   * carried null-on-failure and fell back to the skeleton; this one was the
+   * odd one out.
+   */
+  centersOutstanding: number | null;
+  /**
+   * How many center_fee rows behind `centersOutstanding` carried a basis a cut
+   * could be computed from. 0 means the figure rests on nothing, so it is an
+   * absence rather than a measurement and must not be rendered as money.
+   * See the evidence block in `src/app/api/teacher/center-cuts/route.ts`.
+   */
+  centersCutBasisRows: number;
   income: { collected: number; outstanding: number } | null;
   groups: { count: number; students: number } | null;
   sub: {
@@ -85,15 +102,18 @@ function TileCta({
 }) {
   return (
     <div className="flex flex-col rounded-[var(--radius-card)] border border-[var(--color-brass)]/40 bg-[var(--color-brass-soft)] p-5">
-      <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-[var(--color-text-muted)]">
+      <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-[var(--color-text-amber)]">
         <Icon size={16} aria-hidden />
         {title}
       </span>
       <p className="mb-4 flex-1 text-sm text-[var(--color-text-secondary)]">{body}</p>
+      {/* Design `.subbtn` — block, full width, centred, 8px radius. Same
+          treatment as the subscribed tile's CTA so the tile does not change
+          shape depending on which state renders it. */}
       <button
         type="button"
         onClick={onCta}
-        className="self-start rounded-lg bg-[var(--color-brass)] px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
+        className="block w-full rounded-lg bg-[var(--color-brass)] px-4 py-3 text-center text-xs font-semibold text-white transition-opacity hover:opacity-90"
       >
         {ctaLabel}
       </button>
@@ -146,7 +166,24 @@ export default function TeacherDashboardPage() {
       ]);
       if (cancelled) return;
 
-      const cuts = cutsRes?.ok ? ((await cutsRes.json()) as { totalOutstanding?: number }) : null;
+      const cuts = cutsRes?.ok
+        ? ((await cutsRes.json()) as { totalOutstanding?: number; cutBasisRows?: number })
+        : null;
+      // Read it once, and only accept a finite number. Anything else — the
+      // request failed, the body was missing the field, the field was a string
+      // that will not parse — stays null and the tile shows the skeleton it
+      // already shows while loading.
+      const centersOutstanding =
+        cuts != null && Number.isFinite(Number(cuts.totalOutstanding))
+          ? Number(cuts.totalOutstanding)
+          : null;
+      // Absent field from an older deploy is treated as 0 (unmeasured), which
+      // withholds the figure. Failing towards "we cannot say" is the safe way
+      // for this one to be wrong.
+      const centersCutBasisRows =
+        cuts != null && Number.isFinite(Number(cuts.cutBasisRows))
+          ? Number(cuts.cutBasisRows)
+          : 0;
       const subJson = subRes?.ok
         ? ((await subRes.json()) as {
             status?: string | null;
@@ -187,7 +224,8 @@ export default function TeacherDashboardPage() {
       if (cancelled) return;
       setSummary({
         displayName: profile?.displayName ?? null,
-        centersOutstanding: Number(cuts?.totalOutstanding) || 0,
+        centersOutstanding,
+        centersCutBasisRows,
         income: income ? { collected: Number(income.collectedThisMonth) || 0, outstanding: Number(income.outstanding) || 0 } : null,
         groups: priv
           ? {
@@ -275,11 +313,39 @@ export default function TeacherDashboardPage() {
                 {t('joinCenterCta')}
               </span>
             </>
+          ) : summary === null || summary.centersOutstanding === null ? (
+            // Loading, or the cuts read failed. Same treatment either way: the
+            // skeleton the tile already shows while loading. A 0 off a failed
+            // fetch is a fabrication, not a friendly default.
+            placeholder
+          ) : summary.centersCutBasisRows === 0 ? (
+            /* No center_fee row behind this teacher carries a cut basis, so the
+               sum is an absence, not a measurement — see the evidence block in
+               `src/app/api/teacher/center-cuts/route.ts`. Show no figure and no
+               settlement claim. "0 EGP" under a tile headed "What centers owe
+               me" is itself a money statement ("they owe you nothing"), and it
+               is one nothing in the system is able to make yet. The tile keeps
+               its link through to /teacher/centers, which is real. */
+            <>
+              <p className="text-sm font-semibold text-[var(--color-text-secondary)]">
+                {t('centersNotTracked')}
+              </p>
+              <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+                {t('centersNotTrackedHint')}
+              </p>
+            </>
           ) : (
             <>
               <p className="num text-2xl font-bold text-[var(--color-teal-deep)]">
-                {summary ? formatCurrency(summary.centersOutstanding, locale) : placeholder}
+                {formatCurrency(summary.centersOutstanding, locale)}
               </p>
+              {/* Deliberately NOT the design's zero-state "All centers settled".
+                  That copy is only true of a measured zero, and this branch is
+                  the first one that could ever produce one — it has never run
+                  against a live row. Shipping the affirmative now would be
+                  writing the claim before the fact that backs it exists. The
+                  neutral label describes the figure without asserting anything
+                  beyond it. */}
               <p className="text-xs text-[var(--color-text-muted)]">{t('centersPending')}</p>
             </>
           )}
@@ -342,21 +408,29 @@ export default function TeacherDashboardPage() {
           />
         )}
 
-        {/* Subscription */}
+        {/* Subscription. `Merged-Teacher-Home` draws this tile as `.card.sub`
+            — brass surface, brass border, brass header ink — in all four §01
+            frames it has (grep: 4 × `class="card sub"`, 4 × `class="subbtn"`,
+            4 × §01 frames). Live only did that in the two `TileCta` states, so
+            a subscribed teacher saw a different-looking tile from a trial or
+            lapsed one. All four design frames happen to draw the TRIALING
+            state, so the treatment for active/lapsed is carried across from
+            them for internal consistency rather than copied from a frame —
+            it is a surface, not a claim about any number. */}
         {hasPrivateAccess ? (
-          <div className="flex flex-col rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface-1)] p-5 shadow-card">
-            <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-[var(--color-text-muted)]">
+          <div className="flex flex-col rounded-[var(--radius-card)] border border-[var(--color-brass)]/40 bg-[var(--color-brass-soft)] p-5">
+            <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-[var(--color-text-amber)]">
               <Clock size={16} aria-hidden />
               {t('subscriptionTile')}
             </span>
             {summary ? (
               <>
                 {summary.sub.status === 'trialing' ? (
-                  <p className="text-base font-semibold text-[var(--color-text-primary)]">
+                  <p className="text-sm font-semibold leading-snug text-[var(--color-text-primary)]">
                     {t('trialDaysLeft', { days: formatNumber(summary.sub.daysLeft ?? 0, locale) })}
                   </p>
                 ) : summary.sub.status === 'active' ? (
-                  <p className="text-base font-semibold text-[var(--color-text-primary)]">
+                  <p className="text-sm font-semibold leading-snug text-[var(--color-text-primary)]">
                     {summary.sub.renewalAt
                       ? t('renewsOn', { date: formatDate(summary.sub.renewalAt, locale) })
                       : t('subscriptionActive')}
@@ -403,7 +477,7 @@ export default function TeacherDashboardPage() {
                     return cta ? (
                       <Link
                         href={cta.href}
-                        className="mt-3 self-start rounded-[var(--radius-card)] bg-[var(--color-brass)] px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
+                        className="mt-3 block w-full rounded-lg bg-[var(--color-brass)] px-4 py-3 text-center text-xs font-semibold text-white transition-opacity hover:opacity-90"
                       >
                         {cta.label}
                       </Link>
