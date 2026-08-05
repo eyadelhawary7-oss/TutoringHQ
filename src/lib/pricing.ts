@@ -152,7 +152,39 @@ export type ImpliedMrrCenterFields = {
   id?: string;
   /** Seed / audit / fixture centres - never counted toward subscription MRR (see docs/PRICING_SPEC.md). */
   is_test?: boolean | null;
+  /**
+   * Owning organisation, when the centre is part of a multi-branch group.
+   * Combined with an absent `all_in_price` this identifies an **extra branch**,
+   * which is an add-on rather than a subscription - see `isBranchAddonRow`.
+   * Select it alongside the other MRR fields; when it is not selected the row is
+   * treated as a standalone centre, i.e. exactly the pre-D23 behaviour.
+   */
+  organization_id?: string | null;
 };
+
+/**
+ * True when a `centers` row is an **extra branch** rather than a subscription:
+ * it belongs to an organisation and carries no price of its own.
+ *
+ * D23: an extra branch is billed as a flat add-on on the org PRIMARY centre's
+ * invoice (`src/lib/pricing/branchAddon.ts`), so counting the branch row itself
+ * would double-count the org. Without this test such a row falls through
+ * `getQuarterlyAllInMonthlyRateFromCenter`'s last step to `PLANS[pk].quarterlyAllIn`
+ * and silently contributes a **whole second plan price** to reported MRR -
+ * which is precisely what the cloned-price bug did.
+ *
+ * Deliberately narrow. A standalone centre (`organization_id` NULL) with no
+ * `all_in_price` still falls back to the plan list price exactly as before.
+ * Verified against the live catalog on 2026-08-05: **zero** `centers` rows have
+ * a non-NULL `organization_id`, so this predicate is a provable no-op for every
+ * row that exists today and can only affect branches created from here on.
+ */
+export function isBranchAddonRow(
+  row: Pick<ImpliedMrrCenterFields, 'organization_id' | 'all_in_price'>,
+): boolean {
+  if (row.organization_id == null) return false;
+  return row.all_in_price == null || Number(row.all_in_price) <= 0;
+}
 
 /** Argument for `isCenterEligibleForSubscriptionMrr` when passing a row-shaped input (status + optional flags). */
 export type SubscriptionMrrEligibilityInput = {
@@ -203,7 +235,7 @@ export function planKeyOrStarter(plan: string | null | undefined): PlanKey {
 export function getQuarterlyAllInMonthlyRateFromCenter(
   row: Pick<
     ImpliedMrrCenterFields,
-    'plan' | 'all_in_price' | 'is_early_adopter' | 'early_adopter_price'
+    'plan' | 'all_in_price' | 'is_early_adopter' | 'early_adopter_price' | 'organization_id'
   > & { id?: string },
 ): number {
   const rawPlan = String(row.plan || 'starter').toLowerCase();
@@ -221,6 +253,11 @@ export function getQuarterlyAllInMonthlyRateFromCenter(
   if (row.all_in_price != null && Number(row.all_in_price) > 0) {
     return Number(row.all_in_price);
   }
+  // D23: an extra branch has no price of its own and is billed as a flat add-on
+  // on the org primary's invoice. It must NOT fall through to the plan list
+  // price below, which would report a second full subscription for a branch
+  // nobody is separately invoiced for.
+  if (isBranchAddonRow(row)) return 0;
   return PLANS[pk].quarterlyAllIn;
 }
 
