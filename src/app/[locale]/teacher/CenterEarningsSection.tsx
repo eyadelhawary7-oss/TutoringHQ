@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { CalendarCheck, Wallet } from 'lucide-react';
 import { useRouter } from '@/i18n/routing';
@@ -26,8 +26,21 @@ type CenterAttendanceData = {
  * center work (this Cairo month and all-time) and the recent attendance
  * sessions for their center groups. Every teacher sees it regardless of
  * subscription - reads /api/teacher/center-attendance (requireTeacherAuth).
+ *
+ * `Merged-Teacher-Setup` §02 draws This month / All time INSIDE the owed hero,
+ * not as a second pair of tiles below it. So the Centers page passes
+ * `showTotals={false}` and takes the numbers via `onTotals`, leaving this
+ * section as what the design actually has here: the attendance list. The fetch
+ * is unchanged - one endpoint, one definition of the figure, rendered once.
+ * Any other caller that omits the props keeps the original two-tile layout.
  */
-export default function CenterEarningsSection() {
+export default function CenterEarningsSection({
+  showTotals = true,
+  onTotals,
+}: {
+  showTotals?: boolean;
+  onTotals?: (totals: { earnedThisMonth: number; earnedAllTime: number }) => void;
+} = {}) {
   const t = useTranslations('freeZone');
   const tPortal = useTranslations('teacherPortal');
   const locale = useLocale();
@@ -36,6 +49,11 @@ export default function CenterEarningsSection() {
   const [data, setData] = useState<CenterAttendanceData | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+
+  const onTotalsRef = useRef(onTotals);
+  useEffect(() => {
+    onTotalsRef.current = onTotals;
+  }, [onTotals]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -59,7 +77,14 @@ export default function CenterEarningsSection() {
         setLoadError(true);
         return;
       }
-      setData((await res.json()) as CenterAttendanceData);
+      const json = (await res.json()) as CenterAttendanceData;
+      setData(json);
+      // Through a ref, so a parent passing an inline arrow cannot re-trigger
+      // the fetch on every render.
+      onTotalsRef.current?.({
+        earnedThisMonth: json.earnedThisMonth,
+        earnedAllTime: json.earnedAllTime,
+      });
     } catch {
       setLoadError(true);
     } finally {
@@ -73,8 +98,12 @@ export default function CenterEarningsSection() {
 
   const header = (
     <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-[var(--color-text-primary)]">
-      <Wallet size={18} className="text-[var(--color-teal-deep)]" aria-hidden />
-      {t('earningsTitle')}
+      {showTotals ? (
+        <Wallet size={18} className="text-[var(--color-teal-deep)]" aria-hidden />
+      ) : (
+        <CalendarCheck size={18} className="text-[var(--color-teal-deep)]" aria-hidden />
+      )}
+      {showTotals ? t('earningsTitle') : t('attendanceTitle')}
     </h2>
   );
 
@@ -108,25 +137,32 @@ export default function CenterEarningsSection() {
     <section>
       {header}
 
-      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4 shadow-card">
-          <p className="text-xs text-[var(--color-text-muted)]">{t('earnedThisMonth')}</p>
-          <p className="num mt-1 text-2xl font-bold text-[var(--color-teal-deep)]">
-            {formatCurrency(data.earnedThisMonth, locale)}
-          </p>
-        </div>
-        <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4 shadow-card">
-          <p className="text-xs text-[var(--color-text-muted)]">{t('earnedAllTime')}</p>
-          <p className="num mt-1 text-2xl font-bold text-[var(--color-text-primary)]">
-            {formatCurrency(data.earnedAllTime, locale)}
-          </p>
-        </div>
-      </div>
+      {/* The two totals live in the owed hero when the Centers page assembles
+          the design's single §02 hero. Drawn here only for callers that keep
+          the standalone earnings layout. */}
+      {showTotals && (
+        <>
+          <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4 shadow-card">
+              <p className="text-xs text-[var(--color-text-muted)]">{t('earnedThisMonth')}</p>
+              <p className="num mt-1 text-2xl font-bold text-[var(--color-teal-deep)]">
+                {formatCurrency(data.earnedThisMonth, locale)}
+              </p>
+            </div>
+            <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4 shadow-card">
+              <p className="text-xs text-[var(--color-text-muted)]">{t('earnedAllTime')}</p>
+              <p className="num mt-1 text-2xl font-bold text-[var(--color-text-primary)]">
+                {formatCurrency(data.earnedAllTime, locale)}
+              </p>
+            </div>
+          </div>
 
-      <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-[var(--color-text-muted)]">
-        <CalendarCheck size={14} aria-hidden />
-        {t('attendanceTitle')}
-      </h3>
+          <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-[var(--color-text-muted)]">
+            <CalendarCheck size={14} aria-hidden />
+            {t('attendanceTitle')}
+          </h3>
+        </>
+      )}
       {data.sessions.length === 0 ? (
         <p className="rounded-[var(--radius-card)] border border-dashed border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 text-sm text-[var(--color-text-secondary)]">
           {t('attendanceEmpty')}

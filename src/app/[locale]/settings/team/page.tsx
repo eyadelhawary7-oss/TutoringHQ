@@ -6,7 +6,7 @@ import { useRouter, Link } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { dbSelect } from '@/lib/db-proxy';
 import { useUser } from '@/contexts/UserContext';
-import { PageHeader, RoleBadge } from '@/components/shared';
+import { EmptyState, PageHeader, RoleBadge } from '@/components/shared';
 import PasswordConfirmModal from '@/components/PasswordConfirmModal';
 import { StaffMemberCard, SIX_NEW_FLAGS } from '@/components/settings/StaffMemberCard';
 import TeacherJoinRequests from '@/components/settings/TeacherJoinRequests';
@@ -612,9 +612,16 @@ export default function TeamSettingsPage() {
                 ))}
 
                 {teamMembers.length === 0 && pendingInvites.length === 0 && (
-                  <p className="rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] p-8 text-center text-[var(--color-text-secondary)]">
-                    {t('noTeamMembers')}
-                  </p>
+                  /* §01 quiet variant · the invite control is this card's own
+                     header button, so the empty state does not repeat it —
+                     §01's "one action, never two of equal weight".
+
+                     Carried over from #340's adoption pass, which added this to
+                     the <table> version of this list. #352 replaced the table
+                     with cards, so a plain "take one side" merge would have
+                     silently dropped the primitive and left the hand-rolled <p>
+                     that #340 existed to remove. Both changes are kept. */
+                  <EmptyState icon={Users} title={t('noTeamMembers')} quiet />
                 )}
               </div>
             </>

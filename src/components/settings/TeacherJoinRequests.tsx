@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { UserPlus, Loader2, X } from 'lucide-react';
+import { EmptyState } from '@/components/shared';
 import { supabase } from '@/lib/supabase';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import { useToast } from '@/hooks/useToast';
@@ -121,11 +122,15 @@ export default function TeacherJoinRequests({
   if (requests.length === 0) {
     return (
       <section className="mb-6 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] card-shadow p-5">
+        {/* §01 quiet variant · a join request is sent by a teacher; the owner
+            cannot create one, so this state has no action by design and takes
+            the muted tile rather than the mint one. The section heading stays
+            because it is the card's own label, not part of the empty state. */}
         <h2 className="mb-1 flex items-center gap-2 text-lg font-bold text-[var(--color-text-primary)]">
           <UserPlus className="h-5 w-5 text-[var(--color-teal-deep)]" aria-hidden />
           {t('title')}
         </h2>
-        <p className="text-sm text-[var(--color-text-secondary)]">{t('empty')}</p>
+        <EmptyState icon={UserPlus} title={t('empty')} quiet />
       </section>
     );
   }

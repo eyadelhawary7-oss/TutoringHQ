@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { CalendarClock, CalendarDays, Loader2, X } from 'lucide-react';
+import { ListSkeleton } from '@/components/patterns';
+import { EmptyState } from '@/components/shared';
 import { supabase } from '@/lib/supabase';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import { formatCurrency, formatTime } from '@/lib/formatNumber';
@@ -352,13 +354,15 @@ export default function GroupSlotsSection({ refreshKey = 0 }: { refreshKey?: num
       <p className="text-sm text-[var(--color-text-secondary)]">{t('subtitle')}</p>
 
       {loading ? (
-        <div className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
-          <Loader2 size={16} className="animate-spin" /> ...
-        </div>
+        /* §02 · a spinner followed by an ellipsis said nothing about what was
+           coming. These are group cards, so the list skeleton stands in. */
+        <ListSkeleton rows={2} />
       ) : groups.length === 0 ? (
-        <p className="rounded-[var(--radius-card)] border border-dashed border-[var(--color-border)] bg-[var(--color-surface-1)] px-4 py-6 text-center text-sm text-[var(--color-text-secondary)]">
-          {t('noCenterGroups')}
-        </p>
+        /* §01 quiet variant · center groups are assigned by the center, not
+           created here, so there is no action this screen can offer. */
+        <div className="rounded-[var(--radius-card)] border border-dashed border-[var(--color-border)] bg-[var(--color-surface-1)] py-4">
+          <EmptyState icon={CalendarDays} title={t('noCenterGroups')} quiet />
+        </div>
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
           {groups.map((g) => (

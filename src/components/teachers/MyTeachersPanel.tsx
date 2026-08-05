@@ -3,10 +3,10 @@
 import { useCallback, useEffect, useImperativeHandle, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { ChevronDown, ChevronUp, GraduationCap, Users } from 'lucide-react';
+import { EmptyState } from '@/components/shared';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency, formatNumber } from '@/lib/formatNumber';
 import { ListSkeleton } from '@/components/patterns';
-import { EmptyState } from '@/components/shared';
 
 type MonitorGroup = {
   id: string;
@@ -107,14 +107,12 @@ export default function MyTeachersPanel({
   // invite CTA. Uses the shared `EmptyState` (Merged-Design-Patterns §01).
   if (teachers.length === 0) {
     return (
-      <div className="rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] card-shadow">
-        <EmptyState
-          icon={GraduationCap}
-          title={t('monitorEmptyTitle')}
-          description={t('monitorEmpty')}
-          alt={t('monitorEmptyAlt')}
-        />
-      </div>
+      /* §01 · this panel is read-only for the owner ("viewOnlyNote"), so it
+         gets the quiet tile and no action — the teachers arrive through the
+         join-request flow elsewhere, not from a button here. The hand-rolled
+         version used a bare 32px muted glyph, which is the exact "nothing to
+         anchor on" §01 names. */
+      <EmptyState icon={GraduationCap} title={t('monitorEmpty')} quiet />
     );
   }
 

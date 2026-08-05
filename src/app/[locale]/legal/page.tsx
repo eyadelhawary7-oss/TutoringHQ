@@ -107,8 +107,16 @@ export default async function LegalIndexPage() {
                   {pick(doc.title, isAr)}
                 </span>
                 {/* Design `.dmeta` is the mono face; in-product `font-mono` maps to
-                    Plex + tabular-nums (globals.css), the system's numeral pairing. */}
-                <span className="font-mono mt-1 block text-[11px] text-[var(--color-muted)]">
+                    Plex + tabular-nums (globals.css), the system's numeral pairing.
+                    The design's `.ar .dmeta` swaps that mono face for the Arabic
+                    one at weight 500 — in the app the family half is already
+                    satisfied (`font-mono` resolves to the same Plex/Cairo-Arabic
+                    stack in both locales), so only the 500 is left to apply. */}
+                <span
+                  className={`font-mono mt-1 block text-[11px] text-[var(--color-muted)] ${
+                    isAr ? 'font-medium' : ''
+                  }`}
+                >
                   {meta}
                 </span>
               </span>

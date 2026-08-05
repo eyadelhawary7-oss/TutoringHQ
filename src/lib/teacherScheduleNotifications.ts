@@ -2,6 +2,12 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { isTemplateApproved } from '@/lib/centerNotify';
 import { sendNudgeWhatsapp } from '@/lib/nudges/send';
 import { formatDate } from '@/lib/formatNumber';
+import {
+  TEMPLATE_CLASS_CANCELLED,
+  TEMPLATE_CLASS_REMINDER,
+  TEMPLATE_CLASS_RESCHEDULED,
+  TEMPLATE_SCHEDULE_CHANGED,
+} from '@/lib/teacherWhatsappTemplates';
 
 /**
  * WhatsApp notifications for the teacher schedule feature — sent to the enrolled
@@ -27,11 +33,13 @@ import { formatDate } from '@/lib/formatNumber';
  * mismatch cannot reach Meta (the gate holds), so this is safe to land now.
  */
 
+// Names live in the shared catalog (src/lib/teacherWhatsappTemplates.ts) so the
+// teacher's WhatsApp screen reports on exactly the templates this file sends.
 const TEMPLATES = {
-  scheduleChanged: 'chq_schedule_changed',
-  classCancelled: 'chq_class_cancelled',
-  classRescheduled: 'chq_class_rescheduled',
-  classReminder: 'chq_class_reminder',
+  scheduleChanged: TEMPLATE_SCHEDULE_CHANGED,
+  classCancelled: TEMPLATE_CLASS_CANCELLED,
+  classRescheduled: TEMPLATE_CLASS_RESCHEDULED,
+  classReminder: TEMPLATE_CLASS_REMINDER,
 } as const;
 
 type RosterRecipient = { phone: string; studentName: string };

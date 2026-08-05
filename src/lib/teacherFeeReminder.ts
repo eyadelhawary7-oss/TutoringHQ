@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { isTemplateApproved, waSendingEnabled } from '@/lib/centerNotify';
 import { formatDate } from '@/lib/formatNumber';
+import { TEMPLATE_FEE_REMINDER } from '@/lib/teacherWhatsappTemplates';
 
 /**
  * Manual "Send reminder" on Merged-Teacher-Students §02 — the gate, shared by
@@ -24,7 +25,11 @@ import { formatDate } from '@/lib/formatNumber';
  */
 export const MANUAL_FEE_REMINDER_CONFIG_KEY = 'teacher.fee_reminder.manual_enabled';
 
-export const FEE_REMINDER_TEMPLATE = 'chq_fee_reminder';
+/**
+ * Re-exported from the shared teacher template catalog so the name has exactly
+ * one definition; the teacher WhatsApp screen lists the same constant it sends.
+ */
+export const FEE_REMINDER_TEMPLATE = TEMPLATE_FEE_REMINDER;
 
 /** Same ceiling the nightly cron enforces, so the two paths cannot double-send. */
 export const MAX_FEE_REMINDERS = 2;

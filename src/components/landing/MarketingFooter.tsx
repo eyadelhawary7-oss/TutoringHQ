@@ -101,13 +101,21 @@ export default function MarketingFooter({
 
         <div className="min-w-[116px]">
           <p className={headCls}>{t('legalHeading')}</p>
-          <Link href="/privacy" className={linkCls}>
+          {/* The three deep links point at the canonical `/legal/*` addresses,
+              not at `/privacy`, `/terms` and `/cookies`. Those three are now
+              all `permanentRedirect` stubs into exactly these targets, so the
+              old behaviour was a 308 on every click from the site's own
+              footer. Same labels, same three links — the note below still
+              holds — one hop fewer, and no two public URLs serving the same
+              document. The old addresses stay reachable for links already out
+              in the world. */}
+          <Link href="/legal/privacy" className={linkCls}>
             {t('privacy')}
           </Link>
-          <Link href="/terms" className={linkCls}>
+          <Link href="/legal/terms" className={linkCls}>
             {t('terms')}
           </Link>
-          <Link href="/cookies" className={linkCls}>
+          <Link href="/legal/cookie" className={linkCls}>
             {t('cookies')}
           </Link>
           {/* s08-3: the design does not draw this footer, so "identical" does
