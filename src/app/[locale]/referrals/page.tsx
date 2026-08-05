@@ -10,6 +10,7 @@ import KpiCard from '@/components/shared/KpiCard';
 import { ReferralWithdrawalPanel } from '@/components/referrals/ReferralWithdrawalPanel';
 import { formatDate, formatNumber, formatPercent } from '@/lib/formatNumber';
 import { COMMISSION_TIERS } from '@/lib/referralProgram';
+import { centerStatusPresentation } from '@/lib/referralCommissionStatus';
 
 // Tone per tier, matching Merged-Center-Insight §03's .s25/.s10/.s5 step chips
 // (teal → gold → neutral, in that order). COMMISSION_TIERS is the single
@@ -39,16 +40,22 @@ type ActiveReferral = {
   total: number;
 };
 
+/**
+ * One row of `referral_commissions` as served by GET /api/referral.
+ * D22: field names follow the canonical table. `status` is
+ * 'hold' | 'withdrawable' | 'paid' | 'forfeited'.
+ */
 type RewardHistoryItem = {
   id: string;
   referred_center_id: string;
   referred_center_name: string;
-  month_number: number;
-  reward_percentage: number;
-  base_amount: number;
-  reward_amount: number;
+  months_since_activation: number;
+  /** Fraction (0.25), not percent. */
+  commission_rate: number;
+  referred_plan_fee: number;
+  commission_amount: number;
   status: string;
-  held_until?: string;
+  hold_until?: string;
   paid_at?: string;
   period_month: string;
 };
@@ -67,6 +74,8 @@ export default function ReferralsPage() {
     available: number;
     pending: number;
     paidOut: number;
+    /** Commission lost when a referred centre did not pay in full. */
+    forfeited: number;
     totalReferrals: number;
     activeReferrals: ActiveReferral[];
     rewardHistory: RewardHistoryItem[];
@@ -95,6 +104,7 @@ export default function ReferralsPage() {
           available: json.available ?? 0,
           pending: json.pending ?? 0,
           paidOut: json.paidOut ?? 0,
+          forfeited: json.forfeited ?? 0,
           totalReferrals: json.totalReferrals ?? 0,
           activeReferrals: json.activeReferrals ?? [],
           rewardHistory: json.rewardHistory ?? [],
@@ -301,49 +311,44 @@ export default function ReferralsPage() {
                 <tbody>
                   {data?.rewardHistory?.map((h) => {
                     const monthLabel = formatPeriodMonth(h.period_month, locale);
-                    let statusBadge: ReactNode;
-                    if (h.status === 'held') {
-                      const holdDate = h.held_until ? new Date(h.held_until) : null;
+                    // D22 status vocabulary, from referral_commissions:
+                    //   hold → not yet payable (the retired table split this
+                    //          across 'pending' and 'held')
+                    //   withdrawable → payable now (was 'available')
+                    //   paid → already paid out
+                    //   forfeited → lost because the referred centre did not pay
+                    //          in full. Shown as "expired" and greyed, never
+                    //          hidden: a centre must see what it lost.
+                    const presentation = centerStatusPresentation(h.status);
+                    const isForfeited = presentation.greyed;
+                    // A 'hold' row shows the days remaining when its hold window
+                    // is still open; otherwise the shared label is used verbatim.
+                    // An unrecognised status yields an empty labelKey and is
+                    // rendered as-is rather than guessed at.
+                    let labelText: string;
+                    if (h.status === 'hold') {
+                      const holdDate = h.hold_until ? new Date(h.hold_until) : null;
                       const daysLeft = holdDate ? Math.max(0, Math.ceil((holdDate.getTime() - Date.now()) / 86400000)) : 0;
-                      statusBadge = (
-                        <span className="badge badge-gold">
-                          {daysLeft > 0 ? t('rewardStatusHeld', { days: fmt(daysLeft) }) : t('rewardStatusHeldShort')}
-                        </span>
-                      );
-                    } else if (h.status === 'available') {
-                      statusBadge = (
-                        <span className="badge badge-success">
-                          {t('rewardStatusAvailable')}
-                        </span>
-                      );
-                    } else if (h.status === 'paid') {
-                      statusBadge = (
-                        <span className="badge badge-success">
-                          {t('rewardStatusPaid')}
-                        </span>
-                      );
-                    } else if (h.status === 'disputed') {
-                      statusBadge = (
-                        <span className="badge badge-danger">
-                          {t('statusDisputedShort')}
-                        </span>
-                      );
+                      labelText = daysLeft > 0 ? t('rewardStatusHeld', { days: fmt(daysLeft) }) : t('rewardStatusHeldShort');
+                    } else if (presentation.labelKey) {
+                      labelText = t(presentation.labelKey as 'rewardStatusAvailable');
                     } else {
-                      statusBadge = (
-                        <span className="badge badge-neutral">
-                          {h.status}
-                        </span>
-                      );
+                      labelText = h.status;
                     }
+                    const statusBadge: ReactNode = (
+                      <span className={`badge badge-${presentation.tone}`}>{labelText}</span>
+                    );
                     return (
                       <tr
                         key={h.id}
-                        className="transition-colors duration-150 hover:bg-[var(--color-surface-2)]"
+                        className={`transition-colors duration-150 hover:bg-[var(--color-surface-2)]${
+                          isForfeited ? ' opacity-60' : ''
+                        }`}
                       >
-                        <td className="py-3 px-4 text-[var(--color-text-primary)]">{monthLabel}</td>
-                        <td className="py-3 px-4 text-[var(--color-text-primary)] font-mono">{maskCenterName(h.referred_center_name)}</td>
-                        <td className="py-3 px-4 text-end font-mono text-[var(--color-text-primary)] tabular-nums">
-                          {fmt(h.reward_amount)} {tc('egp')}
+                        <td className={`py-3 px-4 ${isForfeited ? 'text-[var(--color-text-muted)]' : 'text-[var(--color-text-primary)]'}`}>{monthLabel}</td>
+                        <td className={`py-3 px-4 font-mono ${isForfeited ? 'text-[var(--color-text-muted)]' : 'text-[var(--color-text-primary)]'}`}>{maskCenterName(h.referred_center_name)}</td>
+                        <td className={`py-3 px-4 text-end font-mono tabular-nums ${isForfeited ? 'text-[var(--color-text-muted)]' : 'text-[var(--color-text-primary)]'}`}>
+                          {fmt(h.commission_amount)} {tc('egp')}
                         </td>
                         <td className="py-3 px-4">{statusBadge}</td>
                       </tr>

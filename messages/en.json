@@ -1386,7 +1386,8 @@
     "noWithdrawalBalance": "No balance available",
     "withdrawalModalTitle": "Request withdrawal",
     "submitWithdrawal": "Submit request",
-    "instapayInvalid": "InstaPay number must be 11 digits starting with 01"
+    "instapayInvalid": "InstaPay number must be 11 digits starting with 01",
+    "rewardStatusExpired": "Expired"
   },
   "referral": {
     "referralCodeOptional": "Referral Code (optional)",
@@ -4088,6 +4089,7 @@
       "emptyAlt": "Roles can be changed at any time.",
       "permissionSummary": "{count} areas",
       "joinedOn": "Joined {date}",
+      "lastSignedIn": "Last signed in {ago}",
       "customRoleNote": "Ticking anything the chosen role does not already grant saves this person as a custom role. Confirm with your own password.",
       "lockedRoleNote": "Owner and admin permissions are fixed and cannot be edited here.",
       "permissionsSaved": "Permissions saved.",
@@ -4940,7 +4942,6 @@
       "col_period": "Period",
       "col_status": "Status",
       "col_held_until": "Payable After",
-      "status_pending": "Pending",
       "status_held": "Held",
       "status_available": "Available",
       "status_paid": "Paid",
@@ -4953,10 +4954,9 @@
       "no_records": "No reward records yet",
       "no_records_description": "Cron runs on the 2nd of each month and will populate this list.",
       "filter_all": "All",
-      "filter_pending": "Pending",
-      "filter_held": "Held",
+      "filter_pending": "Outstanding",
       "filter_paid": "Paid",
-      "select_payable": "Select payable rows (pending or available) to mark paid.",
+      "select_payable": "Select payable rows (held past their hold date, or withdrawable) to mark paid. Forfeited rows can never be paid.",
       "errors": {
         "unauthorized": "Unauthorized",
         "config": "Server configuration error",
@@ -4964,7 +4964,11 @@
         "superAdminOnly": "Super admin only",
         "invalidBody": "Invalid request body",
         "recordIdsRequired": "Record IDs are required"
-      }
+      },
+      "filter_hold": "Held",
+      "filter_forfeited": "Forfeited",
+      "status_forfeited": "Forfeited",
+      "col_total_forfeited": "Total Forfeited"
     },
     "centerNotes": {
       "title": "Internal Notes",
@@ -5143,6 +5147,7 @@
         "invoices": "Invoices",
         "students": "Students",
         "staff": "Teachers & staff",
+        "branches": "Branches",
         "activityLog": "Activity log",
         "notes": "Internal notes"
       },
