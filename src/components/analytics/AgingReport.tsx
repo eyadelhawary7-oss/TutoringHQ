@@ -5,7 +5,8 @@ import { useLocale, useTranslations } from 'next-intl';
 import { formatCurrency, formatNumber } from '@/lib/formatNumber';
 import { supabase } from '@/lib/supabase';
 import { getCsrfHeaders } from '@/lib/csrf-client';
-import { MessageCircle, Loader2 } from 'lucide-react';
+import { CircleCheck, MessageCircle, Loader2 } from 'lucide-react';
+import { EmptyState } from '@/components/shared';
 
 export interface AgingRow {
   student_id: string;
@@ -26,6 +27,44 @@ function getRowBg(days: number): string {
   return 'bg-red-50';
 }
 
+/**
+ * `Merged-Center-Insight` §01's "Aging · outstanding" card draws three age
+ * BANDS (`0–30`, `31–60` with a `watch` pill, `60+` with an `overdue` pill),
+ * each carrying that band's outstanding total.
+ *
+ * THOSE BANDS ARE NOT BUILT, DELIBERATELY, AND THIS IS THE SECOND ATTEMPT.
+ *
+ * An earlier version of this component DID render them, by grouping the rows
+ * the API returns on `days_overdue` and summing `amount`. That produced a
+ * distribution the data cannot support, and it was caught in adversarial
+ * re-verification:
+ *
+ *   · `amount` is `balances.get(id).balance` from `getStudentBalances(...)` —
+ *     ONE RUNNING TOTAL PER STUDENT (`api/analytics/revenue/route.ts:159-168`),
+ *     not a per-invoice figure. It has no internal structure to split.
+ *   · `days_overdue` is ONE PROXY AGE PER STUDENT: days since the student's
+ *     last confirmed payment + 30d, falling back to the 1st of the current
+ *     month when they have never paid (`route.ts:272-283`).
+ *
+ * So a student five months in arrears who paid anything 20 days ago had their
+ * ENTIRE balance rendered under "0–30 days". A real aging report splits ONE
+ * student's balance ACROSS bands by invoice date; this data cannot, because
+ * per-invoice allocation does not exist yet.
+ *
+ * It was also degenerate in production, not merely imprecise: `payments` holds
+ * 0 rows, so every student falls back to the 1st of the month, every balance
+ * lands in `0–30`, and `31–60` and `60+` printed EGP 0 for every centre,
+ * always. Eyad's call, 5 August: **an honest empty state, not a relabel and
+ * not the chart.** A zero reads as a fact, and two bands reading zero
+ * unconditionally is worse than showing nothing.
+ *
+ * Tracked as its own feature entry with the migration it requires in
+ * `design/BUILD-AFTER-REDESIGN.md` (F45 · per-invoice allocation). When that
+ * lands, the bands come back here and this notice goes away.
+ *
+ * The per-student table below is untouched: it predates this pass, is real
+ * per-student data, and is strictly more capability than the summary.
+ */
 export default function AgingReport({ data = [], onRefresh }: AgingReportProps) {
   const t = useTranslations('analytics');
   const locale = useLocale();
@@ -59,25 +98,30 @@ export default function AgingReport({ data = [], onRefresh }: AgingReportProps) 
     }
   };
 
-  const sendAllReminders = async () => {
+  const sendBatch = async (rows: AgingRow[]) => {
     const session = await getSession();
-    if (!session || data.length === 0) return;
+    if (!session || rows.length === 0) return;
 
+    for (const row of rows) {
+      await fetch('/api/whatsapp/send-balance-reminder', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+          ...(await getCsrfHeaders(session.access_token)),
+        },
+        body: JSON.stringify({ student_id: row.student_id }),
+      });
+      await new Promise((r) => setTimeout(r, 500));
+    }
+    if (onRefresh) onRefresh();
+  };
+
+  const sendAllReminders = async () => {
+    if (data.length === 0) return;
     setSendingAll(true);
     try {
-      for (const row of data) {
-        await fetch('/api/whatsapp/send-balance-reminder', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session.access_token}`,
-            ...(await getCsrfHeaders(session.access_token)),
-          },
-          body: JSON.stringify({ student_id: row.student_id }),
-        });
-        await new Promise((r) => setTimeout(r, 500));
-      }
-      if (onRefresh) onRefresh();
+      await sendBatch(data);
     } finally {
       setSendingAll(false);
     }
@@ -85,8 +129,11 @@ export default function AgingReport({ data = [], onRefresh }: AgingReportProps) 
 
   if (!data?.length) {
     return (
-      <div className="rounded-lg border bg-[var(--color-surface-1)] p-6 text-center text-[var(--color-text-secondary)]">
-        <p className="text-sm">{t('noAgingItems')}</p>
+      /* §01 quiet variant · nothing overdue is the good state. §01's rule
+         "where money could be a worry, say it is not" is already satisfied by
+         the copy — this is the reassuring case, so it gets no action. */
+      <div className="rounded-lg border bg-[var(--color-surface-1)] py-4">
+        <EmptyState icon={CircleCheck} title={t('noAgingItems')} quiet />
       </div>
     );
   }
@@ -105,6 +152,23 @@ export default function AgingReport({ data = [], onRefresh }: AgingReportProps) 
           {t('sendReminderToAll')}
         </button>
       </div>
+
+      {/* §01 "Aging · outstanding" — empty state, not the bands.
+
+          Deliberately renders NO figure. The whole point is that no per-band
+          amount is derivable: a zero here would read as "nothing is that old",
+          which is a claim about the world, not about the data. See the block
+          comment at the top of this file for why, and F45 in
+          design/BUILD-AFTER-REDESIGN.md for what unblocks it. */}
+      <div className="border-b border-[var(--color-border)] px-4 py-4">
+        <p className="text-sm font-medium text-[var(--color-text-primary)]">
+          {t('agingBandsTitle')}
+        </p>
+        <p className="mt-1 text-xs leading-relaxed text-[var(--color-text-secondary)]">
+          {t('agingBandsUnavailable')}
+        </p>
+      </div>
+
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>

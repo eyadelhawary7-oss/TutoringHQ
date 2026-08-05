@@ -2,17 +2,25 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+import { formatDistrictDisplay } from '@/lib/formatDistrict';
 import { formatNumber, formatPercent } from '@/lib/formatNumber';
 import { supabase } from '@/lib/supabase';
 import { useBranchStore } from '@/stores/branchStore';
 import PageHeader from '@/components/shared/PageHeader';
 import { Link } from '@/i18n/routing';
-import { Loader2, Gift, TrendingUp, DollarSign, Users, BookOpen } from 'lucide-react';
-import { BarChartComponent } from '@/components/charts';
+import { Loader2, Gift } from 'lucide-react';
 
 interface BenchmarkMetric {
   your_value: number;
   district_avg: number | null;
+  /**
+   * The district's p50 for this metric. §02 compares every row against the
+   * local MEDIAN, not the mean — `/api/benchmarks` now reads `p50_*` off
+   * `benchmark_snapshots` (columns confirmed live) and attaches it here. Stays
+   * optional: a snapshot row can carry a NULL p50, and the row must then drop
+   * the median line rather than print a zero that reads as a real median.
+   */
+  district_median?: number | null;
   percentile: number;
 }
 
@@ -62,6 +70,7 @@ function hasAnyMetric(d: BenchmarksData): boolean {
 export default function BenchmarksPage() {
   const t = useTranslations('benchmarks');
   const tc = useTranslations('common');
+  const tDistricts = useTranslations('settings.districts');
   const locale = useLocale();
   const { activeCenterId } = useBranchStore();
   const [data, setData] = useState<BenchmarksData | null>(null);
@@ -126,6 +135,32 @@ export default function BenchmarksPage() {
   const isNoDistrict = !districtNorm || d.reason === 'no_district';
   const showLiveBenchmarks = !d.insufficient_data && !isNoDistrict;
 
+  /**
+   * §02's header subtitle. The design names the district in the topbar of BOTH
+   * frames — `Merged-Center-Insight.html` L409 (`add-on · locked`) and L435
+   * (`enabled · fitted`) both read "vs centers in Nasr City" — so the locked
+   * screen gets it too, as long as a district is actually known.
+   *
+   * Label resolution, in order: the localized `settings.districts.<slug>` entry
+   * (which is where the ten seeded districts live in both locales), then
+   * `formatDistrictDisplay` for a slug nobody has translated yet, so a district
+   * added to the DB later degrades to `some_slug` → "Some Slug" rather than
+   * rendering a raw slug or a missing-key crash.
+   *
+   * When no district is set at all there is nothing to name, so the existing
+   * "set your district" prompt stays — that is a call to action, not a label.
+   */
+  const districtLabel = districtNorm
+    ? tDistricts.has(districtNorm)
+      ? tDistricts(districtNorm)
+      : formatDistrictDisplay(districtNorm)
+    : '';
+  const headerSubtitle = districtLabel
+    ? t('subtitleWithDistrict', { district: districtLabel })
+    : isNoDistrict
+      ? t('noDistrictSubtitle')
+      : t('subtitle');
+
   /** API mismatch: metrics without an unlocked district - show sample overlay only. */
   const sampleOnlyMode = !showLiveBenchmarks && hasAnyMetric(d);
 
@@ -150,39 +185,44 @@ export default function BenchmarksPage() {
 
   const cards: {
     key: string;
-    icon: React.ElementType;
     metric: BenchmarkMetric | undefined;
     format: (n: number) => string;
     descKey: string;
   }[] = [
-    { key: 'attendance', icon: TrendingUp, metric: d.attendance, format: formatPct, descKey: 'attendanceDesc' },
-    { key: 'revenue', icon: DollarSign, metric: d.revenue_per_student, format: formatEgp, descKey: 'revenueDesc' },
-    { key: 'retention', icon: Users, metric: d.retention_30d, format: formatPct, descKey: 'retentionDesc' },
-    { key: 'utilization', icon: BookOpen, metric: d.group_utilization, format: formatPct, descKey: 'utilizationDesc' },
+    { key: 'attendance', metric: d.attendance, format: formatPct, descKey: 'attendanceDesc' },
+    { key: 'revenue', metric: d.revenue_per_student, format: formatEgp, descKey: 'revenueDesc' },
+    { key: 'retention', metric: d.retention_30d, format: formatPct, descKey: 'retentionDesc' },
+    { key: 'utilization', metric: d.group_utilization, format: formatPct, descKey: 'utilizationDesc' },
   ];
 
+  /**
+   * §02 opens on a teal gradient `.hero`, not a plain surface card: the
+   * standing is the one figure the screen exists to deliver, and the design
+   * gives it the only filled panel on the page. The `.youmark` is a circular
+   * marker riding a translucent `.postbar`, positioned with a logical inset so
+   * it mirrors under RTL the way the design's AR frame draws it (`right:85%`).
+   */
   const standingCard =
     overall === null ? null : (
-      <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 card-shadow mb-6">
-        <p className="text-sm text-[var(--color-text-muted)]">{t('overallStanding')}</p>
-        <p className="text-4xl font-bold text-[var(--color-text-primary)] mt-1">
+      <div className="rounded-2xl bg-gradient-to-br from-teal-600 to-teal-800 p-4 text-white card-shadow mb-6">
+        <p className="text-xs opacity-85">{t('overallStanding')}</p>
+        <p className="text-3xl font-bold leading-tight mt-0.5">
           {t('topPercent', { percent: formatPercent(Math.round(100 - overall), locale) })}
         </p>
         {d.center_count != null && (
-          <p className="text-sm text-[var(--color-text-muted)] mt-1">
+          <p className="text-[11px] opacity-85 mt-0.5">
             {t('acrossCenters', { count: formatNumber(d.center_count, locale) })}
           </p>
         )}
-        {/* Lower / median / higher scale, per the design. The marker is the mean
-            percentile, so the midpoint genuinely is the district median. */}
-        <div className="mt-5">
-          <div className="relative h-2.5 rounded-full bg-gradient-to-r from-[var(--color-surface-3)] via-[var(--color-surface-3)] to-teal-500/40">
-            <div
-              className="absolute -top-1 h-4.5 w-1.5 rounded-full bg-teal-600 shadow"
-              style={{ insetInlineStart: `calc(${Math.min(100, Math.max(0, overall))}% - 3px)` }}
+        <div className="mt-3">
+          <div className="relative h-2.5 rounded-full bg-white/20">
+            <span
+              aria-hidden
+              className="absolute -top-1 h-4.5 w-4.5 rounded-full border-[3px] border-teal-800 bg-white shadow"
+              style={{ insetInlineStart: `calc(${Math.min(100, Math.max(0, overall))}% - 9px)` }}
             />
           </div>
-          <div className="flex justify-between text-[11px] text-[var(--color-text-muted)] mt-2">
+          <div className="flex justify-between text-[10px] opacity-75 mt-2">
             <span>{t('scaleLower')}</span>
             <span>{t('scaleMedian')}</span>
             <span>{t('scaleHigher')}</span>
@@ -191,63 +231,81 @@ export default function BenchmarksPage() {
       </div>
     );
 
+  /**
+   * §02's "How you compare" is ONE card of compact `.bmrow` rows — metric name,
+   * rank pill, a "you vs median" line and a percentile track with the median
+   * ticked — not one large card per metric. The per-metric two-bar
+   * you-vs-district chart the screen used to draw is dropped with it: it
+   * restated exactly what the track already shows, and the design does not have
+   * it.
+   *
+   * The four metrics are the four `get_center_benchmarks` actually returns
+   * (verified against `pg_get_functiondef`, not assumed). The design's fifth
+   * and sixth rows — average fee, new students/month — are the already-decided
+   * design error (`NEW-FEATURES.md` Appendix D9): build the real four, fix the
+   * drawing. Still not built here, deliberately.
+   */
   const chartGrid = (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {cards.map(({ key, icon: Icon, metric, format, descKey }) => {
+    <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] px-4 card-shadow">
+      {cards.map(({ key, metric, format, descKey }) => {
         if (!metric) return null;
         const yourVal = Number(metric.your_value ?? 0);
         const avgVal = Number(metric.district_avg ?? 0);
         const pct = Math.min(100, Math.max(0, Number(metric.percentile ?? 0)));
+        const medianVal =
+          metric.district_median === null || metric.district_median === undefined
+            ? null
+            : Number(metric.district_median);
+        /* §02's down-state: a metric under the district median draws a gold
+           fill and a "Below median" pill instead of a "Top X%" one. Percentile
+           < 50 IS below the median by definition — the same number already
+           driving the bar, read the other way, not a second computation. */
+        const belowMedian = pct < 50;
         return (
-          <div
-            key={key}
-            className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 card-shadow"
-          >
-            <div className="flex items-center gap-2 text-[var(--color-text-muted)] text-sm mb-2">
-              <Icon className="h-4 w-4 text-teal-600" />
-              {t(key)}
-              {/* Design leads each row with the rank, not the raw value. Same
-                  fact as the sentence below, stated the way an owner reads it. */}
-              <span className="ms-auto shrink-0 rounded-full bg-teal-500/12 px-2 py-0.5 text-[11px] font-semibold text-teal-700">
-                {t('topPercent', { percent: formatPercent(Math.round(100 - pct), locale) })}
-              </span>
+          <div key={key} className="border-t border-[var(--color-border)] py-3 first:border-t-0">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm font-semibold text-[var(--color-text-primary)]">{t(key)}</span>
+              {/* Design leads each row with the rank, not the raw value. */}
+              {belowMedian ? (
+                <span className="shrink-0 rounded-full bg-amber-500/15 px-3 py-0.5 text-[11px] font-semibold text-amber-700">
+                  {t('belowMedian')}
+                </span>
+              ) : (
+                <span className="shrink-0 rounded-full bg-teal-500/12 px-3 py-0.5 text-[11px] font-semibold text-teal-700">
+                  {t('topPercent', { percent: formatPercent(Math.round(100 - pct), locale) })}
+                </span>
+              )}
             </div>
-            <p className="text-3xl font-bold text-[var(--color-text-primary)] mb-1">{format(yourVal)}</p>
-            <p className="text-sm text-[var(--color-text-muted)] mb-4">
-              {t('districtAvg')}: {format(avgVal)}
+            {/* §02's "You 18,400 · median 14,200 EGP" line. The median half is
+                drawn only when the snapshot carried a p50 for this metric — a
+                NULL p50 drops the clause rather than printing a zero that would
+                read as a real district median. The district mean stays on the
+                line too: it is a different statistic, and the screen has always
+                shown it. */}
+            <p className="text-[11px] text-[var(--color-text-muted)] mt-0.5 tabular-nums">
+              {t('comparisonYou')} {format(yourVal)}
+              {medianVal !== null ? ` · ${t('scaleMedian')} ${format(medianVal)}` : ''}
+              {` · ${t('districtAvg')} ${format(avgVal)}`}
             </p>
-            <div className="h-2 bg-[var(--color-surface-3)] rounded-full overflow-hidden mb-3">
+            <div className="relative h-2 bg-[var(--color-surface-3)] rounded-full mt-2">
               <div
-                className="h-full bg-teal-500 rounded-full transition-all duration-500"
+                className={`h-full rounded-full transition-all duration-500 ${
+                  belowMedian ? 'bg-amber-500' : 'bg-teal-500'
+                }`}
                 style={{ width: `${pct}%` }}
               />
+              {/* The median tick the design marks on every track. The scale is
+                  a percentile scale, so the median sits at 50% by definition —
+                  a fixed reference mark, not a value read off the data. */}
+              <span
+                aria-hidden
+                className="absolute w-0.5 rounded-full bg-[var(--color-text-muted)]"
+                style={{ insetInlineStart: '50%', top: '-3px', height: '14px' }}
+              />
             </div>
-            <p className="text-sm text-[var(--color-text-secondary)] mb-3">
+            <p className="text-[11px] text-[var(--color-text-secondary)] mt-2">
               {t(descKey, { percentile: formatPercent(pct, locale) })}
             </p>
-            {(() => {
-              const isMoney = key === 'revenue';
-              const youN = isMoney ? yourVal : yourVal * 100;
-              const distN = isMoney ? avgVal : avgVal * 100;
-              const barData = [
-                { label: t('comparisonYou'), v: youN },
-                { label: t('districtAvg'), v: distN },
-              ];
-              return (
-                <BarChartComponent
-                  data={barData}
-                  xKey="label"
-                  dataKey="v"
-                  height={160}
-                  color="teal"
-                  showGrid={false}
-                  radius={6}
-                  prefix={isMoney ? 'EGP ' : ''}
-                  suffix=""
-                  tooltipValueFormatter={isMoney ? undefined : (v) => formatPercent(Number(v), locale)}
-                />
-              );
-            })()}
           </div>
         );
       })}
@@ -288,7 +346,7 @@ export default function BenchmarksPage() {
 
     return (
       <div className="min-h-screen w-full bg-[var(--color-surface-0)] px-4 py-6 md:py-10">
-        <PageHeader title={t('title')} subtitle={isNoDistrict ? t('noDistrictSubtitle') : t('subtitle')} />
+        <PageHeader title={t('title')} subtitle={headerSubtitle} />
         <div className="max-w-md mx-auto text-center pt-10 md:pt-16">
           <BenchmarkLockIllustration />
           <h2 className="text-xl font-bold text-[var(--color-text-primary)] mt-6">{t('districtTitle')}</h2>
@@ -349,7 +407,7 @@ export default function BenchmarksPage() {
 
   return (
     <div className="min-h-screen w-full bg-[var(--color-surface-0)] p-6">
-      <PageHeader title={t('title')} subtitle={t('subtitle')} />
+      <PageHeader title={t('title')} subtitle={headerSubtitle} />
       {standingCard}
       <h2 className="text-sm font-semibold text-[var(--color-text-secondary)] mb-3">
         {t('howYouCompare')}

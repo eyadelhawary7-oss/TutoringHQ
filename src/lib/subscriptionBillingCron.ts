@@ -8,8 +8,13 @@ import { pauseCommissionClocks } from '@/lib/commissions';
 import { todayISO } from '@/lib/parentPack';
 import { addMonthsToDateStr } from '@/lib/subscriptionAnchor';
 import { sendChqRenewalOverdueTemplate } from '@/lib/centerNotify';
-import { getProcessingFeeConfig, getIntervalConfig } from '@/lib/pricingConfig';
+import { getProcessingFeeConfig, getIntervalConfig, getBranchAddonMonthlyPrice } from '@/lib/pricingConfig';
 import { applyProcessingFee, buildInvoiceTaxSnapshot } from '@/lib/processingFee';
+import {
+  branchAddonChargeForPeriod,
+  buildBranchAddonSnapshot,
+  resolvePrimaryCentreId,
+} from '@/lib/pricing/branchAddon';
 import { logBillingEvent } from '@/lib/billingAudit';
 import { resolveScheduledCenterPlanChange } from '@/lib/scheduledPlanChange';
 import { centerRenewalBaseAmount, centerRenewalPeriodMonths } from '@/lib/centerRenewal';
@@ -91,6 +96,16 @@ export async function runSubscriptionBillingCron(
   // Annual centers renew at monthly × annualMultiplier (=10) over a 12-month clock.
   // Read once per run; only consulted for billing_period='annual' centers.
   const { annualMultiplier } = await getIntervalConfig();
+  /**
+   * D23 — flat extra-branch add-on, EGP/month, VAT-inclusive.
+   *
+   * `null` when `platform_config['branch_addon.monthly_price_egp']` is unset,
+   * which is the state of the live catalog today (verified 2026-08-05). While it
+   * is null every branch add-on resolves to 0.00 and NO invoice changes by a
+   * single piastre — the feature is inert until Eyad inserts the config row.
+   * There is deliberately no fallback price; see `src/lib/pricing/branchAddon.ts`.
+   */
+  const branchAddonMonthlyPrice = await getBranchAddonMonthlyPrice();
 
   // Centers with pending_cancellation: finalize cancel after current_period_end (Cairo YMD vs DATE column).
   const { error: periodEndCancelErr } = await supabase
@@ -135,7 +150,7 @@ export async function runSubscriptionBillingCron(
   const { data: dueIn7, error: q7err } = await supabase
     .from('centers')
     .select(
-      'id, name, phone, next_payment_due, billing_amount, billing_period, all_in_price, plan, center_code, referral_code, status, billing_type, pricing_type, scheduled_plan, scheduled_billing_period',
+      'id, name, phone, next_payment_due, billing_amount, billing_period, all_in_price, plan, center_code, referral_code, status, billing_type, pricing_type, scheduled_plan, scheduled_billing_period, organization_id',
     )
     .lte('next_payment_due', in7)
     .in('status', ['active', 'pending_cancellation'])
@@ -164,6 +179,7 @@ export async function runSubscriptionBillingCron(
         referral_code?: string | null;
         scheduled_plan?: string | null;
         scheduled_billing_period?: string | null;
+        organization_id?: string | null;
       };
       const npd = c.next_payment_due;
 
@@ -234,7 +250,59 @@ export async function runSubscriptionBillingCron(
         storedBillingAmount: sched ? sched.billingAmount : c.billing_amount,
         annualMultiplier,
       });
-      const { fee, total } = applyProcessingFee(ba, feeCfg);
+      /**
+       * D23 — the flat extra-branch add-on.
+       *
+       * Charged ONCE per organisation, on the PRIMARY (oldest) centre's own
+       * renewal invoice, as part of its VAT-inclusive base. Three guards, each
+       * load-bearing:
+       *
+       *  - price unset (`null`, the live state today) → 0.00, nothing changes;
+       *  - centre has no `organization_id` → 0.00. Every centre in the live
+       *    catalog is in this bucket (verified 2026-08-05: zero rows carry an
+       *    organization_id), so no existing centre's invoice can move;
+       *  - centre is not the org primary → 0.00, so an org can never be billed
+       *    the add-on twice even if a branch somehow acquired a due date.
+       *
+       * It rides INSIDE `ba`, before `applyProcessingFee`, so the invoice keeps
+       * exactly one flat 20 EGP fee (never one per line) and VAT is computed on
+       * the full inclusive total — money rules 3 and 13.
+       */
+      let branchAddonTotal = 0;
+      let branchAddonExtras = 0;
+      if (branchAddonMonthlyPrice != null && c.organization_id) {
+        const { data: orgCentres, error: orgErr } = await supabase
+          .from('centers')
+          .select('id, created_at')
+          .eq('organization_id', c.organization_id)
+          .eq('is_test', false)
+          .in('status', ['active', 'pending_cancellation']);
+        if (orgErr) {
+          // Never bill a guessed number. A failed sibling read means the add-on
+          // is omitted from THIS run's invoice; the next run re-derives it.
+          console.error('[subscriptionBillingCron] branch add-on org read:', orgErr);
+        } else {
+          const siblings = (orgCentres ?? []) as { id: string; created_at?: string | null }[];
+          const primaryId = resolvePrimaryCentreId(siblings);
+          if (primaryId === c.id) {
+            branchAddonExtras = Math.max(0, siblings.length - 1);
+            branchAddonTotal = branchAddonChargeForPeriod({
+              extraBranches: branchAddonExtras,
+              monthlyPrice: branchAddonMonthlyPrice,
+              billingPeriod: effectivePeriod,
+              annualMultiplier,
+            });
+          }
+        }
+      }
+
+      const baWithAddon = Math.round((ba + branchAddonTotal) * 100) / 100;
+      const { fee, total } = applyProcessingFee(baWithAddon, feeCfg);
+      const addonSnapshot = buildBranchAddonSnapshot({
+        extraBranches: branchAddonExtras,
+        monthlyPrice: branchAddonMonthlyPrice,
+        total: branchAddonTotal,
+      });
       const billingEnd = addMonthsToDateStr(npd, centerRenewalPeriodMonths(effectivePeriod));
       const code = centerCodeForInvoice(c);
       const yyyymm = npd.slice(0, 7);
@@ -246,12 +314,15 @@ export async function runSubscriptionBillingCron(
         invoice_type: 'subscription',
         status: 'pending',
         total_amount: total,
-        base_amount: ba,
+        base_amount: baWithAddon,
         ...buildInvoiceTaxSnapshot({ total, fee }),
         billing_period_start: npd,
         billing_period_end: billingEnd,
         due_date: npd,
-        metadata: { processing_fee: fee },
+        // The add-on is snapshotted alongside the processing fee for the same
+        // reason: an issued invoice must reprint from what it stored, never from
+        // live config, so repricing the add-on never rewrites billing history.
+        metadata: { processing_fee: fee, ...(addonSnapshot ?? {}) },
       });
       if (invErr) {
         console.error('[subscriptionBillingCron] invoice insert:', invErr);

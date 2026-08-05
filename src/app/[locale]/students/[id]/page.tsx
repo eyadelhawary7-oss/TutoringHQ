@@ -844,20 +844,55 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
 
   if (loading) {
     return (
-      <div className="min-h-screen px-4 py-6 max-w-lg mx-auto bg-[var(--color-surface-0)]">
-        <div className="mb-6 h-5 w-16 animate-pulse rounded bg-[var(--color-surface-2)]" />
-        <div className="flex items-center gap-3">
-          <div className="h-11 w-11 shrink-0 animate-pulse rounded-full bg-[var(--color-surface-2)]" />
+      /* §02's loading frame, block for block: a 42px back square beside two
+         header lines, a 54px identity tile, the 104px balance card, TWO stat
+         tiles (not three — the third was dropped with Visits/Last seen when the
+         statrow was built), FOUR quick-action tiles, then the two section
+         blocks and the pinned bottom bar. A skeleton that lays out differently
+         from what replaces it makes the page jump on load, which is the one
+         thing a skeleton exists to stop. */
+      <div
+        className="mx-auto flex min-h-screen w-full max-w-lg flex-col bg-[var(--color-surface-0)]"
+        aria-busy="true"
+      >
+        <div className="flex items-center gap-3 px-4 pt-2 pb-3">
+          <div className="h-[42px] w-[42px] shrink-0 animate-pulse rounded-xl bg-[var(--color-surface-2)]" />
           <div className="flex-1 space-y-2">
-            <div className="h-5 w-32 animate-pulse rounded bg-[var(--color-surface-2)]" />
-            <div className="h-3.5 w-40 animate-pulse rounded bg-[var(--color-surface-2)]" />
+            <div className="h-[15px] w-32 animate-pulse rounded bg-[var(--color-surface-2)]" />
+            <div className="h-[11px] w-24 animate-pulse rounded bg-[var(--color-surface-2)]" />
           </div>
+          <div className="h-[42px] w-[42px] shrink-0 animate-pulse rounded-xl bg-[var(--color-surface-2)]" />
         </div>
-        <div className="mt-6 h-20 animate-pulse rounded-md bg-[var(--color-surface-2)]" />
-        <div className="mt-3 grid grid-cols-3 gap-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-16 animate-pulse rounded-md bg-[var(--color-surface-2)]" />
-          ))}
+        <div className="flex flex-1 flex-col gap-3 px-4 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="h-[54px] w-[54px] shrink-0 animate-pulse rounded-2xl bg-[var(--color-surface-2)]" />
+            <div className="flex-1 space-y-2">
+              <div className="h-4 w-3/5 animate-pulse rounded bg-[var(--color-surface-2)]" />
+              <div className="h-3 w-4/5 animate-pulse rounded bg-[var(--color-surface-2)]" />
+            </div>
+          </div>
+          <div className="h-[104px] animate-pulse rounded-2xl bg-[var(--color-surface-2)]" />
+          <div className="flex gap-2">
+            {[0, 1].map((i) => (
+              <div
+                key={i}
+                className="h-[74px] flex-1 animate-pulse rounded-2xl bg-[var(--color-surface-2)]"
+              />
+            ))}
+          </div>
+          <div className="flex gap-2">
+            {[0, 1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="h-16 flex-1 animate-pulse rounded-xl bg-[var(--color-surface-2)]"
+              />
+            ))}
+          </div>
+          <div className="h-24 animate-pulse rounded-2xl bg-[var(--color-surface-2)]" />
+          <div className="h-[120px] animate-pulse rounded-2xl bg-[var(--color-surface-2)]" />
+        </div>
+        <div className="px-4 pb-4 pt-3">
+          <div className="h-[50px] animate-pulse rounded-xl bg-[var(--color-surface-2)]" />
         </div>
       </div>
     );
@@ -886,6 +921,15 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
   const owes = (balance ?? 0) > 0;
   const recentScans = scans.slice(0, 3);
   const recentPayments = payments.slice(0, 5);
+  // §03's Attendance card carries a second fact next to the ratio: "Last
+  // attended 20/07". `scans` comes back ordered scanned_at DESC, so the first
+  // row that is not an absence IS the last attendance — no extra query, no
+  // client-side sort to get wrong. Absent when the student has never been
+  // scanned present; there is no placeholder date.
+  const lastAttendedAt =
+    scans.find((sc) => sc.status !== 'absent')?.session_date ??
+    scans.find((sc) => sc.status !== 'absent')?.scanned_at ??
+    null;
   const identityMeta = [
     student.subject,
     student.grade_level ? tDetail('gradeLabel', { grade: student.grade_level }) : null,
@@ -1128,6 +1172,13 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
               <p className="mt-1 text-xs text-[#80827A]">
                 {attendance?.scoped ? tDetail('windowThisTerm') : tDetail('windowAllTime')}
               </p>
+              {lastAttendedAt ? (
+                <p className="mt-1 text-xs text-[#80827A] tabular-nums">
+                  {tDetail('lastAttended', {
+                    date: formatDate(lastAttendedAt, locale, 'short'),
+                  })}
+                </p>
+              ) : null}
             </div>
             {lifetimePaid !== null ? (
               <div className="flex-1 rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3">

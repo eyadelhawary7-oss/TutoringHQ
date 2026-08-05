@@ -3,6 +3,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { usePathname } from '@/i18n/routing';
+import { Inbox } from 'lucide-react';
+import { EmptyState } from '@/components/shared';
 import { supabase } from '@/lib/supabase';
 import { AdminSidebar } from '@/components/AdminSidebar';
 import { MobileWrapper } from '@/components/shell/MobileWrapper';
@@ -267,10 +269,18 @@ export default function CeoTeachersPage() {
     </div>
   );
 
+  /**
+   * §01 quiet variant, reused across all five tabs of this screen. Every one of
+   * them is a read-only CEO view of data produced elsewhere — nothing here is
+   * waiting on the reader — so they take the muted tile and no action. This was
+   * a file-local helper repeated five times; it still is one, but the thing it
+   * repeats is now the shared component rather than a fifth private empty-state
+   * shape.
+   */
   const EmptyRow = ({ colSpan, message }: { colSpan: number; message: string }) => (
     <tr>
-      <td colSpan={colSpan} className="px-3 py-6 text-center text-[var(--color-text-secondary)]">
-        {message}
+      <td colSpan={colSpan}>
+        <EmptyState icon={Inbox} title={message} quiet />
       </td>
     </tr>
   );

@@ -35,6 +35,37 @@ qr_card: 60 EGP per card (inclusive of VAT), **plus one flat 20 EGP processing f
 parent_pack: 12 EGP/active parent/month (inclusive).
 blast: 9.80 EGP/blast (inclusive). (The parent-blast product keeps its own internal `BLAST_SERVICE_FEE_RATE` — a separate additive fee, unrelated to the removed plan-price service fee.)
 
+### extra_branch — BUILT, UNPRICED (D23)
+
+A **flat per-extra-branch monthly add-on**, VAT-inclusive. Every centre in an
+organisation beyond the first is an add-on, **not a second subscription**.
+
+- **Price: `platform_config['branch_addon.monthly_price_egp']`. There is no
+  default and no hardcoded constant.** Verified absent from the live catalog on
+  2026-08-05, so today the add-on renders nothing and charges 0.00. It is
+  config-driven rather than a constant for three reasons: this spec's add-on
+  list is the source of truth and never carried an extra-branch price; the
+  design corpus contradicts itself on the figure (`Merged-Center-Groups` §04
+  says 199/mo, the `/pricing` add-ons section says 299/mo); and every add-on
+  price in this system is already config-driven and snapshotted, while only
+  **plan anchors** are byte-locked in code.
+- **Where it is charged:** added to the organisation's **PRIMARY** (oldest)
+  centre's existing subscription renewal invoice, inside its VAT-inclusive base
+  — `runSubscriptionBillingCron`. One org → one invoice → **one** flat 20 EGP
+  processing fee, never one per branch. VAT is the inclusive slice of the whole
+  total, add-on included.
+- **Annual centres** pay `monthly × annualMultiplier` (=10) for the 12-month
+  cycle, matching the plan's own "pay 10, get 12".
+- **Snapshotted** into `invoices.metadata` as `branch_addon_count` /
+  `branch_addon_unit_price` / `branch_addon_total`, so an issued invoice
+  reprints at its original price after any repricing.
+- **A branch row stores no price of its own** (`billing_amount` 0,
+  `all_in_price` NULL, no `next_payment_due`) and is excluded from subscription
+  MRR by `isBranchAddonRow` — otherwise it would fall through to the plan list
+  price and report a whole second subscription.
+- Source: `src/lib/pricing/branchAddon.ts` (pure) + `getBranchAddonMonthlyPrice()`
+  in `src/lib/pricingConfig.ts` (reader), mirroring the processing-fee split.
+
 ## Internal admin breakdown view (descending from inclusive)
 Total:                              60.00 EGP
 incl. VAT (14%):                     7.37

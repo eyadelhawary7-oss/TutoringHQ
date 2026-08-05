@@ -1,0 +1,277 @@
+-- ============================================================================
+-- F44 — centers.address: the street line on Center details.
+--
+-- ****************************************************************************
+-- * NOT APPLIED — Eyad applies this by hand.                                  *
+-- * CLAUDE.md rule 5: migrations are a MANUAL apply to production. Merging    *
+-- * this file does NOT apply it (tested 15 July 2026: PR #159 merged as       *
+-- * 80f82ba and the columns were still absent from the production catalog     *
+-- * 8 minutes later). Apply it, confirm the column exists in                  *
+-- * information_schema.columns, THEN let the code deploy.                     *
+-- *                                                                            *
+-- * NO CODE ON THIS BRANCH READS OR WRITES THIS COLUMN. The branch is the      *
+-- * .sql file and nothing else, so there is no deploy-order hazard at all:     *
+-- * the F26 failure mode (code shipped against a column that did not exist)    *
+-- * cannot occur here because no query names `address`. The UI that consumes   *
+-- * it is a separate, later change, gated on this having been applied.         *
+-- ****************************************************************************
+--
+-- VERSION NUMBER IS FREE. Verified live 5 August 2026: the highest version in
+-- supabase_migrations.schema_migrations is 20260804171731 (265 rows recorded),
+-- so 20260805120000 is unused. `version` is a PRIMARY KEY — a collision would
+-- let one file look applied while never having run.
+--
+-- ----------------------------------------------------------------------------
+-- PRECONDITIONS — re-queried LIVE against project lczmjpnbuhnsislcvzar on
+-- 5 August 2026. Every line below was actually executed. Nothing here is
+-- carried over from a migration file, a PR body, or another agent's summary.
+-- ----------------------------------------------------------------------------
+--
+-- (1) `public.centers` has exactly 128 columns. Counted, not estimated:
+--
+--       select count(*) from information_schema.columns
+--        where table_schema='public' and table_name='centers';
+--       => 128
+--
+--     (Highest ordinal_position is 133; positions 21, 101, 102, 103 and 125
+--     are dropped columns. 128 is the live count.)
+--
+-- (2) `centers.address` is ABSENT. The full set of address-shaped columns on
+--     the table is FOUR, and `address` is not among them:
+--
+--       select column_name, data_type from information_schema.columns
+--        where table_schema='public' and table_name='centers'
+--          and (column_name ilike '%address%' or column_name ilike '%district%'
+--            or column_name ilike '%city%'    or column_name ilike '%governorate%'
+--            or column_name ilike '%street%'  or column_name ilike '%location%'
+--            or column_name ilike '%area%');
+--       =>  city             text     (ordinal 45)
+--           district         text     (ordinal 57)
+--           governorate      text     (ordinal 58, default 'cairo')
+--           delivery_address jsonb    (ordinal 62)
+--       ZERO rows named `address`.
+--
+-- (3) `centers.district` EXISTS — text, nullable, no default (ordinal 57).
+--     It has NO CHECK constraint. Verified:
+--
+--       select conname, pg_get_constraintdef(oid) from pg_constraint
+--        where conrelid='public.centers'::regclass
+--          and pg_get_constraintdef(oid) ilike '%district%';
+--       => 0 rows.
+--
+--     So the district picklist is enforced in the APPLICATION only, not in the
+--     database. That matters — see the collision note below.
+--
+-- (4) Row counts, so nobody reads a backfill into this that isn't there:
+--       select count(*) from public.centers;                    => 2
+--       select count(*) from public.centers where is_test=false; => 0
+--       count(district) => 0 ; count(delivery_address) => 0 ; count(city) => 0
+--     Every centre row in production today is a test row, and every one of the
+--     four location columns is NULL in all of them. There is nothing to
+--     migrate, backfill, or reconcile. This column starts empty by fact, not
+--     by assumption.
+--
+-- ----------------------------------------------------------------------------
+-- WHY district DOES NOT SERVE THIS FIELD — the question this proposal exists
+-- to answer, answered against the design and the code rather than asserted.
+-- ----------------------------------------------------------------------------
+--
+-- A sibling pass claimed `centers.district` already covers the design's Address
+-- field, so no migration is needed. HALF of that claim is true and the
+-- conclusion does not follow. Both halves, checked:
+--
+--   TRUE: PR #313 did map a "Area / address" UI onto `centers.district`. The
+--   code says so in its own words, twice:
+--     src/app/[locale]/(dashboard)/branches/page.tsx:509-510
+--       "Maps to the existing `centers.district`; there is no
+--        `centers.address` column and none was added."
+--     src/app/api/branches/route.ts:100-104 and :238-242 (POST and PATCH)
+--   A "branch" is a row in `centers` (the branches API selects, inserts and
+--   updates `centers`, scoped by organization_id — there is no `branches`
+--   table in `public`; I checked, it returns zero columns).
+--
+--   DOES NOT FOLLOW: that is the BRANCHES screen. This proposal is about
+--   design/Merged-Center-Setup.html §04 "Settings Center", a DIFFERENT screen,
+--   which draws BOTH fields, adjacent, with different values:
+--
+--     EN, line 903:  Area / city  ->  "Nasr City, Cairo"
+--     EN, line 904:  Address      ->  "12 El-Nasr St, Nasr City"
+--     AR, line 936:  المنطقة / المدينة -> "مدينة نصر، القاهرة"
+--     AR, line 937:  العنوان           -> "١٢ شارع النصر، مدينة نصر"
+--
+--   On that screen `district` is ALREADY SPENT on the field directly above
+--   Address. src/app/[locale]/settings/center/page.tsx renders it at line 368
+--   as a <select> bound to `district` (line 176 writes it), paired with the
+--   `governorate` <select> at line 383 — together they are the "Area / city"
+--   line. Address is the field BELOW that pair, and it has no column.
+--
+--   And `district` cannot hold a street line in that UI even if we wanted it
+--   to: the select's options are a closed 10-value slug list
+--   (DISTRICT_VALUES, settings/center/page.tsx:26-37 — nasr_city, maadi,
+--   dokki, heliopolis, new_cairo, 6th_october, giza, zamalek, mohandiseen,
+--   other), stored as underscore slugs and rendered through
+--   t('districts.<slug>'). "12 El-Nasr St" matches no option.
+--
+--   => A separate column is genuinely needed. This is not a redundant column.
+--
+-- ⚠ PRE-EXISTING COLLISION, REPORTED NOT FIXED. Because #313 pointed the
+--   Branches free-text input at the same `district` column, and because there
+--   is no CHECK constraint (precondition 3), the two screens now disagree
+--   about what `district` contains: Center details writes one of ten slugs;
+--   Branches writes free text up to 200 chars, placeholder "Street, district,
+--   city" (i18n key areaAddressPlaceholder). The Branches PATCH scopes only by
+--   organization_id (src/app/api/branches/route.ts:252-255) and does not
+--   exclude the main centre row, and the main centre row IS listed on that
+--   screen (branches/page.tsx:131). So a centre that edits its own row from
+--   Branches can store "12 El-Nasr St" in `district`, after which the Center
+--   details <select> matches no option and renders blank. This migration does
+--   NOT repair that, does not migrate any value out of `district`, and does
+--   not add the missing CHECK — those are behaviour changes on a shipped
+--   screen and they are Eyad's call, not a side effect of adding a column.
+--   Recorded here so the decision is made deliberately.
+--
+-- WHY NOT `delivery_address` (the other address-shaped column). It is jsonb and
+--   it is card-order SHIPPING, not the centre's premises. It is read as
+--   `{ street }` to prefill the card-order checkout destination:
+--     src/app/[locale]/(dashboard)/orders/checkout/page.tsx:78-86, :105
+--   Overloading it would change where cards get delivered. Two different facts
+--   — where the centre IS, and where its cards go — that are frequently the
+--   same string and are not the same field. They stay separate.
+--
+-- ----------------------------------------------------------------------------
+-- COLUMN-LEVEL REVOKE: NOT RECOMMENDED FOR THIS COLUMN. Reasoning, with the
+-- live grant posture behind it, since the task asks the question explicitly.
+-- ----------------------------------------------------------------------------
+--
+-- The live posture, verified 5 August 2026:
+--   * `centers` grants are TABLE-level, not column-level:
+--       select grantee, privilege_type from information_schema.table_privileges
+--        where table_schema='public' and table_name='centers';
+--     => anon, authenticated and service_role each hold SELECT, INSERT, UPDATE,
+--        DELETE, REFERENCES, TRIGGER, TRUNCATE at the table level.
+--     A table-level grant covers columns added later, so `address` inherits
+--     these the moment it exists. That is the default and it is what the other
+--     128 columns already do.
+--   * RLS is ON and not forced: relrowsecurity=true, relforcerowsecurity=false.
+--     The only SELECT policy is
+--       centers_select_own USING (id = get_auth_center_id())
+--     and get_auth_center_id() is `SELECT center_id FROM users WHERE id =
+--     auth.uid()` (STABLE SECURITY DEFINER). For `anon`, auth.uid() is NULL, no
+--     users row matches, the function returns NULL, and `id = NULL` yields no
+--     rows — so despite holding a table-level SELECT grant, anon reads ZERO
+--     centre rows today. Adding this column does not change that.
+--
+-- Given that, a REVOKE/GRANT carve-out for `address` would be wrong on three
+-- counts, and I would rather say so than add a control that only looks careful:
+--
+--   (a) IT WOULD BREAK THE FEATURE IT PROTECTS. Unlike national_id — which is
+--       written by a webhook and rendered nowhere — this column's entire
+--       purpose is to be typed in and read back by the owner of that very row,
+--       on their own settings screen, under the design's own framing: "Center
+--       details holds the info families see" (Merged-Center-Setup.html §04
+--       masthead). Withholding it from `authenticated` would break Center
+--       details on day one.
+--   (b) THE AUDIENCE IS THE ROW'S OWN TENANT, WHICH RLS ALREADY BOUNDS. The
+--       exposure a column REVOKE prevents is cross-column leakage to someone
+--       who can already read the row. Here the only principal who can read the
+--       row is the centre itself. There is no second audience to withhold it
+--       from.
+--   (c) IT IS A BUSINESS PREMISES, NOT PERSONAL DATA IN THE 151/2020 SENSE. It
+--       is centre PII in the loose sense and it is real, but it is a shop
+--       address a centre advertises to parents. It carries no date of birth,
+--       sex, religion or financial handle. Converting `centers` from table-
+--       level to column-level grants — 129 columns enumerated in a GRANT — to
+--       fence off a street address, while `phone` and `instapay_number`
+--       (ordinal 91) sit table-granted beside it, would be inconsistent enough
+--       to be misleading about what is actually protected.
+--
+-- So: NO REVOKE in this file, deliberately, and the column inherits the same
+-- posture as the 128 columns around it. If Eyad wants the grant model on
+-- `centers` tightened, that is a separate and much larger piece of work with
+-- its own blast radius, and it should not ride in on F44.
+-- ============================================================================
+
+BEGIN;
+
+-- ----------------------------------------------------------------------------
+-- centers.address — the street line: building number, street, landmark.
+--
+-- Nullable with no default, on purpose. A centre that has not filled it in has
+-- NULL, and the UI shows the design's empty state; a '' default would make
+-- "never entered" and "deliberately blank" indistinguishable. Every existing
+-- row (2, both is_test) gets NULL, which is correct — see precondition 4.
+--
+-- TEXT, not jsonb. The design draws one free-text line, not a structured
+-- object. `delivery_address` is jsonb because Bosta needs parts; this needs a
+-- string. Length is bounded by the application, matching the 200-char cap the
+-- Branches API already applies to its own free-text field
+-- (src/app/api/branches/route.ts:104), rather than by a CHECK here — a hard
+-- database limit on a human-entered address line is the kind of constraint
+-- that produces a 500 on a legitimate long address.
+-- ----------------------------------------------------------------------------
+ALTER TABLE public.centers
+  ADD COLUMN IF NOT EXISTS address text;
+
+COMMENT ON COLUMN public.centers.address IS
+  'Street line of the centre''s own premises (building, street, landmark) — the '
+  'Address field on Settings > Center details, Merged-Center-Setup.html §04. '
+  'NOT shipping: card-order delivery is centers.delivery_address (jsonb). '
+  'NOT the locality: that is centers.district + centers.governorate, which '
+  'render the adjacent "Area / city" field on the same screen.';
+
+COMMIT;
+
+-- ============================================================================
+-- WHAT THIS MIGRATION DELIBERATELY DOES NOT DO
+--
+-- (a) NO CHECK CONSTRAINT on `district`, and no migration of values out of it.
+--     The Branches/Center-details collision described above is real and
+--     pre-existing. Adding a CHECK now would start rejecting writes the
+--     Branches screen currently makes successfully, which is a live behaviour
+--     change on shipped code. Eyad decides whether Branches should move to
+--     `address`, whether `district` should be constrained, or neither.
+--
+-- (b) NO BACKFILL. Nothing to copy: all 4 location columns are NULL in all 2
+--     rows (precondition 4). A backfill from `district` would in any case be
+--     wrong — slugs like 'nasr_city' are not street addresses.
+--
+-- (c) NO REVOKE / GRANT. Reasoned above, not overlooked.
+--
+-- (d) NO INDEX. Nothing queries, filters or sorts on this column; it is
+--     displayed on a single-row settings screen fetched by primary key.
+--
+-- (e) NO UI, NO API, NO i18n KEYS. Rule 3 — the column stops here for
+--     approval. The Center-details field, its ar/en strings and its write path
+--     are a follow-up change that must not merge before this is applied.
+--
+-- ----------------------------------------------------------------------------
+-- AFTER APPLYING, CONFIRM — do not assume:
+--
+--   -- 1. The column exists, with the expected type and nullability:
+--   select column_name, data_type, is_nullable, column_default, ordinal_position
+--     from information_schema.columns
+--    where table_schema = 'public'
+--      and table_name   = 'centers'
+--      and column_name  = 'address';
+--   -- expect exactly 1 row: address | text | YES | NULL
+--
+--   -- 2. The column count moved 128 -> 129, and nothing else changed:
+--   select count(*) from information_schema.columns
+--    where table_schema='public' and table_name='centers';
+--   -- expect 129
+--
+--   -- 3. The four pre-existing location columns are untouched:
+--   select column_name, data_type from information_schema.columns
+--    where table_schema='public' and table_name='centers'
+--      and column_name in ('city','district','governorate','delivery_address')
+--    order by ordinal_position;
+--   -- expect 4 rows: city text | district text | governorate text
+--   --                | delivery_address jsonb
+--
+--   -- 4. The comment landed (this is how the next agent avoids re-litigating
+--   --    delivery_address vs address):
+--   select col_description('public.centers'::regclass, ordinal_position)
+--     from information_schema.columns
+--    where table_schema='public' and table_name='centers'
+--      and column_name='address';
+-- ============================================================================

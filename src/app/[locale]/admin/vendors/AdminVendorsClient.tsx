@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { usePathname, useRouter } from '@/i18n/routing';
 import { ArrowDown, ArrowLeft, ArrowUp, ArrowUpDown, Check, Store } from 'lucide-react';
+import { EmptyState } from '@/components/shared';
 import { AdminSidebar } from '@/components/AdminSidebar';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
@@ -307,8 +308,11 @@ export default function AdminVendorsClient({ initialVendor }: { initialVendor: V
               <tbody>
                 {sortedVendorRows.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-[var(--color-text-secondary)]">
-                      {t('noVendorYet')}
+                    {/* §01 quiet variant · vendors are added from the form above
+                        this table, so the empty state does not offer a second
+                        route to it — one action, never two of equal weight. */}
+                    <td colSpan={5}>
+                      <EmptyState icon={Store} title={t('noVendorYet')} quiet />
                     </td>
                   </tr>
                 ) : (
