@@ -6,6 +6,7 @@ import { useRouter } from '@/i18n/routing';
 import {
   AlertTriangle,
   Bell,
+  BellOff,
   Banknote,
   CreditCard,
   Package,
@@ -14,6 +15,8 @@ import {
   UserX,
   type LucideIcon,
 } from 'lucide-react';
+import { ListSkeleton } from '@/components/patterns';
+import { EmptyState } from '@/components/shared';
 import { supabase } from '@/lib/supabase';
 import { cairoDateKey } from '@/lib/cairo/day';
 import { formatNumber, formatRelativeMinutesAgo } from '@/lib/formatNumber';
@@ -192,9 +195,13 @@ export default function NotificationsPageClient() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-[var(--color-mid)]">…</p>
+        /* §02 · an ellipsis is not a loading state. This is a list, so it takes
+           the list skeleton at the rows' own height. */
+        <ListSkeleton rows={5} />
       ) : rows.length === 0 ? (
-        <p className="text-sm text-[var(--color-mid)]">{t('empty')}</p>
+        /* §01 quiet variant · notifications arrive on their own; there is no
+           button that fills this screen, so no action and the muted tile. */
+        <EmptyState icon={BellOff} title={t('empty')} quiet />
       ) : (
         groups.map((g) => (
           <section key={g.key} className="space-y-2 pt-2">

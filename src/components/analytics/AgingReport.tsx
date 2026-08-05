@@ -5,7 +5,8 @@ import { useLocale, useTranslations } from 'next-intl';
 import { formatCurrency, formatNumber } from '@/lib/formatNumber';
 import { supabase } from '@/lib/supabase';
 import { getCsrfHeaders } from '@/lib/csrf-client';
-import { MessageCircle, Loader2 } from 'lucide-react';
+import { CircleCheck, MessageCircle, Loader2 } from 'lucide-react';
+import { EmptyState } from '@/components/shared';
 
 export interface AgingRow {
   student_id: string;
@@ -85,8 +86,11 @@ export default function AgingReport({ data = [], onRefresh }: AgingReportProps) 
 
   if (!data?.length) {
     return (
-      <div className="rounded-lg border bg-[var(--color-surface-1)] p-6 text-center text-[var(--color-text-secondary)]">
-        <p className="text-sm">{t('noAgingItems')}</p>
+      /* §01 quiet variant · nothing overdue is the good state. §01's rule
+         "where money could be a worry, say it is not" is already satisfied by
+         the copy — this is the reassuring case, so it gets no action. */
+      <div className="rounded-lg border bg-[var(--color-surface-1)] py-4">
+        <EmptyState icon={CircleCheck} title={t('noAgingItems')} quiet />
       </div>
     );
   }

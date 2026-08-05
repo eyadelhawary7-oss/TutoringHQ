@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Handshake, Loader2, Plus } from 'lucide-react';
+import { EmptyState } from '@/components/shared';
 import { supabase } from '@/lib/supabase';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import { formatCurrency, formatDate, formatNumber } from '@/lib/formatNumber';
@@ -504,10 +505,11 @@ export default function GroupProposalsTab({ onChanged }: { onChanged?: () => voi
       {loading ? (
         <div className="h-16 animate-pulse rounded-lg bg-[var(--color-surface-2)]" />
       ) : proposals.length === 0 ? (
-        <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-8 text-center">
-          <Handshake className="mx-auto mb-2 h-8 w-8 text-[var(--color-text-muted)]" aria-hidden />
-          <p className="text-sm text-[var(--color-text-secondary)]">{t('emptyCenter')}</p>
-        </div>
+        /* §01 · the tab already carries its own "new proposal" control in the
+           header above, so the empty state does not repeat it — §01's "one
+           action, never two of equal weight". Quiet tile: a proposal arrives
+           from a teacher, it is not something the owner is behind on. */
+        <EmptyState icon={Handshake} title={t('emptyCenter')} quiet />
       ) : (
         <ul className="flex flex-col gap-3">
           {proposals.map((p) => {

@@ -19,6 +19,7 @@ import { KpiCard, SectionHeader } from '@/components/shared';
 import AnalyticsGrowthHeader, {
   type TopAccountView,
   type PlanCountView,
+  type MonthlyRevenueView,
 } from '@/components/admin/AnalyticsGrowthHeader';
 import type { CustomerSplitView } from '@/components/admin/PlatformOverviewHeader';
 import type { CenterRow } from '@/types/admin';
@@ -54,6 +55,9 @@ export default function AdminAnalyticsPage() {
   const [split, setSplit] = useState<CustomerSplitView | null>(null);
   const [topByRevenue, setTopByRevenue] = useState<TopAccountView[] | null>(null);
   const [planMix, setPlanMix] = useState<PlanCountView[] | null>(null);
+  // §02's "Revenue, last 6 months" chart. Already in the overview payload this
+  // page fetches — it was simply never read here.
+  const [monthlyRevenue, setMonthlyRevenue] = useState<MonthlyRevenueView[] | null>(null);
   const [mrrGrowthPct, setMrrGrowthPct] = useState<number | null>(null);
   const [churnRatePct, setChurnRatePct] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -86,6 +90,9 @@ export default function AdminAnalyticsPage() {
           setSplit((ov.customerSplit as CustomerSplitView | null) ?? null);
           setTopByRevenue((ov.topByRevenue as TopAccountView[] | null) ?? null);
           setPlanMix((ov.planMix as PlanCountView[] | null) ?? null);
+          setMonthlyRevenue(
+            Array.isArray(ov.monthlyRevenue) ? (ov.monthlyRevenue as MonthlyRevenueView[]) : null,
+          );
           setMrrGrowthPct(typeof ov.revenueGrowth === 'number' ? ov.revenueGrowth : null);
           setChurnRatePct(typeof ov.churnRate === 'number' ? ov.churnRate : null);
         }
@@ -284,6 +291,7 @@ export default function AdminAnalyticsPage() {
                 split={split}
                 topByRevenue={topByRevenue}
                 planMix={planMix}
+                monthlyRevenue={monthlyRevenue}
                 mrrGrowthPct={mrrGrowthPct}
                 churnRatePct={churnRatePct}
                 planLabel={planLabelFor}

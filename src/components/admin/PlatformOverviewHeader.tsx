@@ -38,11 +38,10 @@ import {
   TrendingUp,
   BarChart3,
   Activity,
-  ChevronLeft,
-  ChevronRight,
 } from 'lucide-react';
-import { Link } from '@/i18n/routing';
+import { ListRow } from '@/components/patterns';
 import { formatCurrency, formatNumber, formatPercent } from '@/lib/formatNumber';
+import { revenueMixSharePct } from '@/lib/adminPlatformDisplay';
 
 export interface CustomerSegmentView {
   accounts: number;
@@ -65,6 +64,15 @@ export interface RevenueMixView {
   amount: number;
 }
 
+/** The design gives each revenue source its own bar colour. */
+const MIX_BAR_TONE: Record<RevenueMixView['key'], string> = {
+  subscriptions: 'bg-[var(--color-brand-500)]',
+  addons: 'bg-[var(--color-brass)]',
+  whatsapp_packs: 'bg-blue-600',
+  other: 'bg-[var(--color-navy-500)]',
+};
+
+
 interface Props {
   split: CustomerSplitView | null;
   revenueMix: RevenueMixView[] | null;
@@ -85,10 +93,12 @@ export default function PlatformOverviewHeader({
 }: Props) {
   const t = useTranslations('admin.platformOverview');
   const locale = useLocale();
-  const isRtl = locale === 'ar' || locale.startsWith('ar-');
-  const Chevron = isRtl ? ChevronLeft : ChevronRight;
-
   if (!split) return null;
+
+  const revenueMixTotal = (revenueMix ?? []).reduce(
+    (sum, row) => sum + (Number(row.amount) || 0),
+    0,
+  );
 
   const customerRows: { key: string; icon: LucideIcon; label: string; seg: CustomerSegmentView }[] = [
     { key: 'centers', icon: Building2, label: t('centers'), seg: split.centers },
@@ -199,18 +209,31 @@ export default function PlatformOverviewHeader({
           <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
             {t('revenueMixHeading')}
           </h3>
+          {/*
+            The design draws each source as a label, a filled bar and an
+            amount. The bar is a SHARE OF THE MONTH'S TOTAL — unlike §02's
+            by-plan bars, these three sources do sum to a meaningful whole
+            (everything paid this month), so a share bar is the honest reading
+            and matches what the design's widths imply.
+          */}
           <div className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)]">
             {revenueMix.map((row, i) => (
               <div
                 key={row.key}
-                className={`flex items-center justify-between gap-3 px-4 py-3 ${
-                  i > 0 ? 'border-t border-[var(--color-border)]' : ''
-                }`}
+                className={`px-4 py-3 ${i > 0 ? 'border-t border-[var(--color-border)]' : ''}`}
               >
-                <span className="text-sm text-[var(--color-text-primary)]">{t(`mix_${row.key}`)}</span>
-                <span className="text-sm font-semibold text-[var(--color-text-primary)]">
-                  {formatCurrency(row.amount, locale)}
-                </span>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm text-[var(--color-text-primary)]">{t(`mix_${row.key}`)}</span>
+                  <span className="text-sm font-semibold text-[var(--color-text-primary)]">
+                    {formatCurrency(row.amount, locale)}
+                  </span>
+                </div>
+                <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-[var(--color-surface-2)]">
+                  <div
+                    className={`h-full rounded-full ${MIX_BAR_TONE[row.key] ?? 'bg-[var(--color-brand-500)]'}`}
+                    style={{ inlineSize: `${revenueMixSharePct(row.amount, revenueMixTotal)}%` }}
+                  />
+                </div>
               </div>
             ))}
           </div>
@@ -232,30 +255,29 @@ export default function PlatformOverviewHeader({
         <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
           {t('jumpToHeading')}
         </h3>
-        <div className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)]">
-          {jumpTo.map((item, i) => {
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.key}
-                href={item.href}
-                className={`flex min-h-[44px] items-center gap-3 px-4 py-3 hover:bg-[var(--color-surface-2)] ${
-                  i > 0 ? 'border-t border-[var(--color-border)]' : ''
-                }`}
-              >
-                <Icon className="h-4 w-4 shrink-0 text-[var(--color-text-muted)]" aria-hidden />
-                <span className="min-w-0 flex-1 text-sm font-medium text-[var(--color-text-primary)]">
-                  {item.label}
-                </span>
-                {item.badge != null && item.badge > 0 && (
+        {/* §03 · these are list rows and are now the shared `ListRow`. This
+            block used to re-implement the primitive's own RTL chevron line
+            verbatim (`const Chevron = isRtl ? ChevronLeft : ChevronRight`),
+            which is the drift the shared-primitive rule exists to stop — two
+            copies of the same rule that can only ever fall out of step. They
+            stay real anchors: `ListRow` takes `href` precisely so a navigation
+            row does not have to become a button to be a `ListRow`. */}
+        <div className="flex flex-col gap-2">
+          {jumpTo.map((item) => (
+            <ListRow
+              key={item.key}
+              icon={item.icon}
+              title={item.label}
+              href={item.href}
+              badge={
+                item.badge != null && item.badge > 0 ? (
                   <span className="shrink-0 rounded-md bg-[var(--color-mint)] px-2 py-0.5 text-xs font-semibold text-[var(--color-accent-deep)]">
                     {formatNumber(item.badge, locale)}
                   </span>
-                )}
-                <Chevron className="h-4 w-4 shrink-0 text-[var(--color-text-muted)]" aria-hidden />
-              </Link>
-            );
-          })}
+                ) : undefined
+              }
+            />
+          ))}
         </div>
       </div>
     </section>

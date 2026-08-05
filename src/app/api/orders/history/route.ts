@@ -96,7 +96,10 @@ export async function GET(request: NextRequest) {
   let query = supabaseAdmin
     .from('card_orders')
     .select(
-      'id, center_id, students, quantity, price_per_card, delivery_fee, shipping_zone, total_amount, status, delivery_address, notes, created_at',
+      // `tracking_number` verified present on public.card_orders in the live
+      // catalogue (information_schema.columns) before being added here — it
+      // backs §01's row-level "Track shipment" action.
+      'id, center_id, students, quantity, price_per_card, delivery_fee, shipping_zone, total_amount, status, delivery_address, notes, created_at, tracking_number',
       { count: 'exact' },
     )
     .eq('center_id', centerId);

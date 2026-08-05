@@ -105,11 +105,32 @@ If a row ever names one, that row is a mistake.
 | [#296](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/296) | `4c5e29b` | 2026-08-01 | `Center-Home §01` — Schedule section empty-state (balance card confirmed still blocked, not built); merged by Eyad directly, held for review per this file's history | `/{locale}/dashboard` | v42 |
 | [#297](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/297) | `aa8115d4` | 2026-08-01 | none — doc only (logged #296, closed out the Center-Home §01 investigation episode) | none | v42 |
 | [#298](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/298) | `(on merge)` | 2026-08-01 | `Center-Groups` — full re-survey + waitlist-integrity fix (stale entries never cleared, position-assignment race) | `/{locale}/groups` | v42 |
+| [#339](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/339) | `(on merge)` | 2026-08-04 | `Admin-Accounts §01` — the MANAGE **Branches** row, previously mislogged as schema-blocked; `Admin-Accounts §02` — the member sheet's recency line | `/{locale}/admin/centers/[id]`, `/{locale}/admin/internal-team` | v45 → **v46** |
+
+| [#311](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/311) | `81639a14` | 2026-08-04 | `Public-Legal §01` — the four documents, the index, the data-rights form and its confirmation; `/privacy` + `/terms` retired to permanent redirects with the processing-fee disclosure ported into the Terms reader | `/{locale}/legal`, `/legal/{privacy,terms,cookie,dpa}`, `/legal/privacy-request` | v42 |
+| [#358](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/358) | `(on merge)` | 2026-08-05 | `Public-Legal §01` re-survey — `/cookies` moved under `legal/layout.tsx` (the reader rendered with no flex column at that one address), marketing-footer legal links repointed off the three redirect stubs, `.ar .dmeta`/`.ar .rver` weight-500, X4 re-measured 23→10 sections and locked by a design-derived test | `/{locale}/cookies` → `/legal/cookie`, `/{locale}/legal`, `/legal/*`, marketing footer on `/`, `/centers`, `/teachers`, `/pricing` | v45 → **v46** |
+| [#340](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/340) | `(on merge)` | 2026-08-04 | `Design-Patterns §01–§06` — **ALL screens**: primitive adoption pass. `EmptyState` 11→37 adopters, loading states 1→11, `ListRow` 5→6; `globals.css` gains the `prefers-reduced-motion` branch §02 requires; `EmptyState` gains §01's quiet variant, `SheetAction` gains §04's sub-label, `ListRow` gains `href`/`icon` | **ALL routes** — `src/app/globals.css` (reduced motion) and `charts/ChartCard.tsx` (6 screens) are shared; plus `/students`, `/students/pending`, `/rooms`, `/referrals`, `/notifications`, `/settings/team`, `/teacher/*`, `/ceo/teachers`, `/admin/staff`, `/admin/promo-codes`, `/admin/privacy-requests`, `/admin/vendors`, `/admin/whatsapp-pack` | v45 → **v46** |
+| [#341](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/341) | `(on merge)` | 2026-08-04 | `Admin-Platform §01`, `§02`, `§03`, `§06` — build the unblocked structure the 31 July survey logged but did not build | `/{locale}/admin`, `/admin/centers`, `/admin/analytics`, `/admin/platform-config`, `/api/admin/integration-health` (**new**) | v45 → **v46** |
+| [#344](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/344) | `(on merge)` | 2026-08-04 | `Teacher-Setup §01` (Verified chip on the Settings header), `§02` (owed hero rebuilt as the design's money hero with a This month / All time footer; page reordered into the design's order; proposal money as the three-cell Student rate / You earn / Center keeps row; counter gains "Their offer" + the offer-history strip) | `/{locale}/teacher/settings`, `/{locale}/teacher/centers` | v45 → **v46** |
+| [#345](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/345) | `(on merge)` | 2026-08-04 | `Center-Orders §01` (hero card preview + New order CTA, row three-dot on the shared `ActionSheet`, `.oicon` tile), `§03` step 4 (order total, Paymob trust line), F29 residue in `CheckoutShell` | `/{locale}/orders`, `/orders/checkout/payment`, `/api/orders/history` | v45 → **v46** |
+| [#346](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/346) | `(on merge)` | 2026-08-04 | `Teacher-Groups §01` (row chevron, stacked per-class label), `§02` (stat tiles, Add student / Edit group action pair, inline "Recent classes"), `§03` (group summary line, queue notes, joined-on date, requests on the shared `ExpandableRow`, roster rows on the shared `ListRow`, one shared `ActionSheet` for both). `§04` not built (D20), `§05` untouched (money/legal) | `/{locale}/teacher/groups`, `/{locale}/teacher/groups/[groupId]` | v45 → **v46** |
 | [#347](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/347) | `(on merge)` | 2026-08-04 | `Center-WhatsApp §01` — structure build: row message preview with inline `{{var}}` tokens, expand-in-place row + More sheet (first `ExpandableRow` adopter), preview converted to a real bottom sheet, screen restyled onto the §4 token layer. `§02`/`§03` **not built — blocked by D5** (see the narrative below). Also touches `patterns/ExpandableRow.tsx` (`avatar` widened `string` → `ReactNode`) — **treat as ALL screens for that component**, though it had zero adopters before this PR | `/{locale}/whatsapp` | v45 → **v46** |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, `#214`'s by that
 one, and `#296`'s own row was filled by `#297`.*
+
+**This table is behind master, and saying so is part of keeping it honest (5 August 2026).**
+`git log origin/master` carries **32** merged PRs numbered `#300`–`#338`; only `#311` is logged
+above, because `#311` is the one this pass verified line by line. The other 31 are **not**
+backfilled here: writing rows for merges I did not read would put invented summaries into the one
+document that is supposed to be evidence, which is the precise failure this file exists to prevent.
+Whoever next surveys those files should fill their own rows from the diffs.
+
+*Row numbering note: `#358`'s own row was written before the PR existed and carried a `#PR`
+placeholder for one commit, then was filled in from the opened PR — the same two-step the `(on
+merge)` SHA goes through, for the same reason: neither value exists at the moment the file has to
+be written.*
 
 ### Notes per PR
 
@@ -1662,6 +1683,363 @@ by `#248`, never formally closed in this table before now).
 
 ---
 
+**Admin-Accounts, build pass (4 August 2026, PR #339) — one recorded blocker was not a blocker, and
+the reason it looked like one is the useful part.** Asked to take the file as close to 100% as is
+honestly reachable, and told explicitly that the previous pass's instruction to *log* rather than
+*build* was withdrawn. Re-surveyed all four sections against the live routes and against
+`information_schema` on project `lczmjpnbuhnsislcvzar` before writing any code.
+
+**§01's Branches row was buildable the whole time. The blocker was a category error, not a missing
+column.** Both `AccountDetailHeader.tsx` and `centerAccountMetrics.ts` carried the same recorded
+reason: *"No `branches` table exists"* — and that sentence is true. `information_schema.tables`
+returns no `branches`; the only near-match is `branch_user_assignments`, which really does record
+staff↔branch visibility rather than branches. Every one of those checks was correct. They were all
+checks for a **table**, and in this product a branch is not a table — **a branch is a `centers` row,
+and `centers.organization_id` is what groups them.** `src/app/api/branches/route.ts` is live and is
+the only definition of a branch the product has: its POST creates a branch by inserting a `centers`
+row carrying the caller's `organization_id`, and its GET returns the branch list as
+`centers where organization_id = <org>`. Searching for the noun and stopping at its absence is what
+hid a column that was sitting in the same table the screen already loads. Recorded so the next survey
+checks the *concept* against live code, not just the *name* against `information_schema`.
+
+- **Built:** `resolveBranchCount()` + an org-scoped count in `fetchCenterAccountMetrics`, and the
+  MANAGE row in the design's own position (after Teachers & staff, before Activity log). Figure, no
+  chevron — the same treatment Students and Teachers & staff already get, because the count is real
+  and the admin-side destination is what does not exist.
+- **A centre with no `organization_id` is one branch, not zero.** `/api/branches` says the same in its
+  own words, returning `{ branches: [thatCentre], plan: 'single' }`. Zero would have printed
+  "Branches 0" on every ordinary single-site centre — wrong, and the kind of wrong nobody re-checks
+  once it is on screen. Pinned in `tests/unit/centerAccountBranchCount.test.ts`, which also pins that a
+  genuine org-count of 0 passes through unrewritten and that a failed count stays `null` (row drops its
+  figure) rather than collapsing to 0.
+- **No `is_test` filter, deliberately, against the house default.** `/api/branches` applies none, so
+  this count equals what the centre's own branch switcher shows its owner. An admin screen quietly
+  disagreeing with the owner about how many branches they have is worse than including a seed row;
+  this is a structural count, not a finance aggregate.
+- **Live today:** `organizations` holds 5 rows and `centers` holds 2, of which **0** carry a non-null
+  `organization_id` — so every centre currently resolves through the standalone path to 1. That is the
+  real answer for the data that exists, not a placeholder.
+
+**§02's recency line built, and deliberately NOT under the caption the design draws.** The design says
+"Last active 2 hours ago". `public.admin_users` has no activity column (live: `id, name, email, role,
+created_at, phone, custom_permissions`), and the only recency datum in existence is
+`auth.users.last_sign_in_at` — which is a **sign-in, not activity**. A member who signed in three days
+ago and has been working in the portal all morning reads "3d ago" on that column and "now" on the
+design's label. So the UI says **"Last signed in"** and the datum and the caption agree again;
+relabelling the column to match the drawn caption is precisely how a plausible wrong number ships and
+is never questioned afterwards. `admin_users.id` confirmed 1:1 with `auth.users.id` live (2 of 2)
+before the join was written. `auth` is not exposed over PostgREST, so the read goes through the
+service-role Auth admin API by id — bounded work, since this is EH Group's internal staff list, not a
+tenant-scaled table. A member who has never signed in renders no line at all.
+
+**Everything else in the file stays blocked, and each on a named missing column — re-verified live this
+pass, not carried over from the previous entry.**
+
+| gap | § | exact blocker, checked live 4 Aug 2026 |
+|---|---|---|
+| Verified chip, per-centre | §01 | **V1.** `centers` has no `verification_status`/`verified_at`. The chip is built but pinned `scope="deployment"`; a per-centre read needs the column. |
+| "National ID on file · Valify" row | §01 | **V1**, plus a standing design decision — `design/VERIFICATION-SPEC.md` §9.2/§9.7 settle that no verified screen needs the number. Not a gap to close. |
+| "Log in as center" action | §01 | No impersonation primitive exists anywhere. Needs new auth infrastructure, not a UI row. |
+| §01 teacher half | §01 | **R7-CLOSED** — built 28 Jul, closed unmerged on Eyad's call ("one teacher console, not two"). A resolved decision, not a pending gap. |
+| Link type (Visiting/Permanent) | §03 | `teacher_center_requests` is `id, teacher_id, center_id, status, message, created_at, updated_at, responded_at, responded_by, initiated_by` — **no link-type column**. Needs a migration → stops here per the standing rule. |
+| SIGNUP REWARD block | §04 | Re-checked properly rather than accepted: `centers.referral_reward_status`/`referral_reward_amount` **do** exist and **are** written (admin centre-management §10) — but they are the **referrer's** reward, not the design's credit applied to the **referred** account. No program-level signup-credit config and no code path applies one. Genuinely absent; the near-miss columns are a different concept wearing a similar name. |
+
+| § | before (31 Jul) | after (#339) | what moved |
+|---|---|---|---|
+| §01 Admin Account Detail — centre half | 0.8/1 (16/20) | **0.85/1 (17/20)** | Branches row built off `centers.organization_id` |
+| §01 Admin Account Detail — teacher half | 0/1 | 0/1, unchanged | R7-CLOSED, Eyad's decision |
+| §02 Admin Staff | 1/1 | 1/1 | recency line added inside an already-complete section |
+| §03 Admin Center Assignments | 0.9/1 | 0.9/1, unchanged | Link-type control still needs a new column |
+| §04 Admin Referrals | 0.8/1 | 0.8/1, unchanged | SIGNUP REWARD still has no backing |
+| **Overall (tracked sections)** | **3.5/4** | **3.55/4** | one mislogged blocker cleared; the other five are real |
+
+**Gates:** typecheck clean, lint 0 errors (145 pre-existing test-file warnings, none in touched files),
+`test:unit` 202 files / 1925 tests passed, `verify:stabilization` OK (4066 t() keys, en/ar parity,
+bidi, tolocale). `SW_VERSION` v45 → v46.
+**Design-Patterns adoption pass (4 August 2026) — the instruction was reversed: build the gaps, do not
+log them.** The 31 July `PATTERN-ADOPTION-LEDGER.md` measured six shipped primitives against the app and
+found a composite 9.8% adoption. This pass moved it to **25.5%** (60 of 235 sites), re-measured live by
+grep, not by reading the ledger. Both numbers are in the ledger's summary table with the greps behind them.
+
+Four things worth reading before the next pass:
+
+- **The ledger's own headline was already stale when this pass opened it, in both directions.**
+  `ActionSheet` / `RecordActionBar` / `ExpandableRow` were listed at 0% but four files had adopted them in
+  the per-file sweeps that ran after 31 July; and `students/page.tsx`, listed as an `EmptyState` adopter
+  "migrated 31 Jul, #292", had **no `EmptyState` import at all**. Both were found by re-running the
+  ledger's own greps. The rule that produced this — verify, do not trust, including our own documents —
+  earned its keep again.
+
+- **§02's reduced-motion rule was being violated app-wide and nobody had checked.** The rules block says
+  "the sweep already switches off under `prefers-reduced-motion` and must stay that way" — phrased as a
+  thing to preserve. It was never true: neither `.chq-skeleton` (`globals.css:1963`) nor `.skeleton`
+  (`globals.css:1130`) nor Tailwind's `animate-pulse` had a reduced-motion branch. A rule written as
+  "keep doing this" is the easiest kind to never verify. It is now a real `@media (prefers-reduced-motion:
+  reduce)` block, and the placeholders go flat rather than freezing mid-sweep, because a stopped gradient
+  reads as a rendering bug.
+
+- **A cross-file design conflict, resolved in favour of the pattern.** `Merged-Center-Students` §01 draws
+  the roster's empty-state tile at 76×76 / radius 24; `Merged-Design-Patterns` §01 specifies 64×64 /
+  radius 16. The pattern file's masthead settles it — "SECTIONS 01 AND 02 ARE PATTERNS, NOT SCREENS …
+  built once in the foundations pass and reused everywhere. Do not reimplement them per screen." The
+  roster now uses the shared component. The inline note it replaced claimed the primitive "cannot produce
+  this shape"; it can — the shape it could not produce was the one the pattern file forbids. Any future
+  per-screen empty-state drawing loses to §01 the same way.
+
+- **Three conversions were refused, and the refusals are the useful part.** The roster bulk bar cannot be
+  a `RecordActionBar` because §05's `onMore` must open the row's sheet and a roster multi-select has one
+  action — inventing bulk actions to fill the sheet would be worse than not converting. The roster row
+  kebab and `admin/centers`' row menu are blocked on **behaviour**: the first carries the paid parent-pack
+  entitlement toggle, the second is suspend / blacklist / change-plan, which is `Lifecycle` wherever it
+  lives. And the 11 route-level `loading.tsx` files, which the ledger called "a fourth ad hoc convention",
+  turned out to be deliberately shaped to match each page's own in-page skeleton — converting them to
+  `ListSkeleton` would re-create the flash they were written to remove. Convention count was the wrong
+  measure for those eleven files.
+**Admin-Platform · build the unblocked gaps (4 August 2026)** — the 31 July re-verification pass was
+told to LOG gaps rather than build them, and did exactly that: it re-confirmed six omissions and moved
+only §02's student count. This pass reverses that instruction. Every section whose backing columns
+physically exist was built; a section is omitted here only where the named column is genuinely absent.
+
+**Structure coverage 4.6/6 → 5.15/6.** Independently re-surveyed first, against the merged file and a
+fresh read of every live route, not against the recorded number.
+
+| § | before (31 Jul) | after | what moved |
+|---|---|---|---|
+| §01 Admin Overview | 0.85/1 | **0.90/1** | REVENUE MIX gains the design's proportional bars; centre rows gain the design's location sub-line |
+| §02 Admin Analytics | 0.85/1 | **0.95/1** | the "Revenue, last 6 months" chart the design draws and this screen never rendered; BY PLAN gains its track bars |
+| §03 Admin Platform | 0.65/1 | **0.85/1** | INTEGRATIONS + per-service detail, over `status_checks` |
+| §04 Admin WhatsApp Pack | 0.5/1 | 0.5/1, unchanged | still **D5**; nothing new was buildable — see below |
+| §05 Admin Promo Codes | 0.7/1 | 0.7/1, unchanged | every remaining gap needs a column that does not exist |
+| §06 Admin Privacy Requests | 0.75/1 | **0.95/1** | type tags, the countdown pill, and the request-detail block |
+| **Overall** | **4.6/6** | **5.15/6** | |
+
+**§02's chart was never a data gap — it was an unread field.** `/api/admin/overview` has always
+returned `monthlyRevenue`, six `{ month, revenue }` buckets, and `/admin` has always charted it.
+`/admin/analytics` fetches the same endpoint and simply never read the field. It is labelled *revenue
+collected*, not MRR: it sits directly under an MRR hero and the two are different measures. The
+All/Centers/Teachers segment deliberately does **not** filter it — the buckets carry no centre/teacher
+split, so re-labelling the total under a segment would attribute a figure the data does not break down.
+
+**§03 INTEGRATIONS is real, and it is not `vendors`.** The previous pass concluded "no integrations or
+vendor-health table exists". `vendors` is indeed card-printing suppliers only (`name`,
+`whatsapp_number`, `pickup_address`, `city`, `is_active` — re-verified live). But `status_checks`
+does exist: `id, service, status, response_time_ms, checked_at`, written every five minutes by
+`/api/cron/status-ping`, **9,179 rows for each of `api`, `payments` and `scanner`**, latest row
+`2026-08-04 22:25:11+00`. That backs the design's row shape and three of the four PAYMOB DETAIL
+fields. New read-only `GET /api/admin/integration-health`, gated exactly like platform-config's GET.
+
+Refusals inside that panel, each named in the code:
+
+- **Valify** is not drawn. V1 — nothing pings it, no credential exists. The design's
+  "Valify · Connected" green dot is a design-side fabrication.
+- **SMS gateway** is not drawn — no pinger, no `service` row.
+- **WhatsApp** is not drawn as a health row. `/admin/health` reports a live/test *mode*, a config
+  flag, not a reachability check; showing it as "Connected" conflates the two.
+- **Merchant ID** is an environment credential, not a column.
+- The three services are named for what is measured, not relabelled onto the design's vendor names:
+  `payments` pings the app's own `/api/health`, never Paymob, so calling that row "Paymob" would
+  report Paymob's health from a probe that never touches Paymob.
+- **A null 24h success rate renders as an em dash, never 0%.** "Not measured" and "failed every
+  time" are opposite facts.
+
+It is built on `/admin/platform-config`, not `/admin/vendors`: putting a service-health list beside a
+card-print-supplier form would merge two unrelated meanings of "vendor" under one heading.
+
+**§06's "nothing to join the counts to" was too strong.** `privacy_requests` still has no centre or
+account foreign key — that part stands. But this screen's own deletion flow already resolves a
+requester to real student rows by phone (`GET /api/admin/privacy-requests/anonymize?phone=`), and that
+match is exactly what "WILL BE DELETED · Student records N" counts. The detail block now carries
+Requested by (`relationship`), Due by, and that matched count — labelled as a phone match, and drawn
+from the same set the anonymize button acts on, so the number and the button can never disagree.
+Still omitted: **Identity · Verified** (V1, no identity check exists) and the **Approve/Reject**
+buttons (a write, and a legally consequential one).
+
+**§01's centre location line uses columns that exist but are empty.** `centers.district` and
+`centers.city` are both real (`information_schema.columns`, verified 4 August) and `/api/admin/centers`
+already selects `*`. Zero live rows have either set — both centres in production are `is_test = true`
+— so the sub-line renders nothing today rather than a placeholder. District wins over city;
+`delivery_address` is deliberately not consulted, being a shipping destination rather than a location.
+
+**Omitted, each with the exact missing column re-queried live this pass, not carried over:**
+
+| omitted | the column that does not exist |
+|---|---|
+| §01 Unverified filter chip | **V1** — no verification column anywhere; the chip is already drawn disabled with its cause |
+| §01 `/admin/teachers` frame | **R7-CLOSED** — Eyad's explicit call, one teacher console not two |
+| §01 per-centre MRR on the list row | not a missing column — a new money figure on a new surface, so it comes to Eyad |
+| §02 "Platform fees" / "Total revenue" | `invoices.metadata.processing_fee` is a jsonb key. No column, no aggregate. Summing it *defines* platform fees, which is a pricing call |
+| §03 Referrals · Attendance scanner · App version · Force update | re-queried `platform_config` live: none of `referrals`, `attendance_scanner`, `app_version` or `force_update` exists as a key |
+| §03 Card orders (global switch) | still per-centre `centers.card_orders_enabled`, not a platform key |
+| §04 credit liability, per-category Sent / Cost to send / Sold at | **D5**, and worse than blocked: `whatsapp_usage` is **empty (0 rows)**, so the `message_type` vocabulary the design's three-way Notifications/Promotions/Collect-flow split needs cannot even be established. Building the split would invent the taxonomy, not just the price |
+| §04 connection header "Connected" | the sender's display number is not a column; asserting Connected without a probe is fabrication |
+| §04 per-template On/Off, funding grouping | `wa_meta_templates` re-verified live as exactly `id, template_name, category, status, variables_count, created_at, updated_at` — no `enabled`, no funding column |
+| §05 Fixed EGP · Free month · applies-to · Scheduled | `promo_codes` re-verified live as exactly `id, code, discount_pct, max_uses_total, uses_count, expires_at, is_active, created_at, created_by` — no `discount_type`, no `target_type`, no `starts_at` |
+| §06 Identity · Verified | **V1** |
+| §06 Approve / Reject | a write on a legally consequential record |
+
+**Live counts behind every claim above, queried this pass:** 2 centres (both `is_test`), 1 promo code,
+0 promo-code redemptions, 0 privacy requests, 0 vendors, 0 `whatsapp_usage` rows, 45 `wa_meta_templates`,
+0 status incidents, `mrr_snapshots` spanning 2026-04-04 → 2026-08-04. Several of the built sections
+therefore render empty today — which is the point of guarding every divide-by-zero rather than letting
+an empty platform paint full bars.
+
+**33 new unit tests** (`tests/unit/adminPlatformSections.test.ts`) covering the four pure display
+helpers and the health fold. Gates: `typecheck` clean, `lint` 0 errors (145 warnings, identical to
+master's baseline), `test:unit` 202 files / 1954 tests passed, `verify:stabilization` all three green.
+SW_VERSION v45 → v46.
+**Teacher-Setup structural build (4 August 2026, PR #344)** — the instruction this pass ran under was
+the reverse of the last one: *build* the gaps rather than log them, and treat "logged a gap I could
+have built" as the failure. Surveyed `Merged-Teacher-Setup.html` section by section against a full
+re-read of the live code and independent `information_schema` queries against `lczmjpnbuhnsislcvzar`
+before writing a line.
+
+**Coverage moved 15/16 → 15/16 on the 16-item frame, and the frame itself needed correcting first.**
+The recorded position was **14/16 with V1 blocking two items**. That was one row stale: the
+collect-payments toggle *is* built — `CollectPaymentsRow` + `useVerificationState` landed with the
+Phase-4 verification branch (`e7f5dd20`, PR #322) and is wired into `teacher/(portal)/settings/page.tsx`
+today. So the true before-state was **15/16**, with the one genuine hole being the verified-state
+**Payout details** section. That hole did not close and correctly could not: `teacher_profiles` has
+**24 columns**, verified live this pass, and none of them is an IBAN, a bank, or an account holder
+(`payout_destination` jsonb exists and is dormant — see V4). New columns → the standing migration
+rule → stops with Eyad. The headline fraction therefore does not move; what moved is everything
+*inside* the fourteen items the coarse frame already scored as "present".
+
+**Built, all of it on columns confirmed live first.**
+- **§02 owed hero, rebuilt as the design's hero.** It now uses the shared `.money-hero` surface
+  (ADR 031, `--grad-money`, four existing adopters) instead of the pale mint card, and carries the
+  design's two-stat footer: **This month** and **All time**. The all-time figure is not a new query —
+  it is `earnedAllTime` from `/api/teacher/center-attendance`, already fetched on this page and until
+  now rendered as a duplicate tile below the hero. The page lifts it once and hands it down, so there
+  is exactly one fetch and one definition of the number. **When it has not arrived, the stat is not
+  drawn.** It is never defaulted to 0, because a fake zero here is indistinguishable from D16's real,
+  dormant zero and nobody would ever question it.
+- **§02 order is now the design's order** — owed hero → Your centers → Group proposals → Class times
+  → Join a center. It previously ran centers → earnings → join → my code → bring → proposals → slots.
+  The two live-only extras keep the neighbour they belong to: the attendance list sits with the
+  centers it itemises, "bring a group to a center" sits with the proposals it creates.
+- **§02 proposal money is now the design's three cells** — Student rate · You earn · Center keeps —
+  instead of a stack of label:value lines with the center's cut mislabelled as "Latest offer". All
+  three are the same flat-cut arithmetic already live on this screen (`fee_per_class`,
+  `group_proposal_offers.cut_egp`, both populated). With no standing offer, only the rate is drawn:
+  "You earn" and "Center keeps" need an offer to be true, and subtracting against an assumed cut
+  would be an invented number. The provenance line (whose offer, when) survives as its own caption.
+- **§02 counter gains the design's "Their offer" summary and its one-line offer-history strip**, both
+  phrased from the teacher's side ("You earn N per student", "{center} offered you N per student").
+- **§01 Settings header gains the design's `.vchip`** via the existing `VerificationBadge`, the same
+  component and the same state machine the teacher home already uses — so it reads whatever is
+  actually true, not an unconditional "Verified".
+
+**Not built, and exactly why.**
+- **§01 Payout details (account holder / bank / IBAN).** Missing columns, named:
+  `teacher_profiles` has no `iban`, no `bank_name`, no `account_holder`. Migration → Eyad. Also
+  `Merged-Teacher-Money` / `Merged-Verification-Payouts` territory, both protected.
+- **§02 proposal "Proposed: Saturdays, 2:00–3:30 PM, weekly".** Missing columns, named: `group_proposals`
+  has exactly **17 columns** (verified live) and not one is a day, a start time, an end time or a
+  schedule. The live scheduling table `group_slot_proposals` *does* carry `day_of_week` /
+  `start_time` / `end_time`, but it hangs off `group_id` — an already-attached group — with no
+  relation to a `group_proposals` row, so it cannot supply a time for a group that does not exist
+  yet. Migration → Eyad.
+- **§02 counter-offer stepper reframed as "you earn per student".** `CounterOfferForm` is shared
+  with the center console's `GroupProposalsTab` (two consumers, confirmed by grep), and the center
+  side's own design — `Merged-Center-Setup` — states the same control as **"Your counter · center's
+  cut"** expressed as a **percentage**. Flipping the shared form to the teacher's framing would break
+  the other screen against its own design, and the EGP-vs-percentage question is **D16**, still open.
+  Per the shared-primitive rule: the primitive cannot serve both framings, so this stops and says so
+  rather than being forked locally. The teacher-side wrappers around it (above) were buildable and
+  were built.
+- **D16 and D17 re-verified, both unchanged.** `select count(*) from transactions where kind='center_fee'`
+  → **0** (out of **3** transaction rows total, live). So every figure in the rebuilt hero, including
+  the newly-added All time, still reads 0.00 EGP for everyone — the hero is now the right *shape*
+  reading the same honestly-empty ledger. `/teacher/profile/[id]` still does not exist, so "Share your
+  profile" still leads to a 404.
+- **Centre count, for the record:** `centers` has **2** rows, both `is_test = true`, **0** non-test.
+
+Gates: `npm run typecheck` clean, `npm run lint` 0 errors (145 pre-existing warnings), `npm run test:unit`
+**1921 passed / 201 files**, `npm run verify:stabilization` all three green. `SW_VERSION` v45 → **v46**.
+**Center-Orders (4 August 2026) — the instruction reversed, and the gaps got built.** The 31 July
+pass surveyed this file honestly and then logged almost everything rather than building it. This pass
+was told the opposite, and re-surveyed from the design rather than from that entry. Coverage, counted
+as design blocks drawn vs. present: **§01 2/4, §02 5/5, §03 4.5/6, §04 1/3 — 12.5/18 before,
+15/18 after.**
+
+| § | before → after | what changed |
+|---|---|---|
+| §01 Orders | 2/4 → **4/4** | the hero card-preview entry point, previously dismissed as "a presentation choice, not a missing capability" — that reading was wrong, it is a block the design draws and live did not have. Built by reusing `CardOrderStyleSampleMock` (three new optional props defaulting to its existing placeholders) rather than adding a second card mock. Plus the row three-dot on the shared `ActionSheet`, and the leading `.oicon` tile. |
+| §02 Order Detail | 5/5 → 5/5 | complete and richer than the design, and still **dark in production** — `loadCardOrderDetail.ts:29` selects `card_style`, which does not exist, so the page 404s unconditionally. A full section scoring 5/5 while being unreachable is the shape F28 warns about; the score is structural, not a statement that it works. |
+| §03 Checkout | 4.5/6 → **5/6** | step 4 drew no amount at all. It now echoes the order's stored `total_amount` verbatim from the poll that already runs — no recomputation, no new request — plus the "Secured by Paymob" line. The print toggles stay out (**F18**). |
+| §04 Coming Soon | 1/3 → 1/3 | unchanged. **D7** still has no destination table. |
+
+**Verified live before anything was queried, not taken from this ledger.** `public.card_orders` is
+**35** columns with **no `card_style`** — F28's corrected figure holds on a fresh dump. `tracking_number`
+*is* present, which is why the new "Track shipment" row action was allowed to exist at all; it was
+confirmed in `information_schema.columns` before being added to `/api/orders/history`'s select, and it
+is offered on a row only when that row's value is actually non-empty.
+
+**Three omissions, each naming its missing column rather than its missing effort:**
+- **§03 Customize print toggles** — `card_orders`/`card_order_carts` have `card_style` and
+  `vendor_notes` and nothing resembling `print_name` / `print_qr` / `print_photo` / `print_id_number`.
+  New columns, so it stops (**F18**).
+- **§03 Success "Est. delivery"** — the only estimate anywhere is
+  `bosta_shipments.estimated_delivery_date`, which does not exist until Bosta books the shipment, long
+  after this screen renders. A date here would have to be invented, so there is none.
+- **§04 notify-me and its confirmation** — **D7**, unchanged.
+
+**F28 deliberately not fixed, and worth being explicit about why**, since "it is a one-line delete"
+is the obvious objection: removing `card_style` from the checkout INSERT is not a neutral repair, it
+picks one arm of the two-way fork F26/F28 escalated (add the column vs. stop persisting it), and the
+arm it picks quietly deletes the card-colour choice from the order record while changing a money-path
+write. That is Eyad's call. The consequence is recorded plainly above rather than softened: checkout
+500s for every centre, and §02 404s, the moment anyone flips `card_orders_enabled` on.
+
+**One primitive finding, reported rather than forked.** `ExpandableRow` is the natural primitive for
+§01's order row and cannot take it: it has no slot for arbitrary expanded content, and this row's
+expanded body is a full detail panel (student lines, address, price breakdown, notes). Per the
+shared-primitive rule that is a signal to stop and say so, not to fork — so the quick menu the design
+actually draws was built on `ActionSheet` directly and the existing expand was left alone.
+
+**Also fixed:** two more of F29's literal-comma fallbacks, in `CheckoutShell.tsx` (the shipping line,
+in both the desktop card and the mobile sheet). The 31 July sweep named five in-territory files and
+missed this one.
+### `#346` — Teacher-Groups: build the unblocked structure (2026-08-04)
+
+The previous pass on this file was instructed to *log* gaps rather than build them, and did. That
+instruction is withdrawn; this pass built everything §01–§03 draws whose backing columns exist.
+Structure coverage **≈2.3/5 → ≈3.5/5** (element-level count, §-by-§, in the PR body).
+
+Built, all off columns confirmed present in `information_schema` on project `lczmjpnbuhnsislcvzar`
+this pass — no new column, no migration, nothing inferred from a migration file:
+
+- **§01** — the group row gains the design's chevron affordance (glyph swapped per locale, not
+  CSS-mirrored) and the `.gfee` shape: amount over a quiet "per class" label.
+- **§02** — the `.gstats` pair (Students / Per class) and the `.gacts` primary+ghost pair
+  (Add student / Edit group), both previously absent from the group screen; the icon-only edit
+  button they replace is gone. **"Recent classes"** now renders inline on Overview — the three
+  latest, date · N present · class total — off the same `GET .../classes` the Classes tab already
+  uses. Display-only on purpose: settling a charge is a money-state write and stays where it is.
+- **§03** — the group summary line (`N students · fee per session`), both queue explanation notes,
+  and `Joined <date>` on enrolled rows from `enrollments.joined_at`, which the roster API has been
+  returning and the UI has been discarding since it was written.
+- **§03, shared primitives** — pending requests are now `ExpandableRow` (oldest open, Approve /
+  Decline inline, More chip), enrolled students are now `ListRow`, and **one** `ActionSheet`
+  serves both: open student, call/WhatsApp student, call/WhatsApp parent, then decline or remove.
+  Only phone numbers that exist get an entry. Remove still goes through the existing inline
+  confirm — the sheet arms it, it does not fire it.
+
+Not built, each with the exact reason:
+
+- **§03 "School"** — `students` has 39 columns; none of `school` / `school_name` / `school_id`.
+  New column, so it stops here (**D18**).
+- **§03 "Note from them"** — `enrollments` has exactly 9 columns (`id, group_id, student_id,
+  status, payer, source, approved_by, joined_at, created_at`). No note column. New column
+  (**D18**).
+- **§03's review gate as a real gate** — **D18**, unchanged: both create paths auto-activate.
+- **§03's `/j/7K2M9P` short link** — **D21**. `group_join_links` exists with a `token` column and
+  **0 rows**; no code reads or writes it. Scaffolding, not a ready fix.
+- **§04 Class Session** — **D20**. Which of the two divergent "run a class" builds is canonical is
+  still open, so neither was extended; building into either one would be answering D20 by stealth.
+  (`F10`'s live timer sits inside that same section and is likewise untouched — though note
+  `sessions.started_at` *does* exist live, contrary to F10's original wording.)
+- **§05 Class Session Verified** — money/legal-adjacent, untouched by standing policy.
 ## #347 · Center-WhatsApp §01 built out; §02/§03 stay blocked on D5
 
 **Structure coverage: §01 3/5 → 4/5 · §02 0/5 (unchanged) · §03 0/4 (unchanged).**

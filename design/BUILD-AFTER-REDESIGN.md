@@ -646,6 +646,8 @@ whose core Add-branch flow sits on top of this unresolved billing question.
 - **Build:** pick one commission model for center-run classes — the live flat-cut negotiation model (`fee_per_class − center_cut_egp`, already surfaced in proposals) or a percentage-split model (matching the unused `teacher_net` / `snap_teacher_pct` / `teacher_split_pct` columns) — and wire a real finish-and-bill path for `kind = 'center'` sessions. Until decided, the hero and tiles are left exactly as they are: honestly reading real (zero) data rather than being restyled to look more finished than the product is.
 - **Touches:** money.
 - **Blocked by:** Eyad's decision on which commission model to build and wire.
+- **Reconfirmed 4 August 2026 (Teacher-Setup structural build, PR #344), with the hero now rebuilt around it.** `select count(*) from transactions where kind='center_fee'` → **0**, against **3** transaction rows in the whole table; `centers` has **2** rows, both `is_test = true`, **0** non-test. Unchanged since 29 July. The §02 hero was rebuilt this pass to the design's shape — the shared `.money-hero` surface plus the design's This month / All time footer — because the *shape* was a real structural gap and the *arithmetic* is not this entry's blocker to resolve. The all-time stat is fed from the already-live `earnedAllTime` on `/api/teacher/center-attendance`, and is **omitted entirely rather than defaulted to 0** while unknown, precisely so it cannot be confused with the genuine zero this entry describes. Net effect for Eyad: the hero is now correctly shaped and still correctly empty. Nothing here narrows the decision — it is still flat-cut vs percentage-split.
+- **One extra consequence, surfaced by this pass and worth naming before the decision is made:** the same open question blocks a purely cosmetic-looking fix elsewhere. `Merged-Teacher-Setup` §02's counter sheet states the teacher's counter as **"you earn per student" in EGP**; `Merged-Center-Setup`'s Requests tab states the same control as **"Your counter · center's cut" in percent**. Both are rendered by one shared component (`src/components/group-proposals/CounterOfferForm.tsx`, two consumers, confirmed by grep), which today uses EGP-cut for both. Whichever commission model wins here also decides which of those two framings the shared control should carry — so the counter-sheet redesign is not an independent restyle and was deliberately not forked locally.
 
 ## D17 · `JoinCenterCard`'s "Share your profile" tab links to a page that does not exist
 - **What:** the "Share your profile" tab renders a link and QR code at `https://tutoringhq.app/teacher/profile/<teacherId>` for a center owner to open and add the teacher directly.
@@ -655,6 +657,28 @@ whose core Add-branch flow sits on top of this unresolved billing question.
 - **Build:** a public, unauthenticated teacher-profile page a center owner can open from the link or QR. A new page, not a restyle — same class of hole as R9 (Teacher Link Rejection).
 - **Touches:** none to build the page itself; once it exists, whatever "add this teacher" action it offers touches account state and comes back to Eyad then.
 - **Blocked by:** Eyad's decision on whether/when to build the page. Left as-is in the meantime — it matches the design, and hiding a designed feature is itself a decision beyond restyle scope.
+- **Reconfirmed 4 August 2026 (Teacher-Setup structural build, PR #344).** Re-read `JoinCenterCard.tsx` directly: `PROFILE_BASE` is still the literal `'https://tutoringhq.app/teacher/profile'` and the share tab still renders both a copyable link and a QR at `${PROFILE_BASE}/${teacherId}`. Re-globbed the whole app-router tree: still no `teacher/profile/[…]` page anywhere under `src/app/[locale]/`. Unchanged, still a 404, still Eyad's call.
+
+## D36 · The verified-state Payout details section needs three columns `teacher_profiles` does not have
+- **What:** `Merged-Teacher-Setup` §01's verified frame replaces "Payment details" (where parents pay the teacher directly) with **"Payout details"** — Account holder ("Matches your verified ID"), Bank, and IBAN, plus the Thursday-cycle explainer. This is the file's one remaining structural hole, and the only reason its coverage is 15/16 rather than 16/16.
+- **Drawn in:** `Merged-Teacher-Setup` §01, verified frame (EN and AR).
+- **Found:** 29–31 July 2026 as the un-itemised half of the "0/2" V1 gap; **promoted to its own entry 4 August 2026** (PR #344) because its sibling half — the collect-payments toggle — has since shipped (`e7f5dd20`, PR #322) and the two no longer share a blocker. The toggle needed Valify state; this needs schema.
+- **Evidence, live:** `select column_name from information_schema.columns where table_schema='public' and table_name='teacher_profiles'` returns **24 columns**, listed in full in the PR. There is **no `iban`, no `bank_name`, no `account_holder`, no `payout_name_matches`**. The nearest thing is `payout_destination` (jsonb) — which is entirely dormant (V4: zero readers, zero writers, `grep -rl "payout_destination" src/` returns nothing) and is a *destination channel*, not the three labelled fields the design draws.
+- **Exactly what is needed:** three columns on `teacher_profiles` — an account-holder name, a bank identifier, and an IBAN — or a decision to model them inside the existing `payout_destination` jsonb instead. **Not written, not applied**, per the standing rule that anything needing a new column stops here.
+- **Why it is not just a schema question:** these are payout rails. `Merged-Teacher-Money` and `Merged-Verification-Payouts` are both **protected files**, and an IBAN is regulated personal data that wants the same column-level-REVOKE treatment `verification_records` already got for the national ID (see `DECISION-national-id-2026-07-26.md`) rather than sitting on a table four `select('*')` call sites already read.
+- **Touches:** money, account state, personal data.
+- **Blocked by:** Eyad — the migration, and the decision on where the IBAN is allowed to live.
+
+## D35 · The proposal card's proposed-schedule line has no backing column anywhere
+- **What:** `Merged-Teacher-Setup` §02 draws a schedule line on the group-proposal card itself — *"Proposed: Saturdays, 2:00–3:30 PM, weekly"* — so a teacher can judge an offer on its time as well as its money before accepting.
+- **Drawn in:** `Merged-Teacher-Setup` §02, the proposal card (EN and AR).
+- **Found:** 4 August 2026, structural build of `Merged-Teacher-Setup` (PR #344). Not previously itemised: the coarse 16-item frame scored "group proposals" as one present section, which hid this.
+- **Evidence, live:** `group_proposals` has exactly **17 columns** (`id, teacher_id, center_id, subject, grade_level, fee_per_class, status, accepted_offer_id, expires_at, opening_message, responded_by, responded_at, created_at, updated_at, initiated_by, target_group_id, carries_link`). None is a day, a start time, an end time, a recurrence or a schedule blob. `group_proposal_offers` (6 columns) has none either.
+- **The near-miss that is not a fix:** `group_slot_proposals` **does** carry `day_of_week` / `start_time` / `end_time` / `note` / `status`, and it is what the live "Class times" section reads. But it hangs off **`group_id`** — an already-existing, already-attached group — with no relation to a `group_proposals` row. A proposal for a group that does not exist yet cannot have a row in it. Reading it here would attach some *other* group's booked time to an unrelated offer, which is worse than omitting the line.
+- **Exactly what is needed:** either schedule columns on `group_proposals` (day / start / end / recurrence), or a nullable `proposal_id` on `group_slot_proposals` so a time can be proposed alongside an offer and promoted on accept. Both are migrations. **Not written, not applied.**
+- **Also a product question, not only a schema one:** if a time rides along with the offer, "Accept" starts meaning "accept the money *and* the slot", and the slot has to survive the accept into a real `schedule_slots` row — which touches the center-side confirmation loop that currently owns booking.
+- **Touches:** account state (what accepting an offer commits the teacher to).
+- **Blocked by:** Eyad — the migration, and whether a proposal should carry a time at all.
 
 ## D18 · §03's "manual approval" premise doesn't happen — every enrollment auto-activates today
 - **What:** `Merged-Teacher-Groups` §03 draws a request-review screen: a pending student waits for the teacher to Approve/Decline, with request detail (grade, school, a note from the requester, how they found the group).
@@ -667,6 +691,7 @@ whose core Add-branch flow sits on top of this unresolved billing question.
 - **Touches:** account state (who gets to join a teacher's group, and when).
 - **Blocked by:** Eyad's decision on which behaviour is correct.
 - **Reconfirmed 4 Aug 2026** (structural-parity survey pass, `claude/parity-teacher-groups-w2`): still live and unchanged. `information_schema.columns` for `enrollments` (project `lczmjpnbuhnsislcvzar`) confirms the exact column set from the original finding, no `note` column anywhere on it; `students` has no `school`/`school_name` column either. Read `verify-otp/route.ts` directly again — the `apply_enrollment_transition(..., 'active', ...)` auto-activate call after `create_enrollment` is still there, still unconditional, still commented as intentional ("a verified self-enroll should not wait for the teacher's manual approval"). The live roster UI (`groups/[groupId]/page.tsx`) does have a working Approve/Decline pair for whatever rarely stays `pending`, and now also surfaces `grade_level` per D18's own note — neither changes the core finding that the design's "approval is always manual" premise is false for the self-link path. No action taken; still Eyad's call.
+- **Reconfirmed 4 Aug 2026** (build pass, PR #346, `claude/teacher-groups-build-w3`). Re-queried `information_schema.columns` live on project `lczmjpnbuhnsislcvzar`: `students` has **39** columns and **0** matching `school` / `school_name` / `school_id`; `enrollments` has **9** and **0** matching `note` / `notes` / `message` / `request_note`. Both request-detail fields therefore stay unbuilt, and the exact missing columns are named in a comment at the queue in `groups/[groupId]/page.tsx` — adding them is a migration, and migrations come to Eyad. **What was built this pass is everything else §03 draws off columns that do exist**: the queue's two explanatory notes, `Joined <date>` from `enrollments.joined_at` (already returned by the roster API, discarded by the UI until now), the group summary line, and the requests themselves moved onto the shared `ExpandableRow` — oldest open, Approve/Decline inline, More chip — with one shared `ActionSheet` behind both the pending and the enrolled rows. The gate's *behaviour* is untouched and still auto-activates; the queue is drawn honestly for the rows that do stay pending, and no copy claims review is protecting the roster.
 
 ## D19 · Private-lesson commission columns are never populated — Teacher Analytics revenue reads 0.00 EGP, live, today
 - **What:** `finish_class_and_bill` (the ACTIVE, correctly-called function for finishing a teacher's own private-group session — not to be confused with `finish_center_class_and_bill` in D16) inserts every `kind = 'lesson'` charge without `teacher_commission_amt`, `teacher_net`, `platform_gross` or `platform_net` — all four stay at their `NOT NULL DEFAULT 0`.
@@ -686,6 +711,7 @@ whose core Add-branch flow sits on top of this unresolved billing question.
 - **Touches:** money (write, once either fix is chosen), and account state (which page teachers actually use to run a class).
 - **Blocked by:** Eyad's decision on which surface is canonical and whether to wire the missing collect paths.
 - **Reconfirmed 4 Aug 2026** (structural-parity survey pass, `claude/parity-teacher-groups-w2`): re-read `SlotActionSheet.tsx` PHASE 3 top to bottom — still strictly read-only, no mark-collected control anywhere in it. Re-read `mark-paid/route.ts` — `MANUAL_METHODS` is still `{cash, instapay, vodafone_cash, other}`, live and already audited, exactly as the original finding says. To size the decision for Eyad: the fix is mechanically small — call the existing `mark-paid` endpoint from `SlotActionSheet`'s recorded phase the same way `GroupClassesTab` already does, and add a third `vodafone_cash` button to `GroupClassesTab`'s existing collect popover. A working version of both was prototyped this pass to confirm feasibility, then **reverted and not shipped** — this entry's own "Blocked by" line, written by an earlier, more careful pass on this exact file, already named this a money-state-write decision analogous to D15's, and it is not this pass's call to override that. Left exactly as found; the two candidate diffs are small enough that either resolution is a same-day build once the surface/wiring decision is made.
+- **Reconfirmed 4 Aug 2026** (build pass, PR #346, `claude/teacher-groups-build-w3`). This pass was told to build every gap it could and still did not touch §04, for one reason worth writing down: **extending either surface is answering D20 by stealth.** Adding the design's summary block, "View in group" link, select-all or live timer to the orphaned session page makes a page nothing navigates to slightly better; adding them to `SlotActionSheet` asserts that `SlotActionSheet` won. Neither is a restyle. Everything §04 draws stays unbuilt until the surface question has an answer. One factual correction to a neighbouring entry while here: **F10 says "no `sessions.started_at`-equivalent timestamp" exists — the column does exist.** `information_schema.columns` for `sessions` (live, this pass) lists `started_at timestamptz NULL`. F10's real content is unchanged (nothing selects it and no UI counts on it), but the schema claim in its wording was wrong.
 
 ## D21 · The self-enroll join link uses the full group UUID, not the design's 6-character code
 - **What:** the design draws `tutoringhq.app/j/7K2M9P`, a short code. Live, `GroupJoinLinkCard.tsx` builds `https://tutoringhq.app/ar/join/g/<full-UUID>`.
@@ -694,6 +720,7 @@ whose core Add-branch flow sits on top of this unresolved billing question.
 - **Touches:** none directly; a URL scheme change on an already-live, already-shared link is worth flagging before touching regardless.
 - **Blocked by:** Eyad's decision on whether the short code is worth building, given the full-UUID link already works and is already shared via QR/WhatsApp.
 - **Reconfirmed 4 Aug 2026** (structural-parity survey pass, `claude/parity-teacher-groups-w2`), with one new piece of live evidence: a `group_join_links` table already exists in the live catalog (`id, group_id, token, max_uses, expires_at, active, created_at` — a `token` short-code column is right there). But it has **zero rows** and `grep -rn "group_join_links" src/` returns nothing — no code anywhere reads or writes it. It looks like scaffolding for exactly this feature that was never wired up, not a ready-made fix: there's still no generator, no collision handling, no rotation policy, and no decision on whether the live full-UUID links already shared via QR/WhatsApp should keep resolving. Surfacing this for Eyad's decision, not building against it.
+- **Reconfirmed 4 Aug 2026** (build pass, PR #346). `select count(*) from group_join_links` → **0**, live, unchanged. Still zero readers in `src/`. The link card was left on the full UUID; nothing in this pass's §03 work depends on the short form.
 
 ## D24 · `students.is_active` is both the pending-signup gate and a directly-editable "paused" toggle — the roster leak can't be silently filtered
 - **What:** `Merged-Center-Students` §01 (roster) draws only active, already-approved students; the design's Pending queue (§04) is a separate screen. Live, `students/page.tsx`'s roster query has no `is_active` filter at all, so students still awaiting sign-up approval (`is_active=false`, inserted by the public join flow, e.g. `src/app/api/join/[center_code]/[group_id]/route.ts`) show up mixed into the main roster before anyone has approved them.
@@ -974,6 +1001,36 @@ Nothing in this section can start until V1 lands. Ordered so that V1 unblocks th
 - **Blocked by:** **Adsero.** The routes and layout exist; only the text is missing.
 - **Drawn in:** `Merged-Public-Legal` §01.
 - **Touches:** none. This is the only external blocker with no money or auth attached, so it can land the moment the text arrives.
+- **Re-measured, 5 August 2026 (Public-Legal second parity pass).** "Only the text is missing" is
+  still right, but it was being read as *all* the text, which stopped being true when **#311**
+  (`81639a14`) landed. The accurate size is **10 of 23 sections**, not 23:
+
+  | Document | Contents entries | Drafted | Pending |
+  |---|---|---|---|
+  | Privacy Policy | 6 | 1, 3, 5 | **2** How we use it · **4** How long we keep it · **6** Contact our DPO |
+  | Terms and Conditions | 6 | 1, 2, 3, 4 | **5** Acceptable use · **6** Liability |
+  | Cookie Policy | 5 | 2, 3, 4 | **1** What cookies are · **5** How to control them |
+  | Data Processing Agreement | 6 | 1, 3, 5 | **2** What we process · **4** Sub-processors · **6** Deletion |
+
+  The 13 drafted sections are live in both languages. The 10 pending ones keep their contents
+  entry and their `#sN` anchor and render one explicit "Pending Adsero draft." line — deliberately,
+  so a reader who clicks "4 · How long we keep it" lands somewhere instead of on a dead anchor.
+  This is a **known deviation from the design**, which simply omits the undrafted sections from the
+  reader body while still listing them in the contents; the design can afford a dead anchor because
+  its contents entries are not links. Do not "restore parity" by deleting the pending sections.
+
+  **Why the remaining 10 stay unbuilt, stated once so it is not re-litigated:** these are PDPL
+  (Law 151/2020) commitments — retention periods, the sub-processor list, the DPO contact point,
+  the erasure procedure. Unlike a wrong figure, a wrong sentence here is *binding on the company*.
+  Drafting them from the surrounding text would be fabrication in the most expensive place it
+  could happen. They become real copy with an edit to `legalContent.ts` and nothing else.
+
+  **Now guarded.** `tests/unit/legalCorpusParity.test.ts` derives the contents lists and the
+  drafted/pending split from `design/Merged-Public-Legal.html` at test time and asserts
+  `legalContent.ts` matches, in both languages and in order. It fails in both directions: on
+  invented copy appearing under a pending heading, and on a pending section being deleted to make
+  the file look finished. When Adsero's text lands, update the design file and `legalContent.ts`
+  together and it goes green — that is the intended workflow, not a test to edit around.
 
 ## X5 · Self-enrollment and the minor-consent question
 - **Blocked by:** **Adsero** for the consent question, **Meta** for the template.
