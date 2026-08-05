@@ -8730,6 +8730,7 @@
       "analytics": "Analytics",
       "groups": "My groups",
       "students": "Students",
+      "whatsapp": "WhatsApp",
       "billing": "Billing",
       "settings": "Settings",
       "logout": "Log out",
@@ -8901,7 +8902,55 @@
       "statusPending": "Pending",
       "statusPaid": "Paid",
       "statusPendingBill": "Pending",
-      "attendees": "{count} present"
+      "attendees": "{count} present",
+      "whatsapp": "WhatsApp"
+    },
+    "whatsapp": {
+      "pageSubtitle": "Messages to your students and their parents.",
+      "lockedBody": "Your WhatsApp credit and the messages your parents receive show up here once you start your trial.",
+      "loadError": "Could not load your WhatsApp details.",
+      "retry": "Try again",
+      "balanceLabel": "WhatsApp credit",
+      "balanceIncluded": "Your plan includes {amount} a month",
+      "bucketMonthly": "Monthly credit",
+      "bucketPurchased": "Bought credit",
+      "balanceResetHint": "Monthly credit is topped back up on the 1st of each month. Bought credit carries over and does not expire.",
+      "balanceNotSpentNote": "Nothing draws on this credit yet. Messages sent today are not deducted from it, so the figure above only goes up.",
+      "templatesHeading": "Your messages",
+      "templatesSubtitle": "What your students and their parents can receive, and whether each one is delivering today. WhatsApp has to approve every message type before it can be sent.",
+      "trigger": {
+        "auto": "Automatic",
+        "autoAndManual": "Automatic and on request"
+      },
+      "delivery": {
+        "sending": "Delivering",
+        "sendingPaused": "Sending paused",
+        "awaitingApproval": "Awaiting WhatsApp approval",
+        "rejected": "Rejected by WhatsApp",
+        "notSubmitted": "Not submitted to WhatsApp yet"
+      },
+      "templates": {
+        "feeReminder": {
+          "name": "Fee reminder",
+          "when": "When a class you billed is still unpaid a day later, and once more about three days after that. Two per charge at most. You can also send it yourself from a student's page."
+        },
+        "classReminder": {
+          "name": "Class reminder",
+          "when": "On the morning of a day one of your private groups has a class."
+        },
+        "scheduleChanged": {
+          "name": "Schedule changed",
+          "when": "When you change a private group's weekly schedule."
+        },
+        "classCancelled": {
+          "name": "Class cancelled",
+          "when": "When you cancel a single class."
+        },
+        "classRescheduled": {
+          "name": "Class moved",
+          "when": "When you move a single class to another date or time."
+        }
+      }
     },
     "studentsList": {
       "searchPlaceholder": "Search students",
