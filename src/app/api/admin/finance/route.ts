@@ -376,6 +376,8 @@ type CenterRow = {
   is_early_adopter: boolean | null;
   early_adopter_price: number | null;
   is_test: boolean | null;
+  /** D23: lets `getImpliedMonthlyMrr` spot an extra branch (add-on, not a subscription). */
+  organization_id: string | null;
 };
 
 async function fetchCentersForFinance(admin: SupabaseClient, includeTest: boolean): Promise<CenterRow[]> {
@@ -383,7 +385,7 @@ async function fetchCentersForFinance(admin: SupabaseClient, includeTest: boolea
     let q = admin
       .from('centers')
       .select(
-        'id, name, plan, status, created_at, all_in_price, billing_period, billing_type, is_early_adopter, early_adopter_price, is_test',
+        'id, name, plan, status, created_at, all_in_price, billing_period, billing_type, is_early_adopter, early_adopter_price, is_test, organization_id',
       )
       .neq('status', 'deleted');
     if (!includeTest) {
@@ -554,6 +556,9 @@ function monthlyChargeForCenter(c: CenterRow): number {
     early_adopter_price: c.early_adopter_price,
     id: c.id,
     is_test: c.is_test,
+    // D23: an extra branch is an add-on on the org primary's invoice, not a
+    // subscription of its own — without this it would count a second time.
+    organization_id: c.organization_id,
   });
 }
 

@@ -1,7 +1,11 @@
 {
   "legal": {
-    "terms": { "title": "الشروط والأحكام" },
-    "privacy": { "title": "سياسة الخصوصية" }
+    "terms": {
+      "title": "الشروط والأحكام"
+    },
+    "privacy": {
+      "title": "سياسة الخصوصية"
+    }
   },
   "plan": {
     "solo": "فردي",
@@ -49,6 +53,15 @@
     "teacherNotePro": "التحليلات المتقدمة داخلة في الحجم ده.",
     "teacherNoteScale": "أكبر سعر ثابت. بعد كده بيكبر معاك.",
     "teacherNoteScalePlus": "مفيش سقف. كل طالب بتضيفه بيطلع أرخص للراس من اللي قبله.",
+    "diffs": {
+      "heading": "اللي بيتغيّر مع الحجم",
+      "studentsPerWeek": "طلاب في الأسبوع",
+      "activeStudentsPerMonth": "طلاب نشطين في الشهر",
+      "noCeiling": "بلا سقف",
+      "advancedAnalytics": "تحليلات متقدمة",
+      "included": "داخلة",
+      "notIncluded": "مش داخلة"
+    },
     "same": {
       "kick": "واحد في كل الأحوال",
       "heading": "مفيش نسخة أرخص من البرنامج.",
@@ -601,6 +614,7 @@
     "loadCommissionsError": "تحميل العمولات خطأ",
     "loadError": "تحميل خطأ",
     "loadingRetry": "جاري التحميل إعادة",
+    "stillWorking": "أبطأ من المعتاد. لسه بنستنى الاتصال.",
     "login": "تسجيل الدخول",
     "logoToastError": "Logo Toast خطأ",
     "logoToastSuccess": "Logo Toast نجاح",
@@ -1560,6 +1574,7 @@
     "overlapBadge": "تعارض",
     "roomOpenAllDay": "متاحة طوال اليوم · اضغط + لاستخدامها",
     "gridCaption": "الإطار الأحمر يعني تعارض قاعة · اسحب لعرض الجمعة والسبت",
+    "endsAt": "حتى {time}",
     "takeAttendance": "تسجيل الحضور",
     "moreActions": "المزيد"
   },
@@ -2126,6 +2141,7 @@
       "emptyAlt": "الأدوار تقدر تتغيّر في أي وقت.",
       "permissionSummary": "{count} أقسام",
       "joinedOn": "انضم في {date}",
+      "lastSignedIn": "آخر تسجيل دخول {ago}",
       "customRoleNote": "لو فعّلت أي حاجة الدور المختار مش بيديها، الشخص ده هيتحفظ كدور مخصّص. أكّد بكلمة السر بتاعتك.",
       "lockedRoleNote": "صلاحيات المالك والمشرف ثابتة ومش بتتعدّل من هنا.",
       "permissionsSaved": "تم حفظ الصلاحيات.",
@@ -2978,7 +2994,6 @@
       "col_period": "الفترة",
       "col_status": "الحالة",
       "col_held_until": "قابلة للسحب بعد",
-      "status_pending": "في الانتظار",
       "status_held": "محجوزة",
       "status_available": "متاحة",
       "status_paid": "مدفوعة",
@@ -2991,10 +3006,9 @@
       "no_records": "لا توجد سجلات مكافآت بعد",
       "no_records_description": "يعمل الكرون في الثاني من كل شهر وسيقوم بتعبئة هذه القائمة.",
       "filter_all": "الكل",
-      "filter_pending": "معلق",
-      "filter_held": "محجوز",
+      "filter_pending": "مستحق",
       "filter_paid": "مدفوع",
-      "select_payable": "اختر الصفوف القابلة للدفع (معلق أو متاح) لتأكيد الدفع.",
+      "select_payable": "اختر الصفوف القابلة للدفع (المحجوزة التي انتهت مدة حجزها أو القابلة للسحب) لتأكيد الدفع. الصفوف الملغاة لا يمكن دفعها أبدًا.",
       "errors": {
         "unauthorized": "غير مصرح",
         "config": "خطأ في إعداد الخادم",
@@ -3002,7 +3016,11 @@
         "superAdminOnly": "للمشرف الأعلى فقط",
         "invalidBody": "محتوى الطلب غير صالح",
         "recordIdsRequired": "معرفات السجلات مطلوبة"
-      }
+      },
+      "filter_hold": "محجوز",
+      "filter_forfeited": "ملغاة",
+      "status_forfeited": "ملغاة",
+      "col_total_forfeited": "إجمالي الملغى"
     },
     "centerNotes": {
       "title": "ملاحظات داخلية",
@@ -3181,6 +3199,7 @@
         "invoices": "الفواتير",
         "students": "الطلاب",
         "staff": "المعلمون والفريق",
+        "branches": "الفروع",
         "activityLog": "سجل النشاط",
         "notes": "ملاحظات داخلية"
       },
@@ -3232,7 +3251,9 @@
       "topEmptyAlt": "حسابات التجربة مش داخلة في الترتيب.",
       "teacherPlan_standard": "معلم · ستاندرد",
       "teacherPlan_pro": "معلم · برو",
-      "teacherPlan_scale": "معلم · سكيل"
+      "teacherPlan_scale": "معلم · سكيل",
+      "revenueLastMonthsHeading": "الإيراد المحصّل، آخر {count} أشهر",
+      "revenueLastMonthsNote": "النقد المحصّل من الفواتير المدفوعة على مستوى المنصة. هذا الشهر حتى الآن: {amount}. وهو مقياس مختلف عن الإيراد المتكرر أعلاه."
     },
     "privacyQueue": {
       "open": "مفتوحة",
@@ -3254,7 +3275,31 @@
       "title": "قوالب المُرسِل",
       "subtitle": "قوالب واتساب الخاصة بمُرسِل المنصة وحالة اعتمادها.",
       "groupingNote": "مجمّعة حسب تصنيف ميتا. التصميم بيجمّعها حسب مين بيدفع تكلفة الرسالة — رصيد العميل، أو على حساب الشركة، أو رصيد منفصل — لكن مفيش عمود بيسجّل ده، فالتقسيم ده مش معروض بدل ما يتخمّن."
-    }
+    },
+    "integrationHealth": {
+      "heading": "التكاملات",
+      "service_api": "قاعدة البيانات",
+      "service_payments": "التطبيق والمدفوعات",
+      "service_scanner": "خدمة المسح",
+      "purpose_api": "فحص قراءة Supabase",
+      "purpose_payments": "نقطة فحص صحة التطبيق",
+      "purpose_scanner": "دالة الحضور الطرفية",
+      "status_operational": "يعمل",
+      "status_degraded": "أداء متدهور",
+      "status_outage": "انقطاع",
+      "status_unknown": "لم يُفحص",
+      "lastCheck": "آخر فحص",
+      "successRate24h": "معدل النجاح ٢٤ ساعة",
+      "responseTime": "زمن الاستجابة",
+      "percentOfChecks": "{pct}٪ من {checks} فحصًا",
+      "milliseconds": "{ms} م.ث",
+      "note": "يتم الفحص كل خمس دقائق. هذه هي الخدمات الثلاث التي تفحصها المنصة فعليًا. حالة مزوّد الدفع ومزوّد التحقق من الهوية غير مقاسة في أي مكان، لذلك لا تُعرض بدلًا من إظهارها كمتصلة."
+    },
+    "privacyDaysLeft": "{days} يومًا",
+    "privacyDetailRequestedBy": "مقدّم الطلب",
+    "privacyDetailDueBy": "الاستحقاق",
+    "privacyDetailStudentRecords": "سجلات الطلاب المطابقة",
+    "privacyRetentionNote": "تُطابق السجلات برقم هاتف مقدّم الطلب. تُخفى هوية السجلات المالية بدلًا من حذفها، امتثالًا لقانون الاحتفاظ الضريبي."
   },
   "ceo": {
     "brandTitle": "TutoringHQ",
@@ -3652,7 +3697,11 @@
     "clearSearch": "مسح البحث",
     "noSearchResults": "لا توجد قوالب تطابق بحثك.",
     "howParentsSeeIt": "كيف سيراها أولياء الأمور",
-    "variablesUsed": "المتغيرات المستخدمة"
+    "variablesUsed": "المتغيرات المستخدمة",
+    "copyTemplateName": "نسخ اسم القالب",
+    "copied": "تم النسخ",
+    "more": "المزيد",
+    "noStoredBody": "لا توجد معاينة محفوظة لهذا القالب بعد. النص النهائي موجود في Meta Business Manager."
   },
   "mobileShell": {
     "tab_bar_label": "التنقل الرئيسي",
@@ -3742,6 +3791,9 @@
     "noGroup": "بدون مجموعة",
     "mrrTrend": "اتجاه MRR",
     "agingReport": "تقرير التقادم",
+    "agingBandsTitle": "المستحقات حسب مدة التأخير",
+    "agingBandsUnavailable": "غير متاح بعد. يُحفظ الرصيد كإجمالي واحد لكل طالب، لذلك لا يمكن تقسيم المبلغ إلى ٠–٣٠ و٣١–٦٠ وأكثر من ٦٠ يومًا دون تخمين. كل المستحقات مدرجة بالكامل بالأسفل.",
+    "remind": "تذكير",
     "studentName": "اسم الطالب",
     "group": "Group:",
     "daysOverdue": "أيام التأخير",
@@ -3864,6 +3916,7 @@
   "benchmarks": {
     "title": "المقارنة المرجعية",
     "subtitle": "قارن أداء مركزك مع مراكز منطقتك",
+    "subtitleWithDistrict": "مقارنةً بالسناتر في {district}",
     "insufficientData": "نحتاج {count} سنتر إضافي في منطقتك لتفعيل المقارنة",
     "noDistrict": "من فضلك حدّد منطقتك من الإعدادات لتفعيل المقارنة المرجعية",
     "referralCta": "ادعُ مراكز أخرى واحصل على مكافآت",
@@ -3883,6 +3936,7 @@
     "retention": "الاحتفاظ لمدة 30 يومًا",
     "utilization": "استخدام المجموعة",
     "attendanceDesc": "أنت أفضل من {percentile} من المراكز في منطقتك من حيث الحضور",
+    "belowMedian": "تحت الوسيط",
     "revenueDesc": "أنت أفضل من {percentile} من المراكز من حيث الإيراد لكل طالب",
     "retentionDesc": "أنت أفضل من {percentile} من المراكز من حيث الاحتفاظ",
     "utilizationDesc": "أنت أفضل من {percentile} من المراكز من حيث استخدام المجموعات",
@@ -4488,6 +4542,7 @@
       "attendance": "الحضور",
       "windowThisTerm": "هذا الفصل",
       "windowAllTime": "كل الفترات",
+      "lastAttended": "آخر حضور {date}",
       "recentAttendance": "آخر الحضور",
       "seeAll": "عرض الكل",
       "attendancePresent": "حاضر",
@@ -4656,7 +4711,9 @@
       "missingSession": "انتهت جلسة الدفع. افتح الطلب من صفحة الطلبات.",
       "notAuthenticated": "سجّل الدخول مجددًا لمتابعة الدفع.",
       "orderNotFound": "الطلب غير موجود.",
-      "recoverFailed": "تعذّر بدء الدفع."
+      "recoverFailed": "تعذّر بدء الدفع.",
+      "total": "الإجمالي",
+      "securedBy": "محمي بواسطة Paymob"
     },
     "success": {
       "title": "تم تأكيد الطلب",
@@ -5027,7 +5084,9 @@
     "totalEarned": "إجمالي Earned",
     "totalReferrals": "إجمالي الإحالات",
     "whatsappPack": "باقة واتساب",
-    "you": "انت"
+    "you": "انت",
+    "heroTitle": "اطلب كروت الطلاب",
+    "heroSubtitle": "كروت مطبوعة يمسحها الطلاب عند الباب."
   },
   "ceoDashboard": {
     "title": "لوحة معلومات الرئيس التنفيذي",
@@ -5205,7 +5264,9 @@
     "todaySchedule": "الجدول",
     "chipBilled": "حُصِّلت",
     "chipNext": "التالية",
-    "chipLater": "لاحقًا"
+    "chipLater": "لاحقًا",
+    "attendanceUnknown": "نسبة الحضور غير متاحة — لا يوجد عدد متوقّع لليوم",
+    "attendanceScannedSuffix": "{count} تم مسحهم"
   },
   "forgotPassword": {
     "title": "إعادة تعيين الرمز السري",
@@ -5379,6 +5440,10 @@
     "counterCutLabel": "الخصم الجديد (جنيه)",
     "noteLabel": "ملحوظة (اختياري)",
     "counterAutonote": "سعر الطالب يبقى {fee} · يحتفظ المركز بـ {keep}",
+    "centerKeeps": "السنتر بياخد",
+    "theirOffer": "عرضهم",
+    "perStudent": "لكل طالب",
+    "offeredYouLine": "{center} عرض عليك {amount} لكل طالب · {date}",
     "send": "ابعت",
     "expiresOn": "بينتهي {date}",
     "teacherLabel": "المدرس",
@@ -5532,6 +5597,7 @@
     "enrolledOfCapacity": "{count}/{capacity}",
     "groupFull": "مكتملة",
     "headerCount": "{groups} مجموعات · {subjects} مواد",
+    "headerCountDigital": "{groups} مجموعات · كلها تُحصّل رقميًا",
     "headerCountEmpty": "لا شيء بعد",
     "centerCutPct": "{pct} للمركز",
     "membersCount": "الأعضاء · {count}",
@@ -5676,7 +5742,14 @@
     "roleStudent": "الطالب",
     "roleParent": "ولي الأمر",
     "call": "اتصال",
-    "whatsapp": "واتساب"
+    "whatsapp": "واتساب",
+    "more": "المزيد",
+    "callStudent": "اتصال بالطالب",
+    "waStudent": "واتساب للطالب",
+    "callParent": "اتصال بولي الأمر",
+    "waParent": "واتساب لولي الأمر",
+    "declineConfirmTitle": "رفض هذا الطلب؟",
+    "declineConfirmBody": "لن يتم تسجيل {name} ولن يظهر في قائمة طلابك. يمكنه تقديم الطلب مرة أخرى من نفس الرابط."
   },
   "import": {
     "title": "استيراد بالجملة",
@@ -6238,7 +6311,8 @@
     "noWithdrawalBalance": "لا يوجد رصيد متاح",
     "withdrawalModalTitle": "طلب سحب العمولات",
     "submitWithdrawal": "إرسال الطلب",
-    "instapayInvalid": "رقم إنستاباي يجب أن يكون ١١ رقماً ويبدأ بـ ٠١"
+    "instapayInvalid": "رقم إنستاباي يجب أن يكون ١١ رقماً ويبدأ بـ ٠١",
+    "rewardStatusExpired": "منتهية"
   },
   "resetPassword": {
     "title": "تغيير الرمز السري",
@@ -7080,7 +7154,8 @@
       "createGroup": "إنشاء",
       "groupFeePlaceholder": "الرسوم لكل حصة (جنيه)"
     },
-    "rosterMeta": "{active} نشط · {branches} فروع",
+    "rosterMetaActive": "{count} نشط",
+    "rosterMetaBehind": "{count} متأخر",
     "acrossBranches": "في {count} فروع",
     "standing_paid": "مدفوع",
     "standing_at_risk": "معرض للتأخر",
@@ -8730,6 +8805,7 @@
       "analytics": "التحليلات",
       "groups": "مجموعاتي",
       "students": "الطلاب",
+      "whatsapp": "واتساب",
       "billing": "الفوترة",
       "settings": "الإعدادات",
       "logout": "تسجيل الخروج",
@@ -8853,6 +8929,8 @@
       "greetingFallbackName": "هناك",
       "centersTile": "اللي السناتر مدينة لك بيه",
       "centersPending": "مستحق من السناتر",
+      "centersNotTracked": "لسه مش بيتحسب",
+      "centersNotTrackedHint": "حصص السنتر لسه مش بتسجّل نسبتك، فمفيش رقم نعرضه.",
       "centersEmpty": "مفيش سناتر مربوطة",
       "joinCenterCta": "انضم لمركز",
       "incomeTile": "دخل الشهر",
@@ -8901,7 +8979,55 @@
       "statusPending": "قيد الانتظار",
       "statusPaid": "مدفوع",
       "statusPendingBill": "معلّق",
-      "attendees": "{count} حاضر"
+      "attendees": "{count} حاضر",
+      "whatsapp": "واتساب"
+    },
+    "whatsapp": {
+      "pageSubtitle": "الرسائل اللي بتوصل لطلابك وأولياء أمورهم.",
+      "lockedBody": "رصيد الواتساب والرسائل اللي بتوصل لأولياء الأمور بيظهروا هنا لما تبدأ تجربتك.",
+      "loadError": "مقدرناش نحمّل بيانات الواتساب بتاعتك.",
+      "retry": "جرّب تاني",
+      "balanceLabel": "رصيد الواتساب",
+      "balanceIncluded": "باقتك معاها {amount} في الشهر",
+      "bucketMonthly": "الرصيد الشهري",
+      "bucketPurchased": "الرصيد المشترى",
+      "balanceResetHint": "الرصيد الشهري بيتجدد أول كل شهر. الرصيد المشترى بيترحّل ومابينتهيش.",
+      "balanceNotSpentNote": "لسه مافيش حاجة بتخصم من الرصيد ده. الرسائل اللي بتتبعت النهاردة مابتتخصمش منه، يعني الرقم فوق بيزيد بس.",
+      "templatesHeading": "رسائلك",
+      "templatesSubtitle": "اللي ممكن يوصل لطلابك وأولياء أمورهم، وهل كل واحدة شغّالة النهاردة ولا لأ. واتساب لازم يوافق على كل نوع رسالة قبل ما تتبعت.",
+      "trigger": {
+        "auto": "تلقائي",
+        "autoAndManual": "تلقائي وبطلب منك"
+      },
+      "delivery": {
+        "sending": "بتتبعت",
+        "sendingPaused": "الإرسال متوقف",
+        "awaitingApproval": "في انتظار موافقة واتساب",
+        "rejected": "واتساب رفضها",
+        "notSubmitted": "لسه ماتقدمتش لواتساب"
+      },
+      "templates": {
+        "feeReminder": {
+          "name": "تذكير بالمصروفات",
+          "when": "لما حصة حاسبت عليها تفضل غير مدفوعة بعد يوم، وتاني مرة بعدها بحوالي ٣ أيام. مرتين على الأكثر لكل مستحق. وتقدر تبعتها بنفسك من صفحة الطالب."
+        },
+        "classReminder": {
+          "name": "تذكير بالحصة",
+          "when": "صباح اليوم اللي فيه حصة لإحدى مجموعاتك الخاصة."
+        },
+        "scheduleChanged": {
+          "name": "تغيير المواعيد",
+          "when": "لما تغيّر مواعيد مجموعة خاصة."
+        },
+        "classCancelled": {
+          "name": "إلغاء حصة",
+          "when": "لما تلغي حصة واحدة."
+        },
+        "classRescheduled": {
+          "name": "نقل حصة",
+          "when": "لما تنقل حصة واحدة لتاريخ أو معاد تاني."
+        }
+      }
     },
     "studentsList": {
       "searchPlaceholder": "ابحث عن طالب",
@@ -9070,6 +9196,8 @@
       "cutLabel": "نصيبك {pct}",
       "unknownCenter": "سنتر",
       "fromCentersCaption": "من {count} سناتر · بيتسوّى شهريًا",
+      "statThisMonth": "الشهر ده",
+      "statAllTime": "الإجمالي",
       "yourCenters": "مراكزك",
       "centersActiveCount": "{count} نشِطة",
       "centersActiveCountOne": "{count} نشِط",
@@ -9126,7 +9254,14 @@
         "shareWhatsapp": "اشارك على واتساب",
         "waMessage": "انضم لمجموعة {group} على TutoringHQ: {url}",
         "note": "الطالب بيضغط الرابط ويتسجل لوحده."
-      }
+      },
+      "perClassLabel": "للحصة",
+      "statStudents": "الطلاب",
+      "statPerClass": "للحصة",
+      "headerSummary": "{count} طالب · {fee} للحصة",
+      "recentClasses": "آخر الحصص",
+      "seeAllClasses": "عرض الكل",
+      "presentCount": "{count} حاضر"
     },
     "groupTabs": {
       "tabOverview": "نظرة عامة",
@@ -9217,7 +9352,15 @@
       "contactStudent": "الطالب",
       "contactParent": "ولي الأمر",
       "callAction": "اتصال",
-      "messageAction": "رسالة واتساب"
+      "messageAction": "رسالة واتساب",
+      "joinedOn": "انضم {date}",
+      "enrolledHeading": "المسجلون · {count}",
+      "enrolledSub": "اضغط الاسم لعرض تفاصيله.",
+      "queueNote": "طلبوا الانضمام عبر رابط هذه المجموعة. الموافقة تضيفهم إلى {group} فقط.",
+      "queueOtherGroupsNote": "طلبات مجموعاتك الأخرى تبقى في مجموعاتها. كل رابط يملأ مجموعته وحدها.",
+      "more": "المزيد",
+      "openStudent": "فتح ملف الطالب",
+      "rowActions": "إجراءات {name}"
     },
     "notes": {
       "toggle": "ملاحظة خاصة",
@@ -9879,6 +10022,43 @@
       "clear": "مسح الفلاتر",
       "noMatch": "لا توجد صفوف مطابقة",
       "search": "بحث"
+    }
+  },
+  "ceoBoard": {
+    "title": "اللوحة",
+    "bySegment": "حسب الشريحة",
+    "hero": {
+      "totalRevenue": "إجمالي الإيراد هذا الشهر",
+      "vsLastMonth": "{pct} مقارنة بالشهر الماضي"
+    },
+    "chart": {
+      "title": "الإيراد، آخر {count} أشهر"
+    },
+    "kpi": {
+      "mrr": "الإيراد الشهري المتكرر (الاشتراكات)",
+      "activeAccounts": "الحسابات النشطة",
+      "newAccounts": "حسابات جديدة هذا الشهر",
+      "netNewCenters": "صافي السناتر الجديدة",
+      "centerChurn": "معدل مغادرة السناتر",
+      "arpu": "متوسط الإيراد لكل حساب"
+    },
+    "segment": {
+      "centers": "السناتر",
+      "teachers": "المدرسون",
+      "accounts": "الحسابات",
+      "mrr": "الإيراد الشهري المتكرر",
+      "revenueThisMonth": "المحصَّل هذا الشهر",
+      "growth": "النمو هذا الشهر"
+    },
+    "basis": "يحتسب الإيراد الفواتير المدفوعة حسب شهر التقويم بتوقيت القاهرة. معدل المغادرة وصافي الجديد للسناتر فقط: إلغاءات المدرسين ليس لها عمود تاريخ يمكن احتسابها به. الحسابات التجريبية مستثناة.",
+    "teachers": {
+      "title": "نظرة عامة على المدرسين",
+      "activeTeachers": "المدرسون النشطون",
+      "classesThisMonth": "الحصص هذا الشهر",
+      "billableSubs": "الاشتراكات المستحقة للفوترة",
+      "byPlan": "حسب الباقة",
+      "planLine": "{tier} · {price}/شهريًا",
+      "teacherCount": "{count} مدرس"
     }
   },
   "supportFab": {

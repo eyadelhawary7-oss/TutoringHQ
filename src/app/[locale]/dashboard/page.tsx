@@ -10,7 +10,7 @@ import { useUser } from '@/contexts/UserContext';
 import { Link } from '@/i18n/routing';
 import { EmptyState, KpiCard, SectionHeader } from '@/components/shared';
 import ListRow from '@/components/patterns/ListRow';
-import { formatDate, formatNumber, formatPercent, formatCurrency, formatTime } from '@/lib/formatNumber';
+import { formatDate, formatNumber, formatPercent, formatCurrency, splitFormattedTime } from '@/lib/formatNumber';
 import { getCairoWeekDayKeys, scheduleSlotsDayOfWeek } from '@/lib/cairo/week';
 import { cairoDateKey, startOfCairoDay, getCurrentCairoClock, cairoPaidAtDayUtcBounds } from '@/lib/cairo/day';
 import { classifyTodaySchedule } from '@/lib/todayScheduleStatus';
@@ -32,6 +32,7 @@ function splitFormattedPercent(value: number, locale: string): { value: string; 
   const formatted = formatPercent(value, locale);
   return { value: formatted.slice(0, -1), sign: formatted.slice(-1) };
 }
+
 
 interface DashboardData {
   /** Scans recorded today — the "Attendance" tile's numerator. */
@@ -501,11 +502,25 @@ export default function DashboardPage() {
   const attendanceTodayCount = Number(statsData?.attendanceToday ?? safeData.todayAttendance ?? 0);
   // §01 "Attendance" tile: scanned-today over EXPECTED today (the sum of today's
   // schedule_slots member counts), not over the whole roster.
+  //
+  // WHEN THERE IS NO DENOMINATOR THE PERCENTAGE IS UNKNOWN, NOT ZERO. This used
+  // to fall back to a literal 0, which rendered "0%" — a fabricated figure, and
+  // not a rare one: `schedule_slots` holds ONE row in the entire production
+  // database (F17 addendum, re-verified live this pass, 5 Aug 2026), so almost
+  // every centre has no slots for today and therefore no expected headcount.
+  // A centre that scanned fifty students was being told its attendance was 0%.
+  // `null` here means "not computable", and the tile renders an em dash with the
+  // real scan count beside it instead of a number nobody can question later.
+  //
+  // Digital share deliberately does NOT get the same treatment: it prints its
+  // own denominator ("0 EGP total") right next to the percentage, so a 0% there
+  // reads as "nothing was collected", which is exactly what happened.
   const attendancePctOfExpectedToday =
     safeData.studentsExpectedToday > 0
       ? Math.min(100, Math.round((attendanceTodayCount / safeData.studentsExpectedToday) * 10000) / 100)
-      : 0;
-  const attendanceSplit = splitFormattedPercent(attendancePctOfExpectedToday, locale);
+      : null;
+  const attendanceSplit =
+    attendancePctOfExpectedToday !== null ? splitFormattedPercent(attendancePctOfExpectedToday, locale) : null;
 
   const planKeyRaw = (centerBilling?.plan ?? 'starter').toLowerCase();
   const CENTER_PLAN_KEYS = ['solo', 'nano', 'starter', 'pro', 'business', 'enterprise'] as const;
@@ -636,10 +651,47 @@ export default function DashboardPage() {
         ) : (
           <>
             {/* §01 .alert — sand fill, brass ink, 20px alert glyph, action pinned
-                to the far end. The design's balance card (.bal) is deliberately
-                absent: it shows money TutoringHQ would hold on the centre's
-                behalf, which needs the payout system and online collection.
-                Neither exists, so it is omitted rather than stubbed. */}
+                to the far end.
+
+                THE DESIGN'S BALANCE CARD (.bal) IS STILL DELIBERATELY ABSENT,
+                and this pass can now name exactly what is missing rather than
+                gesturing at "the payout system". Re-verified live against
+                project lczmjpnbuhnsislcvzar on 5 August 2026:
+
+                  · RPC `public.payout_available_minor` — DOES NOT EXIST. The
+                    only `%payout%` routine in `pg_proc` is
+                    `enforce_payout_status_transition`.
+                  · Table `public.center_payouts` — DOES NOT EXIST, and neither
+                    does any ledger table the engine posts into.
+                  · `transactions`: 3 rows, `settled_at` populated on 0 of them.
+                  · `payout_requests`: 0 rows.
+
+                Consequence, read in the code rather than inferred:
+                `getAvailableBalanceMinor` (lib/collectionPayout/payoutEngine.ts)
+                calls that missing RPC, takes its `isNotMigrated` branch and
+                returns UNSOURCED_ZERO — so `GET /api/collection/status` answers
+                `balance.sourced: false` for every centre, today, always. That
+                route's own contract is explicit that a false `sourced` means the
+                zero is UNKNOWN, not EMPTY, and that "a surface that renders the
+                number without the reason is fabricating a balance". Nothing in
+                `src/` fetches that route — grepped, 0 callers — so it is honest
+                plumbing waiting on the ledger, not a source this screen is
+                ignoring. (The LIBRARY behind it is not unused: eight API routes
+                import `lib/collectionPayout/*`. It is the read-only status
+                endpoint that has no caller, not the engine.)
+
+                So the card's headline ("Available now") has no source at all.
+                "Pending" and "Processed" are a different case and worth stating
+                precisely rather than lumping in: `payout_requests` DOES carry
+                their columns live (`status`, `amount_requested`, `processed_at`
+                — confirmed in `information_schema.columns`), so their problem is
+                0 rows, not 0 source. Only "Unpaid" is both sourced and non-empty.
+                Rendering one real figure, plus two structural zeroes, inside a
+                card whose headline cannot exist is the fake this
+                omission exists to prevent, and redefining "Available now" from
+                other data was raised with Eyad on 1 Aug and explicitly declined.
+                Unblocking it needs a migration (rule 3) and is Verification-
+                Payouts / V3 / V4 territory (protected). Omitted, not stubbed. */}
             {safeData.unpaidCount > 0 && (
               <div className="mb-3 flex items-center gap-2 rounded-md border border-[var(--color-brass)]/25 bg-[var(--color-sand)] px-4 py-3">
                 <AlertCircle className="h-5 w-5 shrink-0 text-[var(--color-brass)]" aria-hidden />
@@ -688,10 +740,30 @@ export default function DashboardPage() {
               <KpiCard
                 label={t('attendanceShort')}
                 value={
-                  <>
-                    {attendanceSplit.value}
-                    <span className="text-xs font-medium text-[var(--color-text-muted)]">{attendanceSplit.sign}</span>
-                  </>
+                  attendanceSplit ? (
+                    <>
+                      {attendanceSplit.value}
+                      <span className="text-xs font-medium text-[var(--color-text-muted)]">{attendanceSplit.sign}</span>
+                    </>
+                  ) : (
+                    /* No expected headcount today ⇒ no denominator ⇒ no
+                       percentage. The scan count below is a real measured
+                       figure and keeps the tile from going blank.
+
+                       `role="img"` is load-bearing, not decoration: ARIA does
+                       not expose `aria-label` on a generic-role element, so
+                       several screen readers drop the label off a bare <span>
+                       and announce only the em dash. Giving the element a role
+                       makes the label its accessible name. */
+                    <span role="img" aria-label={t('attendanceUnknown')}>
+                      —
+                    </span>
+                  )
+                }
+                subLabel={
+                  attendanceSplit
+                    ? undefined
+                    : t('attendanceScannedSuffix', { count: formatNumber(attendanceTodayCount, locale) })
                 }
               />
             </div>
@@ -733,19 +805,31 @@ export default function DashboardPage() {
             />
             {safeData.todaySchedule.length > 0 ? (
               <div className="space-y-2">
-                {safeData.todaySchedule.map((s) => (
+                {safeData.todaySchedule.map((s) => {
+                  const at = splitFormattedTime(s.startTime.slice(0, 5), locale);
+                  return (
                   <ListRow
                     key={s.id}
+                    /* §01 `.sess` is a THREE-part row — `.tm` | `.sn` | `.schip`
+                       — with the start time as a 52px leading column, not a line
+                       inside the meta block. `.tm b` 13/700 tabular over
+                       `.tm span` 11 muted, centred. This is the shared ListRow's
+                       leading slot (the `.av` position), not a bespoke row. */
+                    leading={
+                      <span className="w-[52px] shrink-0 text-center" dir="ltr">
+                        <span className="num block text-base font-bold leading-tight text-[var(--color-ink)]">
+                          {at.time}
+                        </span>
+                        {at.period && (
+                          <span className="block text-xs text-[var(--color-text-muted)]">{at.period}</span>
+                        )}
+                      </span>
+                    }
                     title={s.groupName}
                     meta={
-                      <>
-                        <span className="block font-bold text-[var(--color-ink)]" dir="ltr">
-                          {formatTime(s.startTime.slice(0, 5), locale)}
-                        </span>
-                        <span className="block">
-                          {s.teacherName} · {s.roomName} · {formatNumber(s.memberCount, locale)}
-                        </span>
-                      </>
+                      <span className="block">
+                        {s.teacherName} · {s.roomName} · {formatNumber(s.memberCount, locale)}
+                      </span>
                     }
                     onOpen={s.groupId ? () => router.push(`/attendance?group=${s.groupId}&date=${cairoDateKey()}&tab=scan`) : undefined}
                     badge={
@@ -764,7 +848,8 @@ export default function DashboardPage() {
                       </span>
                     }
                   />
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="rounded-md border border-[var(--color-line)] bg-[var(--color-panel)]">

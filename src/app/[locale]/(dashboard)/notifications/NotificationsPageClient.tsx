@@ -6,6 +6,7 @@ import { useRouter } from '@/i18n/routing';
 import {
   AlertTriangle,
   Bell,
+  BellOff,
   Banknote,
   CreditCard,
   Package,
@@ -14,6 +15,8 @@ import {
   UserX,
   type LucideIcon,
 } from 'lucide-react';
+import { ListSkeleton } from '@/components/patterns';
+import { EmptyState } from '@/components/shared';
 import { supabase } from '@/lib/supabase';
 import { cairoDateKey } from '@/lib/cairo/day';
 import { formatNumber, formatRelativeMinutesAgo } from '@/lib/formatNumber';
@@ -28,27 +31,46 @@ type Row = {
   created_at: string;
 };
 
-type Tone = 'money' | 'warn' | 'people' | 'order' | 'system';
+type Tone = 'money' | 'warn' | 'danger' | 'people' | 'order' | 'system';
 
 /**
- * Icon tints, Merged-Center-Home §02 (`.i-ok` / `.i-warn` / `.i-accent` /
- * `.i-info` / `.i-danger`).
+ * Icon tints, Merged-Center-Home §02.
  *
- * The design collapses to three tints — mint on accent, sand on brass, and a
- * neutral — where this file had five unrelated Tailwind palettes. `order`
- * lands on the same mint/accent as `money` because the design's `.i-info`
- * and `.i-ok` are byte-identical; that is deliberate there, not an oversight
- * here.
+ * §02 declares six tint classes but they resolve to only FOUR distinct pairs —
+ * `.i-ok` and `.i-info` are byte-identical (#DFEEEB / #0E6B61), and so are
+ * `.i-warn` and `.i-brass` (#F4EBD7 / #9A6B1F). The four real tints are:
  *
- * KIND_RULES below is untouched: which kind gets which tone is classification,
- * not styling. One consequence worth naming — the design tints "Identity
- * verified" as positive (`.i-ok`), while this file files anything matching
- * `verif`/`identity` under `system` and renders it neutral. Reconciling that
- * means editing the rules, so it stays for the feature pass.
+ *   mint    / accent       #DFEEEB / #0E6B61   .i-ok, .i-info   → money, order
+ *   sand    / brass        #F4EBD7 / #9A6B1F   .i-warn,.i-brass → warn
+ *   hairline/ danger       #F0ECE2 / #9C3322   .i-danger        → danger
+ *   mint    / accent-deep  #DFEEEB / #0A514A   .i-accent        → people
+ *
+ * `danger` was MISSING here entirely until this pass: the design draws "Fee
+ * overdue" in clay (`.i-danger`) and everything else attention-shaped in brass,
+ * and this file collapsed both onto brass, so the one row the design singles
+ * out as destructive rendered identically to a soft warning. All four token
+ * values above are exact matches in `tokens.css` §4 — nothing new was minted.
+ *
+ * `system` is the fallback for a kind nobody has written yet. The design has no
+ * neutral tint because the design draws no unknown kind; inventing a tinted
+ * meaning for an unclassified row would assert something the row does not say,
+ * so the neutral stays and is documented rather than force-fitted.
  */
+/**
+ * Does this body line carry a money figure, and therefore §02's `.num` tabular
+ * treatment?
+ *
+ * Matches the two suffixes `formatCurrency` actually emits (`formatNumber.ts`
+ * §`EGP_EN_SUFFIX` / `EGP_AR_SUFFIX`) rather than "has a digit in it". The
+ * design is explicit that those are different tests: it draws "Physics G10"
+ * and "#THQ-2607" — both digit-bearing — as plain `ns`.
+ */
+const CURRENCY_IN_BODY = /(?:EGP|ج\.م)/;
+
 const TONE_CLASS: Record<Tone, string> = {
   money: 'bg-[var(--color-mint)] text-[var(--color-accent)]',
   warn: 'bg-[var(--color-sand)] text-[var(--color-brass)]',
+  danger: 'bg-[var(--color-hairline)] text-[var(--color-danger)]',
   people: 'bg-[var(--color-mint)] text-[var(--color-accent-deep)]',
   order: 'bg-[var(--color-mint)] text-[var(--color-accent)]',
   system: 'bg-[var(--color-hairline)] text-[var(--color-mid)]',
@@ -69,13 +91,27 @@ const TONE_CLASS: Record<Tone, string> = {
  * yet still arrives with a sensible icon rather than none.
  */
 const KIND_RULES: { match: string[]; icon: LucideIcon; tone: Tone }[] = [
-  { match: ['overdue', 'unpaid', 'failed', 'declined', 'past_due'], icon: AlertTriangle, tone: 'warn' },
+  // Money already missed, in clay — §02's "Fee overdue" row is the only one it
+  // draws as `.i-danger`. Split out from the brass rule below so the design's
+  // one destructive row stops rendering as a soft warning.
+  { match: ['overdue', 'past_due'], icon: AlertTriangle, tone: 'danger' },
+  // Money at risk but not yet missed — §02 draws "Payment failed" and the
+  // "8 unpaid links" row in brass (`.i-warn`), not clay.
+  { match: ['unpaid', 'failed', 'declined'], icon: AlertTriangle, tone: 'warn' },
   { match: ['absent', 'absence'], icon: UserX, tone: 'warn' },
   { match: ['payout'], icon: Banknote, tone: 'money' },
   { match: ['payment', 'paid', 'fee', 'invoice', 'collect'], icon: CreditCard, tone: 'money' },
   { match: ['order', 'card_order', 'shipment', 'shipped'], icon: Package, tone: 'order' },
+  // §02's "New student" row — person-plus glyph on `.i-accent` (mint on the
+  // deep accent), the one place the design uses that tint.
   { match: ['student', 'enrol', 'enroll', 'join', 'signup', 'sign_up'], icon: UserPlus, tone: 'people' },
-  { match: ['verif', 'identity', 'privacy'], icon: ShieldCheck, tone: 'system' },
+  // §02 tints "Identity verified" `.i-ok` — it is good news, not chrome. This
+  // rendered neutral until this pass; the file's own note deferred it to "the
+  // feature pass", and this is it. `privacy` splits off below: `privacy_request`
+  // is written only against an `admin_users.id`, so it never reaches a centre's
+  // own feed at all, and it is genuinely system chrome rather than good news.
+  { match: ['verif', 'identity'], icon: ShieldCheck, tone: 'money' },
+  { match: ['privacy'], icon: ShieldCheck, tone: 'system' },
 ];
 
 function decorate(kind: string | null): { Icon: LucideIcon; tone: Tone } {
@@ -120,6 +156,20 @@ export default function NotificationsPageClient() {
     void load();
   }, [load]);
 
+  /**
+   * Open a row: always mark it read, navigate only when the row HAS somewhere
+   * to go.
+   *
+   * `href` used to default to `/orders`. That was safe only while the single
+   * live writer was the card-order one; `in_app_notifications.kind` is
+   * unconstrained free text (no enum, no CHECK — verified live), so the moment
+   * any other writer lands (D26), every href-less row of every kind would have
+   * sent the owner to the card-orders page. Tapping "Fee overdue" and arriving
+   * at a shipping list is a wrong answer, not a neutral default.
+   *
+   * Marking read still happens either way — that is what the tap means — and
+   * the list is reloaded so the row and the unread count settle together.
+   */
   const openRow = async (n: Row) => {
     const {
       data: { session },
@@ -130,8 +180,12 @@ export default function NotificationsPageClient() {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
     }
-    const href = (n.href ?? '/orders').trim() || '/orders';
-    router.push(href);
+    const href = (n.href ?? '').trim();
+    if (href) {
+      router.push(href);
+      return;
+    }
+    void load();
   };
 
   const markAll = async () => {
@@ -192,9 +246,13 @@ export default function NotificationsPageClient() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-[var(--color-mid)]">…</p>
+        /* §02 · an ellipsis is not a loading state. This is a list, so it takes
+           the list skeleton at the rows' own height. */
+        <ListSkeleton rows={5} />
       ) : rows.length === 0 ? (
-        <p className="text-sm text-[var(--color-mid)]">{t('empty')}</p>
+        /* §01 quiet variant · notifications arrive on their own; there is no
+           button that fills this screen, so no action and the muted tile. */
+        <EmptyState icon={BellOff} title={t('empty')} quiet />
       ) : (
         groups.map((g) => (
           <section key={g.key} className="space-y-2 pt-2">
@@ -240,8 +298,28 @@ export default function NotificationsPageClient() {
                             {formatRelativeMinutesAgo(n.created_at, locale)}
                           </span>
                         </span>
+                        {/* §02 marks the body line `.num` selectively, and the
+                            selector is MONEY, not digits. Read off the design:
+                            "paid 350 EGP", "1,350 EGP outstanding" and
+                            "13,509 EGP to CIB" get `ns num`; "Sara Ahmed was
+                            marked absent in Physics G10" and "Card order
+                            #THQ-2607 is on the way" carry digits and are drawn
+                            as plain `ns` (the order code takes `.mono`
+                            instead). An earlier version of this line applied
+                            `num` to every body and defended it as "a no-op on
+                            rows with no digits" — that defence is wrong, and it
+                            was wrong on the only rows that render today: the
+                            single live writer is the card-order one, i.e.
+                            precisely the row the design leaves plain.
+                            `kind` cannot decide this (the amount lives inside
+                            free text and the column is unconstrained), so the
+                            test is the rendered currency suffix. */}
                         {n.body ? (
-                          <span className="mt-1 block text-sm text-[var(--color-muted)]">
+                          <span
+                            className={`mt-1 block text-sm text-[var(--color-muted)]${
+                              CURRENCY_IN_BODY.test(n.body) ? ' num' : ''
+                            }`}
+                          >
                             {n.body}
                           </span>
                         ) : null}

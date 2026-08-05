@@ -12,6 +12,7 @@ import { isProOrAbove } from '@/lib/teacherPlans';
 import { phoneFromCenterhqAuthEmail } from '@/lib/utils/phone';
 import MyCodeCard from '../../MyCodeCard';
 import CollectPaymentsRow from '@/components/verification/CollectPaymentsRow';
+import VerificationBadge from '@/components/verification/VerificationBadge';
 import { useVerificationState } from '@/hooks/useVerificationState';
 
 /**
@@ -377,7 +378,14 @@ export default function TeacherSettingsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{t('title')}</h1>
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{t('title')}</h1>
+          {/* `Merged-Teacher-Setup` §01 draws a `.vchip` beside the Settings
+              title in its verified frame. Same badge the teacher home already
+              uses, reading the same one state machine — so it says whatever is
+              actually true rather than an unconditional "Verified". */}
+          <VerificationBadge state={verification} />
+        </div>
         <p className="mt-1 text-sm text-[var(--color-text-secondary)]">{t('subtitle')}</p>
       </div>
 

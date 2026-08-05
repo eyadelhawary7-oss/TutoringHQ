@@ -52,14 +52,36 @@ function SampleWatermark({ textColor }: { textColor: string }) {
   );
 }
 
+/** Keeps a long real name from running off the edge of a fixed-width SVG card. */
+function fitToCard(raw: string | null | undefined, max: number, fallback: string): string {
+  const s = typeof raw === 'string' ? raw.trim() : '';
+  if (!s) return fallback;
+  return s.length > max ? `${s.slice(0, max - 1)}…` : s;
+}
+
 export function CardOrderStyleSampleMock({
   variant,
   className,
+  centerName,
+  studentName,
+  studentNumber,
 }: {
   variant: 'dark' | 'light';
   className?: string;
+  /**
+   * Real values, when the caller has them, so the preview shows the centre's
+   * own card rather than a generic one. All three stay optional and fall back
+   * to the neutral placeholders — never to an invented name. The SAMPLE
+   * watermark stays on either way: this is a print preview, not a real card.
+   */
+  centerName?: string | null;
+  studentName?: string | null;
+  studentNumber?: string | null;
 }) {
   const isDark = variant === 'dark';
+  const centerLabel = fitToCard(centerName, 30, 'Center name');
+  const studentLabel = fitToCard(studentName, 30, 'Student name');
+  const numberLabel = fitToCard(studentNumber, 18, '#STU-00000');
   const bg = isDark ? DARK_BG : LIGHT_BG;
   const subtext = isDark ? 'rgba(255,255,255,0.55)' : 'rgba(15,23,42,0.45)';
   const title = isDark ? colors.navy[50] : colors.navy[900];
@@ -78,13 +100,13 @@ export function CardOrderStyleSampleMock({
       <rect x="0" y="24" width="270" height="14" fill={TEAL} />
       <circle cx="28" cy="19" r="10" fill="rgba(255,255,255,0.25)" />
       <text x="120" y="24" textAnchor="middle" fill="#ffffff" fontSize="11" fontWeight={600} fontFamily="system-ui, sans-serif">
-        Center name
+        {centerLabel}
       </text>
       <text x="135" y="62" textAnchor="middle" fill={title} fontSize="11" fontWeight={600} fontFamily="system-ui, sans-serif">
-        Student name
+        {studentLabel}
       </text>
       <text x="135" y="76" textAnchor="middle" fill={subtext} fontSize="9" fontFamily="ui-monospace, monospace">
-        #STU-00000
+        {numberLabel}
       </text>
       <g transform="translate(103,88)">
         <rect

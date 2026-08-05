@@ -19,8 +19,10 @@ import type {
   CeoTeacherSubsSummary,
   CeoTeacherSubscriptionRow,
 } from '@/types/ceoTeachers';
-import type { CeoTeacherCombined } from '@/types/ceo';
-import { TEACHER_PLANS } from '@/lib/teacherPlans';
+import type { CeoTeacherCombined, CeoTeacherOverview } from '@/types/ceo';
+import { TEACHER_PLANS, TEACHER_PLAN_KEYS } from '@/lib/teacherPlans';
+import { formatCalendarMonthYyyyMmInCairo } from '@/lib/formatNumber';
+import { startOfUtcInstantForCairoCalendarDay } from '@/lib/cairo/day';
 
 /**
  * Monthly gross price per teacher tier, used only when a subscription row has
@@ -319,6 +321,94 @@ export async function getCeoTeacherData(
     attachments,
     credits,
     teacher_mrr,
+  };
+}
+
+/**
+ * `Merged-CEO` §02 (CEO Teachers) overview strip: active teachers, classes run
+ * this Cairo month, and the plan mix.
+ *
+ * OMITTED from the design's overview, and exactly why:
+ *
+ *   "Verified" (KPI 2) and the unverified-count banner — there is no
+ *   verification column anywhere. `information_schema.columns` has no
+ *   `verification_status`, `national_id` or `kyc` column on `teacher_profiles`
+ *   (or on `centers`); the only `%verif%` matches in the whole public schema
+ *   are phone/OTP columns on unrelated tables. That is V1, and V5 with it.
+ *
+ *   "Paid out" (KPI 3) — there is no teacher payout table. `payout_requests`
+ *   is `center_id`-scoped and `commission_payouts` is `staff_id`-scoped
+ *   (internal sales staff, not teachers). Nothing records money paid out to a
+ *   teacher, so the figure has no source at all.
+ *
+ *   "Teacher fee revenue" hero and the "Top earners" list — both are the
+ *   platform's cut of teacher classes, which lives in `transactions.teacher_net`
+ *   / `teacher_commission_amt`. No write path populates either column, so both
+ *   would read 0 for every teacher forever. D19 and D16, both open.
+ *
+ * Read-only. Test teachers are excluded throughout.
+ */
+export async function getCeoTeacherOverview(
+  supabase: SupabaseClient,
+  now: Date = new Date(),
+): Promise<CeoTeacherOverview> {
+  const monthKey = formatCalendarMonthYyyyMmInCairo(now);
+  const monthStartIso = startOfUtcInstantForCairoCalendarDay(`${monthKey}-01`).toISOString();
+
+  const [profilesRes, subsRes, groupsRes, sessionsRes] = await Promise.all([
+    supabase.from('teacher_profiles').select('user_id, is_test'),
+    supabase.from('teacher_subscriptions').select('teacher_id, plan_key, status, price_gross'),
+    // student_groups.teacher_id is the teacher↔group join (groups.teacher_name
+    // is free text on the centre-side table and cannot be joined on).
+    supabase.from('student_groups').select('id, teacher_id').not('teacher_id', 'is', null),
+    supabase
+      .from('sessions')
+      .select('id, group_id, status, finished_at')
+      .eq('status', 'finished')
+      .gte('finished_at', monthStartIso),
+  ]);
+
+  for (const [label, res] of [
+    ['teacherProfiles', profilesRes],
+    ['teacherSubs', subsRes],
+    ['studentGroups', groupsRes],
+    ['sessions', sessionsRes],
+  ] as const) {
+    if (res.error) console.error('[CEO Teacher Overview]', label, res.error.message);
+  }
+
+  const profiles = (profilesRes.data ?? []) as Array<{ user_id: string; is_test: boolean | null }>;
+  const testIds = new Set(profiles.filter((p) => p.is_test).map((p) => p.user_id));
+  const activeTeachers = profiles.filter((p) => !p.is_test).length;
+
+  const subs = ((subsRes.data ?? []) as Array<
+    MrrSubInput & { teacher_id: string }
+  >).filter((s) => !testIds.has(s.teacher_id));
+
+  const groups = (groupsRes.data ?? []) as Array<{ id: string; teacher_id: string }>;
+  const realGroupIds = new Set(
+    groups.filter((g) => !testIds.has(g.teacher_id)).map((g) => g.id),
+  );
+  const sessions = (sessionsRes.data ?? []) as Array<{ group_id: string | null }>;
+  const classesThisMonth = sessions.filter(
+    (s) => s.group_id != null && realGroupIds.has(s.group_id),
+  ).length;
+
+  // Plan mix over billable subscriptions only — a cancelled sub is not a seat.
+  const billable = subs.filter((s) => isBillableTeacherStatus(s.status));
+  const plans = TEACHER_PLAN_KEYS.map((key) => ({
+    plan_key: key,
+    price_gross: TEACHER_PLANS[key].priceGross,
+    teachers: billable.filter((s) => s.plan_key === key).length,
+  }));
+
+  return {
+    month: monthKey,
+    active_teachers: activeTeachers,
+    billable_subscriptions: billable.length,
+    classes_this_month: classesThisMonth,
+    teacher_mrr: computeTeacherMrr(subs),
+    plans,
   };
 }
 

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { parseBodyWithLimit } from '@/lib/validate';
 import { getAdminContext, requireAdminRole } from '@/lib/admin-auth';
+import { OUTSTANDING_STATUSES } from '@/lib/referralCommissionStatus';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -13,22 +14,44 @@ const supabaseAdmin =
       })
     : null;
 
-type RewardRow = {
+/**
+ * D22: this route read `referral_reward_records`. That table's only writer was
+ * POST /api/referrals/calculate-rewards, which had no cron registration in
+ * vercel.json and no caller in src/, so this admin screen was structurally
+ * empty. That route was DELETED on 5 August 2026 and the table is dropped by a
+ * migration applied by hand; nothing writes it any more.
+ * `referral_commissions` is the canonical ledger, written monthly by
+ * /api/cron/referral-automation.
+ *
+ * Column names below are the canonical ones. Note `commission_rate` is a
+ * FRACTION (0.25), where the retired table's `reward_percentage` was a PERCENT
+ * (25) — the admin page already multiplied by 100, so it was rendering 2500%.
+ */
+type CommissionRow = {
   id: string;
   referrer_center_id: string;
   referred_center_id: string;
-  month_number: number;
-  reward_percentage: number | string;
-  base_amount: number | string;
-  reward_amount: number | string;
+  months_since_activation: number;
+  commission_rate: number | string;
+  referred_plan_fee: number | string;
+  commission_amount: number | string;
   status: string;
-  held_until: string | null;
+  hold_until: string | null;
   paid_at: string | null;
   period_month: string;
   created_at: string;
+  referred_paid_in_full: boolean | null;
   referrer?: { id: string; name: string; center_code: string | null; phone: string | null } | null;
   referred?: { id: string; name: string; center_code: string | null; plan: string | null } | null;
 };
+
+/**
+ * Outstanding commission — earned, not yet paid out. The retired table spread
+ * this across 'pending', 'held' and 'available'. 'forfeited' is deliberately
+ * absent: it is commission the centre lost, not commission owed to it, and it
+ * must never be markable as paid.
+ */
+const OUTSTANDING = OUTSTANDING_STATUSES as readonly string[];
 
 // GET - list reward records + per-referrer totals
 export async function GET(request: Request) {
@@ -44,13 +67,13 @@ export async function GET(request: Request) {
   const statusFilter = searchParams.get('status') ?? '';
 
   const { data: totalsRows, error: totalsErr } = await supabaseAdmin
-    .from('referral_reward_records')
+    .from('referral_commissions')
     .select(
       `
       referrer_center_id,
-      reward_amount,
+      commission_amount,
       status,
-      referrer:centers!referral_reward_records_referrer_center_id_fkey(name)
+      referrer:centers!referral_commissions_referrer_center_id_fkey(name)
     `,
     );
 
@@ -67,6 +90,7 @@ export async function GET(request: Request) {
       center_name: string;
       pending: number;
       paid: number;
+      forfeited: number;
       total_records: number;
     }
   > = {};
@@ -74,7 +98,7 @@ export async function GET(request: Request) {
   for (const raw of totalsRows ?? []) {
     const r = raw as {
       referrer_center_id: string;
-      reward_amount: number | string;
+      commission_amount: number | string;
       status: string;
       referrer?: { name: string } | { name: string }[] | null;
     };
@@ -86,37 +110,43 @@ export async function GET(request: Request) {
         center_name: refName ?? '',
         pending: 0,
         paid: 0,
+        forfeited: 0,
         total_records: 0,
       };
     }
     if (!totals[rid].center_name && refName) totals[rid].center_name = refName;
     totals[rid].total_records++;
     const st = r.status;
-    if (st === 'pending' || st === 'held' || st === 'available') {
-      totals[rid].pending += Number(r.reward_amount);
+    if (OUTSTANDING.includes(st)) {
+      totals[rid].pending += Number(r.commission_amount);
     }
     if (st === 'paid') {
-      totals[rid].paid += Number(r.reward_amount);
+      totals[rid].paid += Number(r.commission_amount);
+    }
+    if (st === 'forfeited') {
+      totals[rid].forfeited += Number(r.commission_amount);
     }
   }
 
   let listQuery = supabaseAdmin
-    .from('referral_reward_records')
+    .from('referral_commissions')
     .select(
       `
       *,
-      referrer:centers!referral_reward_records_referrer_center_id_fkey(
+      referrer:centers!referral_commissions_referrer_center_id_fkey(
         id, name, center_code, phone
       ),
-      referred:centers!referral_reward_records_referred_center_id_fkey(
+      referred:centers!referral_commissions_referred_center_id_fkey(
         id, name, center_code, plan
       )
     `,
     )
     .order('created_at', { ascending: false });
 
+  // 'pending' is the UI's word for "outstanding", which under the canonical
+  // vocabulary is hold + withdrawable.
   if (statusFilter === 'pending') {
-    listQuery = listQuery.in('status', ['pending', 'available']);
+    listQuery = listQuery.in('status', OUTSTANDING);
   } else if (statusFilter) {
     listQuery = listQuery.eq('status', statusFilter);
   }
@@ -129,7 +159,7 @@ export async function GET(request: Request) {
     );
   }
 
-  const rows = (data ?? []) as RewardRow[];
+  const rows = (data ?? []) as CommissionRow[];
 
   return NextResponse.json({
     records: rows,
@@ -173,11 +203,14 @@ export async function PATCH(request: Request) {
 
   const paidAt = new Date().toISOString();
 
+  // The status filter is the guard: only outstanding commission can be marked
+  // paid. A 'paid' row cannot be double-paid and a 'forfeited' row — commission
+  // the centre lost — can never be turned into a payment.
   const { data: updated, error } = await supabaseAdmin
-    .from('referral_reward_records')
+    .from('referral_commissions')
     .update({ status: 'paid', paid_at: paidAt })
     .in('id', ids)
-    .in('status', ['pending', 'held', 'available'])
+    .in('status', OUTSTANDING)
     .select('id');
 
   if (error) {

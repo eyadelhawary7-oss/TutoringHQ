@@ -130,7 +130,7 @@ export async function GET(request: Request) {
     let centers: unknown[] = [];
     let centersQuery = supabaseAdmin
       .from('centers')
-      .select('id, name, phone, plan, status, billing_type, billing_period, all_in_price, is_early_adopter, early_adopter_price, created_at, is_test')
+      .select('id, name, phone, plan, status, billing_type, billing_period, all_in_price, is_early_adopter, early_adopter_price, created_at, is_test, organization_id')
       .neq('status', 'deleted')
       .order('created_at', { ascending: false });
     if (!includeTestCenters) {
@@ -169,6 +169,8 @@ export async function GET(request: Request) {
       early_adopter_price?: number;
       created_at?: string;
       is_test?: boolean | null;
+      /** D23: lets `getImpliedMonthlyMrr` spot an extra branch (add-on, not a subscription). */
+      organization_id?: string | null;
     }>;
     const activeCenters = allCenters.filter((c: { status?: string }) => c.status === 'active');
     const suspendedCenters = allCenters.filter((c: { status?: string }) => c.status === 'suspended');
@@ -212,6 +214,7 @@ export async function GET(request: Request) {
         early_adopter_price: c.early_adopter_price,
         id: c.id,
         is_test: c.is_test,
+        organization_id: c.organization_id,
       });
       mrrByPlan[plan] = (mrrByPlan[plan] ?? 0) + amt;
     }
