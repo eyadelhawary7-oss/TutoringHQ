@@ -473,6 +473,78 @@ resolve — this entry describes a bug that was already fixed before it was logg
     already shows today, in a second place, which is the exact anti-pattern this pass is told to avoid.
     `Teacher-Money` itself is one of the six protected files and out of scope for this branch regardless.
 
+### PARTIALLY CLOSED, 5 August 2026 — the screen is built; the pack and the usage history are not
+
+The instruction was reversed for this pass: build every section whose backing columns exist, and
+omit only where a named column genuinely does not. Re-checked the whole file against the live
+catalog before writing anything, and the answer split cleanly in three — two thirds of it was
+buildable and the previous pass had been wrong to hold all of it.
+
+**Built** (`/{locale}/teacher/whatsapp`, new route, plus a nav entry in the desktop rail and the
+More sheet — there had been none):
+
+- **Balance.** `teacher_profiles.blast_credits_subscription` / `blast_credits_purchased` are real
+  live `numeric NOT NULL default 0` columns and are already served, teacher-authenticated, by
+  `GET /api/teacher/subscription/status`. No new endpoint and no new money math: the screen renders
+  the two buckets and their sum through `formatCurrency`, with the plan's included monthly amount
+  from `TEACHER_PLANS[*].blastCreditsMonthly` (Standard 0, Pro/Scale 100) — the same figure the
+  reset RPC tops the bucket up to. Deliberately NOT drawn in messages: teachers hold an EGP credit,
+  not a message allowance, and there is no per-teacher message price anywhere to convert it with.
+  Converting it would have been an invented number.
+- **The one disclosure that makes the balance honest.** `deduct_blast_credits` is still real in the
+  database with zero callers in `src/` (re-grepped this pass: only `baseline.sql` and
+  `migrations_archive/20260612000005_teacher_pro_rpcs.sql`). So the screen says so, in both locales,
+  in a line under the card: nothing draws on this credit yet, messages sent today are not deducted.
+  This is the answer to the previous pass's objection. The objection was right that displaying a
+  permanently-one-directional number is an integrity problem — but the fix is to state the
+  direction, not to withhold the screen. `Teacher-Money`'s `TeacherPlanSection` shows the same two
+  numbers today with no such line; that file is protected and was not touched.
+- **Templates.** Five real teacher send paths exist in code and now have a screen:
+  `chq_fee_reminder` (nightly `/api/cron/fee-reminders` plus the manual send-reminder route),
+  `chq_class_reminder` (`/api/cron/class-reminders`), and `chq_schedule_changed` /
+  `chq_class_cancelled` / `chq_class_rescheduled` (`teacherScheduleNotifications.ts`). Each row
+  carries its live `wa_meta_templates.status`, resolved by the same 'APPROVED'-only rule
+  `isTemplateApproved` gates every send with. Confirmed live this pass across all 45 rows:
+  `chq_fee_reminder` is `PENDING`; the other four have **no row at all**. Those are reported as two
+  different states — "awaiting WhatsApp approval" vs "not submitted to WhatsApp yet" — because they
+  are one step apart and collapsing them would overstate progress. The "when it sends" line on each
+  row is read off the sender, not invented: the fee reminder's >24h-then-~3-days, max-two cadence
+  and the class reminder's same-Cairo-day window are both quoted from the crons.
+- One source of truth for the names: `src/lib/teacherWhatsappTemplates.ts` (new, pure, unit-tested).
+  `teacherScheduleNotifications.ts` and `teacherFeeReminder.ts` now import their template names from
+  it, so the screen cannot list a template the code does not send.
+
+**Not built, each for a named missing column or an open decision:**
+
+- **"Where yours went" (per-template usage this month) and "Sent by us, at our cost."** Missing
+  column: **`wa_message_queue.teacher_id`**. Verified two ways this pass rather than re-stated:
+  `wa_message_queue` is `(id, center_id, to_phone, template_name, variables, body, status,
+  waba_message_id, error_message, created_at, updated_at)` with `center_id uuid NOT NULL`; and a
+  schema-wide query for `column_name in ('teacher_id','teacher_user_id')` returns exactly 16 tables
+  — `ar_by_student, ar_by_teacher, bookings, chargebacks, commissions, group_proposals, invoices,
+  schedule_slots, student_credits, student_group_notes, student_groups, teacher_assignments,
+  teacher_center, teacher_center_requests, teacher_subscriptions, transactions` — **not one of which
+  is a WhatsApp log**. `whatsapp_usage`, `wa_messages` and `whatsapp_messages` are all `center_id`-
+  keyed too, so there is no second table to fall back to. A new column is a migration → stops here,
+  comes to Eyad. No count was estimated from anything else.
+- **The pack purchase state** (fixed 200 / 1,000 / 5,000-message tiers, "Buy a pack", the
+  "Includes VAT · 20 EGP processing fee" footer). Held on **D5**, still open. Live billing is a
+  per-parent monthly pack; the design is a one-time never-expiring top-up. Putting the design's
+  tiers on screen would be fabricated pricing, and a CTA with nothing behind it would be a dead
+  button, so the footer CTA is absent too. Both omissions are written into the page's own header
+  comment so the next reader does not re-litigate them.
+- **The "Sent by us" pair (Payment link, Receipt).** Not a missing column — a missing template and a
+  missing sender, platform-wide. Re-confirmed against all 45 live `wa_meta_templates` rows: there is
+  no parent-facing payment-link or receipt template for anyone, centre or teacher, and no sender in
+  `src/`. `chq_payment_confirmed` / `chq_payment_failed` are `APPROVED` but confirm a centre's own
+  subscription payment *to* TutoringHQ, which is a different message to a different recipient.
+  Drawing the pair would claim a capability that does not exist.
+
+**Structure coverage: 0/3 → 2/3** (balance, templates built; pack held on D5). Screen-level, the
+route now exists and is reachable, so the file's 0/1 becomes 1/1 *drawn* with one of three states
+still held. Still open on this entry: D5, wiring `deduct_blast_credits` to real sends, and the
+teacher-attribution column above. Meta approval for the five templates stays external and unchanged.
+
 ## D7 · Card-order notify-me — a write with no destination
 - **The decision:** where does a notify-me registration go?
 - **Why it is stuck:** the only waitlist table is `waitlist_notifications (student_id, group_id, …)`, which is about group waitlists, not card orders.
