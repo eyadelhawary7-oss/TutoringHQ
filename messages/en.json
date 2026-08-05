@@ -5993,7 +5993,17 @@
     "markedPresent": "{name} marked present",
     "alreadyPresent": "{name} is already present today",
     "saveFailed": "Couldn't save attendance. Please try again.",
-    "subscriptionInactive": "Your subscription is inactive. Reactivate to record attendance."
+    "subscriptionInactive": "Your subscription is inactive. Reactivate to record attendance.",
+    "feePerSession": "{amount} / session",
+    "chipCount": "{count} {label}",
+    "chipNotMarked": "{count} not marked",
+    "notMarked": "Not marked",
+    "legendBox": "Tap the <b>box</b> for present or absent",
+    "legendMethod": "Then pick <b>how they paid</b>",
+    "legendName": "Tap the <b>name</b> for student details",
+    "markPresentAria": "Mark {name} present",
+    "fullProfile": "Full profile",
+    "messageParent": "Message parent"
   },
   "checkout": {
     "pageTitle": "Checkout",

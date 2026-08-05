@@ -4599,7 +4599,17 @@
     "markedPresent": "تم تسجيل حضور {name}",
     "alreadyPresent": "{name} مُسجّل حاضر اليوم بالفعل",
     "saveFailed": "تعذّر حفظ الحضور. يرجى المحاولة مرة أخرى.",
-    "subscriptionInactive": "اشتراكك غير نشط. فعّله لتسجيل الحضور."
+    "subscriptionInactive": "اشتراكك غير نشط. فعّله لتسجيل الحضور.",
+    "feePerSession": "{amount} / حصة",
+    "chipCount": "{count} {label}",
+    "chipNotMarked": "{count} غير مسجّل",
+    "notMarked": "غير مسجّل",
+    "legendBox": "اضغط <b>المربّع</b> للحضور أو الغياب",
+    "legendMethod": "ثم اختر <b>طريقة الدفع</b>",
+    "legendName": "اضغط <b>الاسم</b> لتفاصيل الطالب",
+    "markPresentAria": "تسجيل حضور {name}",
+    "fullProfile": "الملف الكامل",
+    "messageParent": "مراسلة ولي الأمر"
   },
   "checkout": {
     "pageTitle": "إتمام الطلب",

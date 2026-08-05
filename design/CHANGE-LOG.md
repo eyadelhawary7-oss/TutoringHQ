@@ -136,6 +136,7 @@ inferred rather than read, and an inferred row in this table is worse than an ab
 | — | — | — | **⚠ HOLE — 32 merged PRs are missing from this table, between `253297bc` (#298) and the row below.** `git log --oneline 253297bc..origin/master` returns exactly **32** squash merges with no row here (verified 5 Aug 2026). They are **not** backfilled: writing "screens touched" cells from commit subjects alone would put unverified claims into the one table people are told to trust before touching a screen. The `SW_VERSION` column therefore skips **v43 → v45** across this gap. **Backfilling this needs its own pass, reading each of the 32 diffs.** | — | v42 → v45 |
 | [#351](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/351) | `(on merge)` | 2026-08-05 | `Center-Home §01` (schedule row `.tm` leading column, Attendance fabricated-0% fix), `§02` (four-tint reconciliation, href fallback) — plus `formatTime` and `ListRow`, both **shared**, so treat as ALL screens reading a wall-clock time or a list row | `/{locale}/dashboard`, `/{locale}/notifications`, and every screen calling `formatTime` with an `HH:MM` string (`/schedule`, `/groups`, teacher slot surfaces) | v45 → **v46** |
 | [#356](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/356) | `(on merge)` | 2026-08-05 | `Teacher-Insight §01` built to the drawn frame — Pro gate card, per-metric glyphs, "What you'll unlock" label; new `.panel-accent` surface in `globals.css`, so treat as **ALL screens** for that one class (no existing adopters). `§02` untouched, still D14 | `/{locale}/teacher/analytics` | v45 → **v46** |
+| (this PR) | `(on merge)` | 2026-08-05 | `Center-Attendance §01` — block-level re-survey; summary card, legend, three-tap-target row, name-tap detail sheet, and the verification-badge slot filled with the real state machine. §02 untouched (protected behaviour + V6) | `/{locale}/attendance` | v45 → v46 |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, `#214`'s by that
@@ -2551,3 +2552,69 @@ it would be entrenching one side of the decision D14 exists to make. Unbuilt, lo
 **Docs-sync note, not fixed here.** This log's PR table ends at `#298` while master is at `#337`. That
 gap predates this pass and is left alone rather than filled with rows for PRs nobody in this session
 read — the same reasoning the log applies to `(on merge)` SHAs. `#356`'s row is appended in place.
+**Center-Attendance §01 (5 August 2026) — V6 was STALE; the file is no longer 0/2 wholesale.**
+Row 16 said "~0/2, wholesale-blocked" on **V6**. Re-checked rather than trusted, and the position had
+moved underneath it: **PR #322 (`e7f5dd20`, merged 4 August, one day before this pass)** shipped
+`src/components/verification/VerificationBadge.tsx` and `src/hooks/useVerificationState.ts` — a real
+badge driven by one state machine that renders whichever state is true and fails closed to
+"Verification unavailable". §01's blocker was never "the screen needs Valify to function"; it was
+"the design draws a Verified pill in 5 of 5 frames and live had nothing honest to put there." That is
+now false. The slot is filled.
+
+What that badge reads today, and why that is the correct outcome rather than a gap:
+`verification_records` and `verification_attempts` **do not exist** in the live catalog — queried
+directly against project `lczmjpnbuhnsislcvzar` on 5 August (`information_schema.tables`, both names,
+zero rows returned; `payout_requests` does exist but is the pre-existing referral table, not #322's
+ledger). #322's own body says both its migrations are proposals for Eyad to apply by hand. So the pill
+reads "Verification unavailable", which is true, and cannot read "Verified" until an HMAC-verified
+webhook says so.
+
+**Built this pass, all of it §01, none of it a new write and none of it a new money figure:**
+- **The summary card.** The design's `.sum` — tally, per-session price, and one chip per outcome. The
+  chips are a fold of state the component already held (`done`/`pending`/`roster`); no new query, no
+  new column. The per-session price was already on screen in the roster header and moved into the card
+  rather than introduced.
+- **The legend.** The design's three-line `.legend`, naming the three tap targets. Line two reads
+  "then pick how they paid" rather than the design's "tap the chip to switch digital or cash", because
+  there is no digital collection to switch to.
+- **The row split into three tap targets.** The design is explicit that a row is three targets, not
+  one: the box marks present, the name opens details, the chip states the outcome. Live had one target
+  for all of it. The box and the name are now separate buttons. The chip is a **state, not a switch** —
+  the design's digital/cash toggle is V3.
+- **The name-tap detail sheet**, on the shared `ActionSheet` (`Merged-Design-Patterns` §04), not a
+  local one.
+
+**Not built, each with the reason and the exact missing thing:**
+- **The "Covered" chip and the billing-basis note (`.opt`).** `student_groups` carries `fee_per_class`
+  and **no billing-basis column whatsoever** — no `billing_type`, no `billing_basis`, no `monthly_fee`,
+  no `bundle_size` (full column list read from `information_schema.columns`, 16 columns). There is no
+  fact that could mark a student covered by a monthly plan or a bundle. This is **D12**. A chip that
+  always read "0 covered" would be a fabricated reassurance.
+- **The detail sheet's four-fact card** (This session / Outstanding / Attendance / Last paid).
+  `ActionSheet` takes title, subtitle and actions — it has **no body slot**, and widening a primitive
+  with eight adopters is a design-system change, so per the shared-primitive rule this stops rather
+  than forks. "This session" is carried in the subtitle, which the primitive does have. Outstanding and
+  Last paid would also be new money figures on this screen, which is a separate stop.
+- **The footer and the End-session-and-bill sheet.** The checklist never opens a `sessions` row
+  (`attendance_scans.session_id` is left NULL by this path — the same fact F20 item 2 turns on), so
+  there is no session to end. Which surface owns "run a class" is **D20**. The sheet's own contents
+  (collection fee 10%, "You receive") are V3 besides.
+- **Select all.** The design's own caption says it "marks the room present and **bills digitally**" —
+  V3. And a bulk write here is precisely the amplification **F20 item 2** warns about: this pipeline
+  has no retry dedup for a billing-relevant insert, so one button that fires N of them is the wrong
+  thing to add while that is open.
+- **The topbar's "teacher · room" subtitle.** `student_groups` has **no room column** (`sessions.room`
+  exists, but this path opens no session), and `teacher_id` is an FK to `users(id)` whose proxy scope
+  is `center_id`-bound, which a teacher row is not guaranteed to satisfy. Subject is what the group row
+  actually carries, so subject is what the subtitle shows.
+- **§02 Center Collect ForMe — 0/13, and it stays there.** Not for absence of code: #322 shipped
+  `GET /api/collection/status` and `POST /api/collection/enable`, and **neither has a UI caller
+  anywhere in `src/`** (grepped). §02 is nonetheless the protected shape — it writes (enable
+  collection), it shows money figures (available balance, pending, the 10% fee, the 7.5% + 7.5 markup,
+  a withdraw amount), and it is an entitlement check. #322's own body says it outright: "No
+  centre-facing payout UI: `Merged-Center-Money.html` is protected and Eyad's." **V6** still applies
+  too. This is a routing rule, not a difficulty rating.
+
+**F20's remaining items are untouched and still open** — the retry-dedup fix, the `'admitted'`
+constraint gap, the `'late_entry'` schema gap, the Zod field-stripping, and the missing permission gate
+on the `payments` insert. Nothing this pass added writes to that path.
