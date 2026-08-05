@@ -128,6 +128,10 @@ inferred rather than read, and an inferred row in this table is worse than an ab
 | [#357](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/357) | `(on merge)` | 2026-08-05 | `Teacher-WhatsApp §01` — the screen built for the first time: balance + templates (2 of its 3 states). Pack state held on **D5**; usage history held on a missing `wa_message_queue.teacher_id`. Also touches the teacher nav (rail + More sheet), so treat as **all teacher-portal routes** for the nav only | `/{locale}/teacher/whatsapp` (**new**), `/api/teacher/whatsapp/templates` (**new**), plus the nav on every `/{locale}/teacher/*` page | v45 → **v46** |
 | ⚠ **gap — 32 PRs merged after #298 were never logged here.** Count derived, not estimated: `git log origin/master --oneline \| grep -oE '\(#[0-9]+\)' \| tr -d '(#)' \| sort -n \| uniq \| awk '$1 > 298'` → 32 (#300…#308, #310…#314, #316…#330, #333, #337, #338). The tip of master is #337 (`26f8b3b3`) but the highest PR *number* merged is #338. Not backfilled: reconstructing rows from commit subjects would be invention, which is the one thing this file exists to prevent. Recorded so the gap is visible rather than silent. | | | | | |
 | [#360](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/360) | `(on merge)` | 2026-08-05 | `Teacher-Home §01` — Centers tile withholds the unmeasured zero (no settlement claim; `/api/teacher/center-cuts` gains `cutBasisRows`), fabricated-zero fix kept from #342, Subscription tile → design's `.card.sub`/`.subbtn` in all three states | `/{locale}/teacher`, `/api/teacher/center-cuts` | v45 → **v46** |
+| [#298](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/298) | `253297bc` | 2026-08-01 | `Center-Groups` — full re-survey + waitlist-integrity fix (stale entries never cleared, position-assignment race) | `/{locale}/groups` | v42 |
+| [#313](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/313) | `5ed71d34` | 2026-08-04 | `Center-Groups §01/§03/§04/§05` — visual-parity rework, D31 closed (Branches moved onto `ExpandableRow` with real Switch/Dashboard/Edit/More) | `/{locale}/groups`, `/{locale}/rooms`, `/{locale}/branches`, `/{locale}/schedule` | v43 (untouched) |
+| [#321](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/321) | `44692233` | 2026-08-04 | `Center-Groups` re-verification — 8 live Arabic-translation bugs fixed in the `groups`/`rooms`/`branches` namespaces (**F31**) | `/{locale}/groups`, `/{locale}/rooms`, `/{locale}/branches` | v45 (untouched) |
+| _(this PR)_ | `(on merge)` | 2026-08-05 | `Center-Groups §01` (waitlist head-of-queue primary, §02 Verified chrome, §01 type/radius pass), `§03` Rooms (card onto design tokens), `§04` Branches (KPI strip onto design tokens), `§05` Schedule (by-room end-time + activity ordering, nullable-`room_id` clash guard, radius pass) | `/{locale}/groups`, `/{locale}/rooms`, `/{locale}/branches`, `/{locale}/schedule` | v45 → **v46** |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, `#214`'s by that
@@ -149,6 +153,16 @@ in after `#298`; the PRs between it and `#353` — including `#310`, `#312`, `#3
 `#318`, `#319`, `#321`, `#327`, `#330`, `#333` and `#337`, all on master — bumped `SW_VERSION` four
 times without adding rows here. Their narrative write-ups DO exist further down under "Notes per PR";
 only the table rows are missing. Do not read the gap as "nothing shipped."*
+*Ledger gap, recorded 5 August 2026 rather than silently papered over.* `#298`'s `(on merge)`
+placeholder was never filled and **the table then stopped entirely** while `master` took roughly two
+dozen more merges and `sw.js` climbed `v42 → v45`. Three corrections were made here, each from
+`git log`, none from memory: `#298`'s SHA is `253297bc`; the two other `Center-Groups` PRs merged
+since (`#313`, `#321`) are now rows. Their SW column says **untouched**, not a bump — checked with
+`git log -L 17,17:public/sw.js`, which shows the `v42 → v45` climb belongs to `#310`, `#312` and
+`#318`, none of them this file's. The ~20 non-`Center-Groups` PRs merged in that window are **still
+missing** from this table and were deliberately not reconstructed here: guessing at another file's
+scope and routes to fill a row is exactly the invented-corroboration failure this ledger exists to
+prevent. Whoever owns those files should backfill their own rows.
 
 ### Notes per PR
 

@@ -251,7 +251,7 @@ export default function RoomsPage() {
           onClick={() => setShowAddModal(true)}
           aria-label={t('addRoom')}
           title={t('addRoom')}
-          className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl bg-teal-600 text-white transition-colors hover:bg-teal-700 btn-press chq-focus"
+          className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-md bg-teal-600 text-white transition-colors hover:bg-teal-700 btn-press chq-focus"
         >
           <Plus size={22} aria-hidden />
         </button>
@@ -278,44 +278,57 @@ export default function RoomsPage() {
         )}
         {!isLoading && rooms.length > 0 && (
           <>
-            <p className="mb-3 text-sm text-[var(--color-text-secondary)]">
+            {/* Design (§03) `.count`: 12px/600 muted, not 14px body. */}
+            <p className="mb-3 px-1 text-xs font-semibold text-[var(--color-muted)]">
               {t('subtitleCount', { count: formatNumber(rooms.length, locale) })}
             </p>
-            {/* Design (§03): two columns at every width — these cards are a
-                fixed 118px tile, not a responsive card. */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* Design (§03) `.rgrid`: two columns at every width, 8px gutter —
+                these cards are a fixed 118px tile, not a responsive card. */}
+            <div className="grid grid-cols-2 gap-2">
               {rooms.map((r) => (
-                <div key={r.id} className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4 shadow-sm">
-                  <div className="mb-2 flex items-start justify-between">
-                    <div className="rounded-lg bg-teal-100 p-2">
-                      <DoorOpen className="h-5 w-5 text-teal-600" />
+                /* Design `.rcard`: --color-panel on a 1px --color-line, radius
+                   16 (--radius-lg), 16px padding, shadow-sm. The old
+                   --color-border-subtle is rgba(20,24,26,.06) — an almost
+                   invisible cool hairline where the design draws the warm
+                   #E2DDD1 rule every other card on these screens uses. */
+                <div key={r.id} className="rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] p-4 shadow-sm">
+                  <div className="mb-1 flex items-start justify-between">
+                    {/* Design `.ricon`: 38px, radius 12, mint fill with
+                        accent-deep glyph. `bg-teal-100` resolves to
+                        --color-mint-deep (#bfe3dd), the accent BORDER colour,
+                        not the accent fill — so it read a shade too heavy. */}
+                    <div className="flex h-[38px] w-[38px] items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-mint)] text-[var(--color-accent-deep)]">
+                      <DoorOpen className="h-5 w-5" aria-hidden />
                     </div>
                     <button
                       type="button"
                       onClick={() => setSheetRoom(r)}
-                      className="rounded-lg p-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)]"
+                      className="-me-1 rounded-lg p-1.5 text-[var(--color-muted)] hover:bg-[var(--color-surface-2)]"
                       aria-label={t('moreActions')}
                     >
                       <MoreVertical className="h-4 w-4" />
                     </button>
                   </div>
-                  <h3 className="truncate font-semibold text-[var(--color-text-primary)]">{r.name}</h3>
+                  {/* Design `.rn`: 15px/600, tight leading. */}
+                  <h3 className="truncate text-[15px] font-semibold leading-tight text-[var(--color-text-primary)]">{r.name}</h3>
                   {/* `rooms.capacity` defaults to 0 in the live catalog. The
                       design has no empty-capacity state and "0 seats" would be
                       a claim about the room, so an unset capacity draws nothing. */}
                   {r.capacity != null && Number.isFinite(Number(r.capacity)) && Number(r.capacity) > 0 && (
-                    <p className="mt-1 flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)]">
+                    /* Design `.rc`: 13px, --color-ink-body, 4px gap. */
+                    <p className="mt-1 flex items-center gap-1 text-[13px] text-[var(--color-ink-body)]">
                       <Users size={14} aria-hidden />
                       <span className="font-mono tabular-nums">
                         {t('seatsValue', { count: formatNumber(Number(r.capacity), locale) })}
                       </span>
                     </p>
                   )}
+                  {/* Design `.rmeta`: 11px/600 pill, 4px/8px padding, 8px above. */}
                   <span
-                    className={`mt-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                    className={`mt-2 inline-flex w-fit items-center gap-1 rounded-pill px-2 py-1 text-[11px] font-semibold ${
                       (r.schedule_count ?? 0) > 0
                         ? 'bg-teal-500/12 text-teal-700'
-                        : 'bg-[var(--color-surface-2)] text-[var(--color-text-muted)]'
+                        : 'bg-[var(--color-surface-2)] text-[var(--color-muted)]'
                     }`}
                   >
                     {(r.schedule_count ?? 0) > 0 && (
@@ -409,7 +422,7 @@ export default function RoomsPage() {
             <form onSubmit={handleAddRoom} className="space-y-3.5">
               <div>
                 <label className="mb-1 block px-1 text-xs text-[var(--color-text-muted)]">{t('roomName')}</label>
-                <div className="flex items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 focus-within:border-teal-600 focus-within:ring-[3px] focus-within:ring-teal-600/12">
+                <div className="flex items-center gap-2 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-4 focus-within:border-teal-600 focus-within:ring-[3px] focus-within:ring-teal-600/12">
                   <DoorOpen size={17} className="shrink-0 text-[var(--color-text-muted)]" aria-hidden />
                   <input
                     value={addName}
@@ -422,7 +435,7 @@ export default function RoomsPage() {
               </div>
               <div>
                 <label className="mb-1 block px-1 text-xs text-[var(--color-text-muted)]">{t('capacity')}</label>
-                <div className="flex items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 focus-within:border-teal-600 focus-within:ring-[3px] focus-within:ring-teal-600/12">
+                <div className="flex items-center gap-2 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-4 focus-within:border-teal-600 focus-within:ring-[3px] focus-within:ring-teal-600/12">
                   <Users size={17} className="shrink-0 text-[var(--color-text-muted)]" aria-hidden />
                   <input
                     type="number"
@@ -465,7 +478,7 @@ export default function RoomsPage() {
             <form onSubmit={handleSaveEdit} className="space-y-3.5">
               <div>
                 <label className="mb-1 block px-1 text-xs text-[var(--color-text-muted)]">{t('roomName')}</label>
-                <div className="flex items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 focus-within:border-teal-600 focus-within:ring-[3px] focus-within:ring-teal-600/12">
+                <div className="flex items-center gap-2 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-4 focus-within:border-teal-600 focus-within:ring-[3px] focus-within:ring-teal-600/12">
                   <DoorOpen size={17} className="shrink-0 text-[var(--color-text-muted)]" aria-hidden />
                   <input
                     value={editName}
@@ -478,7 +491,7 @@ export default function RoomsPage() {
               </div>
               <div>
                 <label className="mb-1 block px-1 text-xs text-[var(--color-text-muted)]">{t('capacity')}</label>
-                <div className="flex items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 focus-within:border-teal-600 focus-within:ring-[3px] focus-within:ring-teal-600/12">
+                <div className="flex items-center gap-2 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-4 focus-within:border-teal-600 focus-within:ring-[3px] focus-within:ring-teal-600/12">
                   <Users size={17} className="shrink-0 text-[var(--color-text-muted)]" aria-hidden />
                   <input
                     type="number"

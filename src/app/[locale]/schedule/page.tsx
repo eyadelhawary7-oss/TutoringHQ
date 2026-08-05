@@ -79,6 +79,20 @@ interface SessionRowProps {
   showRoom: boolean;
   timing: 'now' | 'done' | null;
   conflict: boolean;
+  /**
+   * Whether a clash REPLACES the meta line with the "Room 1 clash · overlaps
+   * Math 5:30" sentence.
+   *
+   * True in the by-time list (design lines 1125/1130), where nothing else on
+   * screen says which room is double-booked. False in the by-room board (design
+   * lines 1169-1170), where the room is already the section header and the
+   * header carries its own "▲ overlap" badge — there the clashing rows instead
+   * show how far each one runs ("30 students · to 7:00"), which is the fact the
+   * header cannot give you. The stripe stays red either way, and the clash text
+   * still reaches assistive tech through `aria-label`, so it is never
+   * colour-only.
+   */
+  showConflictLine: boolean;
   locale: string;
   onOpen: () => void;
   onMore: () => void;
@@ -90,6 +104,8 @@ interface SessionRowProps {
     done: string;
     members: string;
     conflict: string;
+    /** "to 6:00" — design's by-room end-time tail. Omitted when absent. */
+    endsAt?: string;
   };
 }
 
@@ -112,6 +128,7 @@ function SessionRow({
   showRoom,
   timing,
   conflict,
+  showConflictLine,
   locale,
   onOpen,
   onMore,
@@ -119,6 +136,7 @@ function SessionRow({
 }: SessionRowProps) {
   const clock = splitClockLabel(formatTime(formatTimeForDisplay(session.start_time), locale));
   const stripe = conflict ? '#9C3322' : subjectPalette(session.subject).fg;
+  const clashReplacesMeta = conflict && showConflictLine;
   return (
     <div
       role="button"
@@ -130,8 +148,11 @@ function SessionRow({
           onOpen();
         }
       }}
+      /* When the clash sentence is not drawn (by-room board), the meaning still
+         has to reach a screen reader — the red stripe alone is colour-only. */
+      aria-label={conflict && !showConflictLine ? labels.conflict : undefined}
       title={conflict ? labels.conflict : labels.open}
-      className={`flex cursor-pointer items-center gap-3 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-3 shadow-sm transition-colors hover:bg-[var(--color-surface-2)] ${
+      className={`flex cursor-pointer items-center gap-3 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 shadow-sm transition-colors hover:bg-[var(--color-surface-2)] ${
         timing === 'done' ? 'opacity-60' : ''
       }`}
       style={{ borderInlineStartWidth: '3px', borderInlineStartColor: stripe, borderInlineStartStyle: 'solid' }}
@@ -146,7 +167,7 @@ function SessionRow({
         <div className="truncate text-sm font-semibold text-[var(--color-text-primary)]">
           {session.group_name || labels.notAvailable}
         </div>
-        {conflict ? (
+        {clashReplacesMeta ? (
           <div className="mt-0.5 flex items-center gap-1 text-xs font-semibold" style={{ color: '#9C3322' }}>
             <AlertTriangle size={12} className="shrink-0" aria-hidden />
             <span className="truncate">{labels.conflict}</span>
@@ -154,6 +175,9 @@ function SessionRow({
         ) : (
           <div className="mt-0.5 truncate font-mono text-xs text-[var(--color-text-secondary)]">
             {showRoom ? `${session.room_name || labels.notAvailable} · ${labels.members}` : labels.members}
+            {/* Design line 1169: a by-room clash row says how far it runs, so
+                the overlap the header flagged is legible on the rows themselves. */}
+            {conflict && labels.endsAt ? ` · ${labels.endsAt}` : ''}
             {timing === 'done' ? ` · ${labels.done}` : ''}
           </div>
         )}
@@ -454,8 +478,16 @@ export default function SchedulePage() {
   const getConflictingSlotIds = useMemo(() => {
     const conflictIds = new Set<string>();
     for (const s1 of slots) {
+      // `schedule_slots.room_id` is NULLABLE in the live catalog (verified in
+      // information_schema.columns). Two room-less slots are not a ROOM clash,
+      // and `null !== null` is false, so without this guard they would both be
+      // flagged and the row would claim a double-booking that does not exist.
+      // No such row exists live today (0 of 1 slots has a null room_id) — this
+      // is closing the hole, not fixing a visible number.
+      if (!s1.room_id) continue;
       for (const s2 of slots) {
         if (s1.id >= s2.id) continue;
+        if (!s2.room_id) continue;
         if (s1.room_id !== s2.room_id) continue;
         if (Number(s1.day_of_week) !== Number(s2.day_of_week)) continue;
         const a1 = timeToMinutes(s1.start_time);
@@ -476,8 +508,12 @@ export default function SchedulePage() {
   const conflictPartnerName = useMemo(() => {
     const partner = new Map<string, string>();
     for (const s1 of slots) {
+      // Same nullable-room_id guard as getConflictingSlotIds — the two must
+      // agree or a row could be striped red with no partner to name.
+      if (!s1.room_id) continue;
       for (const s2 of slots) {
         if (s1.id === s2.id) continue;
+        if (!s2.room_id) continue;
         if (s1.room_id !== s2.room_id) continue;
         if (Number(s1.day_of_week) !== Number(s2.day_of_week)) continue;
         const a1 = timeToMinutes(s1.start_time);
@@ -604,16 +640,31 @@ export default function SchedulePage() {
    *
    * Rooms with nothing booked are kept and shown free — the design's whole
    * reason for this view is seeing which rooms are open.
+   *
+   * ORDER is the design's, not the room list's: earliest session first, free
+   * rooms last (design lines 1161/1167/1173 run Room 2 at 3:00, Room 1 at 5:00,
+   * then the free Room 3). Sorting by room name instead — which is what this did
+   * — could open the board on a room that has nothing in it all day. Ties fall
+   * back to name so the order is stable rather than dependent on fetch order.
    */
   const dayRoomBreakdown = (() => {
     const slotsToday = displaySlots.filter((s) => Number(s.day_of_week) === selectedDay);
-    return rooms.map((room) => {
-      const slots = slotsToday
-        .filter((s) => s.room_id === room.id)
-        .sort((a, b) => timeToMinutes(a.start_time) - timeToMinutes(b.start_time));
-      const overlaps = slots.some((s) => getConflictingSlotIds.has(s.id));
-      return { room, slots, overlaps };
-    });
+    return rooms
+      .map((room) => {
+        const slots = slotsToday
+          .filter((s) => s.room_id === room.id)
+          .sort((a, b) => timeToMinutes(a.start_time) - timeToMinutes(b.start_time));
+        const overlaps = slots.some((s) => getConflictingSlotIds.has(s.id));
+        const firstStart = slots.length > 0 ? timeToMinutes(slots[0]!.start_time) : null;
+        return { room, slots, overlaps, firstStart };
+      })
+      .sort((a, b) => {
+        if (a.firstStart == null && b.firstStart == null) return a.room.name.localeCompare(b.room.name);
+        if (a.firstStart == null) return 1;
+        if (b.firstStart == null) return -1;
+        if (a.firstStart !== b.firstStart) return a.firstStart - b.firstStart;
+        return a.room.name.localeCompare(b.room.name);
+      });
   })();
 
   /** Distinct subjects actually present in the loaded slots — the §05 legend. */
@@ -718,7 +769,7 @@ export default function SchedulePage() {
               aria-label={t('addSession')}
               title={t('addSession')}
               onClick={() => rooms.length > 0 && setShowAddModal(true)}
-              className={`flex h-[42px] w-[42px] items-center justify-center rounded-xl bg-teal-600 text-white transition-colors hover:bg-teal-700 btn-press chq-focus ${
+              className={`flex h-[42px] w-[42px] items-center justify-center rounded-md bg-teal-600 text-white transition-colors hover:bg-teal-700 btn-press chq-focus ${
                 rooms.length === 0 ? 'opacity-50 cursor-not-allowed hover:bg-teal-600' : ''
               }`}
             >
@@ -767,14 +818,14 @@ export default function SchedulePage() {
           {/* Design (§05): Day / Week. The view is now a choice rather than a
               consequence of screen width — before this a phone could not reach
               the week grid at all and a desktop could not reach the day list. */}
-          <div className={`mb-3 gap-1 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-1 ${isTeacher ? 'hidden md:flex' : 'flex'}`}>
+          <div className={`mb-3 gap-1 rounded-md bg-[var(--color-surface-2)] p-1 ${isTeacher ? 'hidden md:flex' : 'flex'}`}>
             {(['day', 'week'] as const).map((mode) => (
               <button
                 key={mode}
                 type="button"
                 onClick={() => setViewMode(mode)}
                 aria-pressed={viewMode === mode}
-                className={`min-h-[40px] flex-1 rounded-lg text-sm font-semibold transition-colors ${
+                className={`min-h-[40px] flex-1 rounded-sm text-[13px] font-semibold transition-colors ${
                   viewMode === mode
                     ? 'bg-teal-600 text-white'
                     : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]'
@@ -794,7 +845,7 @@ export default function SchedulePage() {
               type="button"
               onClick={() => setWeekOffset((v) => v - 1)}
               aria-label={t('previousWeek', { defaultValue: 'Previous week' })}
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] btn-press chq-focus"
+              className="flex h-[30px] w-[30px] items-center justify-center rounded-sm border border-[var(--color-line)] bg-[var(--color-panel)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] btn-press chq-focus"
             >
               <PrevIcon size={16} aria-hidden />
             </button>
@@ -821,7 +872,7 @@ export default function SchedulePage() {
               type="button"
               onClick={() => setWeekOffset((v) => v + 1)}
               aria-label={t('nextWeek', { defaultValue: 'Next week' })}
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] btn-press chq-focus"
+              className="flex h-[30px] w-[30px] items-center justify-center rounded-sm border border-[var(--color-line)] bg-[var(--color-panel)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)] btn-press chq-focus"
             >
               <NextIcon size={16} aria-hidden />
             </button>
@@ -847,7 +898,7 @@ export default function SchedulePage() {
               </div>
             )}
 
-            <div className="overflow-x-auto rounded-xl border border-[var(--color-border-subtle)] shadow-sm">
+            <div className="overflow-x-auto rounded-md border border-[var(--color-line)] shadow-sm">
               <div className="min-w-[720px] bg-[var(--color-surface-1)]">
                 <div
                   ref={gridScrollRef}
@@ -939,7 +990,7 @@ export default function SchedulePage() {
                                      timetable. aria-label carries the meaning
                                      so it is never colour-only. */
                                   aria-label={isConflict ? clashLabel : undefined}
-                                  className="relative cursor-pointer rounded-xl p-2 shadow-sm transition-opacity hover:opacity-90"
+                                  className="relative cursor-pointer rounded-sm p-2 shadow-sm transition-opacity hover:opacity-90"
                                   style={{
                                     background: palette.bg,
                                     color: palette.fg,
@@ -987,7 +1038,7 @@ export default function SchedulePage() {
                   type="button"
                   aria-label={labelForWeekday(day)}
                   onClick={() => setSelectedDay(day)}
-                  className={`snap-start flex min-h-[44px] min-w-[44px] shrink-0 flex-col items-center justify-center rounded-lg border px-3 py-2 text-sm font-semibold tabular-nums transition-colors ${
+                  className={`snap-start flex min-h-[44px] min-w-[44px] shrink-0 flex-col items-center justify-center rounded-md border px-3 py-2 text-sm font-semibold tabular-nums transition-colors ${
                     selectedDay === day
                       ? 'border-teal-600 bg-teal-600 text-white'
                       : isWeekend(day)
@@ -1019,14 +1070,14 @@ export default function SchedulePage() {
                 Day / Week above it. Still hidden for teachers — the by-room
                 board is a room-management view, not a teaching one. */}
             {!isTeacher && (
-              <div className="mb-3 flex w-full gap-1 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-1">
+              <div className="mb-3 flex w-full gap-1 rounded-md bg-[var(--color-surface-2)] p-1">
                 {(['time', 'room'] as const).map((mode) => (
                   <button
                     key={mode}
                     type="button"
                     onClick={() => setDayView(mode)}
                     aria-pressed={dayView === mode}
-                    className={`min-h-[38px] flex-1 rounded-md text-sm font-semibold transition-colors ${
+                    className={`min-h-[38px] flex-1 rounded-sm text-[13px] font-semibold transition-colors ${
                       dayView === mode
                         ? 'bg-teal-600 text-white'
                         : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-2)]'
@@ -1076,7 +1127,7 @@ export default function SchedulePage() {
                           setFormDay(selectedDay);
                           setShowAddModal(true);
                         }}
-                        className="w-full rounded-xl border border-dashed border-[#CDB98A] p-3 text-center text-xs font-semibold text-[#9A6B1F] disabled:cursor-default disabled:opacity-60 btn-press chq-focus"
+                        className="w-full rounded-md border border-dashed border-[#CDB98A] p-3 text-center text-xs font-semibold text-[#9A6B1F] disabled:cursor-default disabled:opacity-60 btn-press chq-focus"
                       >
                         {t('roomOpenAllDay')}
                       </button>
@@ -1089,6 +1140,10 @@ export default function SchedulePage() {
                             showRoom={false}
                             timing={sessionTimingState(s.start_time, s.end_time, selectedDay === cairoTodayWd)}
                             conflict={getConflictingSlotIds.has(s.id)}
+                            // The room header already names the room and
+                            // already carries the overlap badge, so the row
+                            // spends its line on the end time instead.
+                            showConflictLine={false}
                             locale={locale}
                             onOpen={() => openAttendance(s.group_id)}
                             onMore={() => setSheetSlot(s)}
@@ -1099,9 +1154,12 @@ export default function SchedulePage() {
                               now: t('now'),
                               done: t('sessionDone'),
                               members: formatMemberCount(s.member_count ?? 0),
-                              // The conflict line replaces the meta line that
-                              // carries room_name, so it must itself name the
-                              // double-booked room (design §05 clash line).
+                              endsAt: t('endsAt', {
+                                time: formatTime(formatTimeForDisplay(s.end_time), locale),
+                              }),
+                              // Still built, still reachable — it is the row's
+                              // aria-label and title here rather than its
+                              // visible meta line.
                               conflict: conflictPartnerName.get(s.id)
                                 ? t('conflictWith', {
                                     room: s.room_name || tCommon('notAvailable'),
@@ -1130,6 +1188,9 @@ export default function SchedulePage() {
                       showRoom
                       timing={sessionTimingState(session.start_time, session.end_time, selectedDay === cairoTodayWd)}
                       conflict={getConflictingSlotIds.has(session.id)}
+                      // Design lines 1125/1130: in the by-time list the clash
+                      // sentence IS the meta line — nothing else names the room.
+                      showConflictLine
                       locale={locale}
                       onOpen={() => openAttendance(session.group_id)}
                       onMore={() => setSheetSlot(session)}
@@ -1169,7 +1230,7 @@ export default function SchedulePage() {
                     return (
                     <div
                       key={session.id}
-                      className={`mb-2 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-3 shadow-sm ${timing === 'done' ? 'opacity-60' : ''}`}
+                      className={`mb-2 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 shadow-sm ${timing === 'done' ? 'opacity-60' : ''}`}
                       dir={isRtl ? 'rtl' : 'ltr'}
                     >
                       <div className="flex items-center gap-2">
@@ -1203,7 +1264,7 @@ export default function SchedulePage() {
                   {thisWeekSessions.map((session) => (
                     <div
                       key={session.id}
-                      className="mb-2 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-3 shadow-sm"
+                      className="mb-2 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 shadow-sm"
                       dir={isRtl ? 'rtl' : 'ltr'}
                     >
                       <div className="font-mono text-sm text-teal-600">
