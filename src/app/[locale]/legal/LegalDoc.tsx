@@ -78,8 +78,14 @@ export default async function LegalDoc({
 
       <div className="flex-shrink-0 border-b border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3">
         <h2 className="text-[15px] font-bold text-[var(--color-ink)]">{pick(doc.title, isAr)}</h2>
-        {/* Design `.rver` is the mono face; `font-mono` here is Plex + tabular-nums. */}
-        <p className="font-mono mt-1 text-[11px] text-[var(--color-muted)]">
+        {/* Design `.rver` is the mono face; `font-mono` here is Plex + tabular-nums.
+            `.ar .rver` re-specifies the Arabic face at weight 500; the family is
+            already the same stack in both locales, so only the weight applies. */}
+        <p
+          className={`font-mono mt-1 text-[11px] text-[var(--color-muted)] ${
+            isAr ? 'font-medium' : ''
+          }`}
+        >
           {versionLine}
           {pick(LEGAL_CHROME.pendingReview, isAr)}
         </p>

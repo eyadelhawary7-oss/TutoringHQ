@@ -6,6 +6,7 @@ import { parseBodyWithLimit } from '@/lib/validate';
 import { getProcessingFeeConfig } from '@/lib/pricingConfig';
 import { resolveProcessingFeeAmount } from '@/lib/processingFee';
 import { computeReferralPayout, REFERRAL_WITHDRAWAL_MIN_EGP } from '@/lib/referralPayout';
+import { WITHDRAWABLE_STATUS, withdrawableBalance } from '@/lib/referralCommissionStatus';
 import { validateCSRFRequest } from '@/lib/csrf';
 
 export async function POST(request: NextRequest) {
@@ -68,14 +69,28 @@ export async function POST(request: NextRequest) {
 
     const centerId = auth.centerId;
 
-    // Available balance from referral_reward_records
+    // Withdrawable balance from `referral_commissions` — the canonical ledger.
+    //
+    // D22: this read was `referral_reward_records` WHERE status='available'. That
+    // table's only writer is POST /api/referrals/calculate-rewards, which has no
+    // cron registration in vercel.json and no caller anywhere in src/, so the
+    // 'available' bucket was structurally empty and `available` was always 0 —
+    // every withdrawal failed the `amountRequested > available` check below.
+    // `referral_commissions` is written monthly by /api/cron/referral-automation,
+    // which sets `holdUntil ? 'hold' : 'withdrawable'`, so 'withdrawable' is a
+    // state the engine actually produces.
+    //
+    // Only 'withdrawable' counts: 'hold' is not yet payable, 'paid' is already
+    // out, and 'forfeited' is commission the centre lost when the referred centre
+    // failed to pay in full (written with commission_amount 0 by
+    // /api/referrals/process-commission).
     const { data: records } = await auth.supabaseAdmin
-      .from('referral_reward_records')
-      .select('reward_amount')
+      .from('referral_commissions')
+      .select('status, commission_amount')
       .eq('referrer_center_id', centerId)
-      .eq('status', 'available');
+      .eq('status', WITHDRAWABLE_STATUS);
 
-    const available = (records || []).reduce((s: number, r: { reward_amount: number }) => s + Number(r.reward_amount ?? 0), 0);
+    const available = withdrawableBalance(records ?? []);
 
     if (amountRequested > available) {
       return NextResponse.json(

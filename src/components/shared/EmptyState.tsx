@@ -14,6 +14,15 @@ interface EmptyStateProps {
    * second way forward, not just a button.
    */
   alt?: React.ReactNode;
+  /**
+   * The design's `.es-ic.quiet` — `#F2EEE5` on `#80827A` instead of the mint
+   * tile. §01's rules block makes this a real distinction, not a shade choice:
+   * "Empty because it is early gets the muted icon and no button. Insight and
+   * card orders are not waiting on anyone. Giving them a call to action invents
+   * work." A screen that fills itself uses `quiet` and passes no `action`; a
+   * screen waiting on the owner keeps the mint tile and offers the one action.
+   */
+  quiet?: boolean;
 }
 
 /**
@@ -35,11 +44,22 @@ interface EmptyStateProps {
  * text running the full width of a tablet. They are logical, so RTL is
  * unaffected.
  */
-export default function EmptyState({ icon: Icon, title, description, action, alt }: EmptyStateProps) {
+export default function EmptyState({
+  icon: Icon,
+  title,
+  description,
+  action,
+  alt,
+  quiet,
+}: EmptyStateProps) {
   return (
     <div className="flex flex-col items-center justify-center px-6 pb-8 pt-6 text-center">
       <div
-        className="mb-4 flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-[var(--color-mint)] text-[var(--color-accent-deep)]"
+        className={`mb-4 flex h-16 w-16 shrink-0 items-center justify-center rounded-lg ${
+          quiet
+            ? 'bg-[var(--color-tile)] text-[var(--color-muted)]'
+            : 'bg-[var(--color-mint)] text-[var(--color-accent-deep)]'
+        }`}
         aria-hidden
       >
         <Icon className="h-7 w-7" strokeWidth={1.75} />

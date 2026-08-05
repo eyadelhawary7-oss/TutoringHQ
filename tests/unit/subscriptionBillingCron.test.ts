@@ -7,10 +7,22 @@ import { makeFakeSupabase, type Row } from './billingFakeSupabase';
 const createActionSpy = vi.hoisted(() =>
   vi.fn<(supabase: unknown, input: unknown) => Promise<unknown>>(async () => ({})),
 );
+/**
+ * D23 extra-branch add-on price. Defaults to `null` — the live catalog state,
+ * where `branch_addon.monthly_price_egp` does not exist — so every pre-existing
+ * expectation in this file keeps its original amount. Only the add-on tests at
+ * the bottom set it.
+ */
+const branchAddonPrice = vi.hoisted(() => ({ value: null as number | null }));
 
 vi.mock('@/lib/pricingConfig', () => ({
   getProcessingFeeConfig: async () => ({ enabled: true, amount: 20 }),
   getIntervalConfig: async () => ({ annualMultiplier: 10 }),
+  // D23: mirrors the live catalog, where `branch_addon.monthly_price_egp` is
+  // absent. Every expected invoice amount in this file is therefore unchanged
+  // from before the add-on existed — which is the point: an unpriced add-on must
+  // not move a single figure.
+  getBranchAddonMonthlyPrice: async () => branchAddonPrice.value,
 }));
 vi.mock('@/lib/ceo', () => ({ createAction: createActionSpy }));
 vi.mock('@/lib/commissions', () => ({ pauseCommissionClocks: async () => {} }));
@@ -156,5 +168,135 @@ describe('runSubscriptionBillingCron (B-H2 / B-H3 / B-H4)', () => {
     expect(inv, 'top_centers with price bills').toBeTruthy();
     expect(Number(inv?.total_amount)).toBeGreaterThan(0);
     expect(createActionSpy).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * D23 — the flat extra-branch add-on, wired into the renewal invoice.
+ *
+ * A monthly centre here bills 1000 base + 20 processing fee = 1020 with no
+ * add-on; that 1020 is the control figure every case below is measured against.
+ */
+describe('runSubscriptionBillingCron — D23 extra-branch add-on', () => {
+  beforeEach(() => {
+    createActionSpy.mockClear();
+    branchAddonPrice.value = null;
+    process.env.PAYMOB_RECURRING_INTEGRATION_ID = 'test-recurring-id';
+  });
+
+  it('unpriced (the live state today): a multi-branch org bills exactly as before', async () => {
+    const tables: Record<string, Row[]> = {
+      centers: [
+        baseCenter({ id: 'primary', organization_id: 'org-1', created_at: '2026-01-01T00:00:00Z', next_payment_due: in7, is_test: false }),
+        baseCenter({ id: 'branch', organization_id: 'org-1', created_at: '2026-02-01T00:00:00Z', next_payment_due: null, is_test: false, billing_amount: 0, all_in_price: null }),
+      ],
+      invoices: [],
+    };
+    await runSubscriptionBillingCron(makeFakeSupabase(tables));
+    const inv = tables.invoices.find((i) => i.center_id === 'primary');
+    expect(Number(inv?.total_amount)).toBe(1020);
+    expect(inv?.metadata).not.toHaveProperty('branch_addon_total');
+  });
+
+  it('priced: the org PRIMARY carries one add-on per extra branch, inside one invoice', async () => {
+    branchAddonPrice.value = 199;
+    const tables: Record<string, Row[]> = {
+      centers: [
+        baseCenter({ id: 'primary', organization_id: 'org-1', created_at: '2026-01-01T00:00:00Z', next_payment_due: in7, is_test: false }),
+        baseCenter({ id: 'branch', organization_id: 'org-1', created_at: '2026-02-01T00:00:00Z', next_payment_due: null, is_test: false, billing_amount: 0, all_in_price: null }),
+      ],
+      invoices: [],
+    };
+    await runSubscriptionBillingCron(makeFakeSupabase(tables));
+    const inv = tables.invoices.find((i) => i.center_id === 'primary');
+    // 1000 subscription + 199 add-on = 1199 base, + ONE flat 20 fee = 1219.
+    expect(Number(inv?.base_amount)).toBe(1199);
+    expect(Number(inv?.total_amount)).toBe(1219);
+    expect(Number(inv?.processing_fee)).toBe(20);
+    expect(inv?.metadata).toMatchObject({
+      processing_fee: 20,
+      branch_addon_count: 1,
+      branch_addon_unit_price: 199,
+      branch_addon_total: 199,
+    });
+  });
+
+  it('VAT is computed on the total INCLUDING the add-on (money rule 13)', async () => {
+    branchAddonPrice.value = 199;
+    const tables: Record<string, Row[]> = {
+      centers: [
+        baseCenter({ id: 'primary', organization_id: 'org-1', created_at: '2026-01-01T00:00:00Z', next_payment_due: in7, is_test: false }),
+        baseCenter({ id: 'branch', organization_id: 'org-1', created_at: '2026-02-01T00:00:00Z', next_payment_due: null, is_test: false, billing_amount: 0, all_in_price: null }),
+      ],
+      invoices: [],
+    };
+    await runSubscriptionBillingCron(makeFakeSupabase(tables));
+    const inv = tables.invoices.find((i) => i.center_id === 'primary');
+    // 1219 x 0.14 / 1.14 — the inclusive split, never total x 0.14.
+    expect(Number(inv?.vat_rate)).toBe(0.14);
+    expect(Number(inv?.vat_amount)).toBeCloseTo((1219 * 0.14) / 1.14, 2);
+  });
+
+  it('a single-branch org is never charged the add-on, even when priced', async () => {
+    branchAddonPrice.value = 199;
+    const tables: Record<string, Row[]> = {
+      centers: [
+        baseCenter({ id: 'solo', organization_id: 'org-2', created_at: '2026-01-01T00:00:00Z', next_payment_due: in7, is_test: false }),
+      ],
+      invoices: [],
+    };
+    await runSubscriptionBillingCron(makeFakeSupabase(tables));
+    const inv = tables.invoices.find((i) => i.center_id === 'solo');
+    expect(Number(inv?.total_amount)).toBe(1020);
+  });
+
+  it('a centre with no organisation is never charged the add-on — every live centre today', async () => {
+    branchAddonPrice.value = 199;
+    const tables: Record<string, Row[]> = {
+      centers: [baseCenter({ id: 'standalone', next_payment_due: in7, is_test: false })],
+      invoices: [],
+    };
+    await runSubscriptionBillingCron(makeFakeSupabase(tables));
+    const inv = tables.invoices.find((i) => i.center_id === 'standalone');
+    expect(Number(inv?.total_amount)).toBe(1020);
+  });
+
+  it('a NON-primary branch that somehow has a due date is not charged the org’s add-on twice', async () => {
+    branchAddonPrice.value = 199;
+    const tables: Record<string, Row[]> = {
+      centers: [
+        baseCenter({ id: 'primary', organization_id: 'org-1', created_at: '2026-01-01T00:00:00Z', next_payment_due: in7, is_test: false }),
+        // A branch with a stray due date: it must bill its own (zero) subscription
+        // without picking up the add-on, which belongs to the primary alone.
+        baseCenter({ id: 'branch', organization_id: 'org-1', created_at: '2026-02-01T00:00:00Z', next_payment_due: in7, is_test: false, billing_amount: 0, all_in_price: null }),
+      ],
+      invoices: [],
+    };
+    await runSubscriptionBillingCron(makeFakeSupabase(tables));
+    const primaryInv = tables.invoices.find((i) => i.center_id === 'primary');
+    const branchInv = tables.invoices.find((i) => i.center_id === 'branch');
+    expect(Number(primaryInv?.base_amount)).toBe(1199);
+    // The org is charged 199 once, not once per centre.
+    expect(branchInv?.metadata).not.toHaveProperty('branch_addon_total');
+  });
+
+  it('three extra branches bill 3x the flat price, not a multiple of the plan price', async () => {
+    branchAddonPrice.value = 199;
+    const tables: Record<string, Row[]> = {
+      centers: [
+        baseCenter({ id: 'primary', organization_id: 'org-1', created_at: '2026-01-01T00:00:00Z', next_payment_due: in7, is_test: false }),
+        baseCenter({ id: 'b1', organization_id: 'org-1', created_at: '2026-02-01T00:00:00Z', next_payment_due: null, is_test: false, billing_amount: 0, all_in_price: null }),
+        baseCenter({ id: 'b2', organization_id: 'org-1', created_at: '2026-03-01T00:00:00Z', next_payment_due: null, is_test: false, billing_amount: 0, all_in_price: null }),
+        baseCenter({ id: 'b3', organization_id: 'org-1', created_at: '2026-04-01T00:00:00Z', next_payment_due: null, is_test: false, billing_amount: 0, all_in_price: null }),
+      ],
+      invoices: [],
+    };
+    await runSubscriptionBillingCron(makeFakeSupabase(tables));
+    const inv = tables.invoices.find((i) => i.center_id === 'primary');
+    // 1000 + (3 x 199) = 1597 base. The old clone bug would have produced a
+    // second, third and fourth FULL plan price instead.
+    expect(Number(inv?.base_amount)).toBe(1597);
+    expect(Number(inv?.total_amount)).toBe(1617);
+    expect(inv?.metadata).toMatchObject({ branch_addon_count: 3, branch_addon_total: 597 });
   });
 });

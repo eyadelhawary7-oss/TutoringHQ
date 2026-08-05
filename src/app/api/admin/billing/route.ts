@@ -71,7 +71,7 @@ export async function GET(request: Request) {
 
     let centersQuery = supabaseAdmin
       .from('centers')
-      .select('id, name, plan, phone, billing_period, all_in_price, next_payment_due, billing_status, status, payment_due_date, auto_suspend_at, is_early_adopter, early_adopter_price, billing_type, is_test')
+      .select('id, name, plan, phone, billing_period, all_in_price, next_payment_due, billing_status, status, payment_due_date, auto_suspend_at, is_early_adopter, early_adopter_price, billing_type, is_test, organization_id')
       .neq('status', 'deleted');
     if (!includeTest) {
       centersQuery = centersQuery.eq('is_test', false);
@@ -118,6 +118,9 @@ export async function GET(request: Request) {
         early_adopter_price: (row as { early_adopter_price?: number | null }).early_adopter_price,
         id: (row as { id: string }).id,
         is_test: (row as { is_test?: boolean | null }).is_test,
+        // D23: an extra branch is an add-on on the org primary's invoice, not a
+        // subscription of its own — without this it would count a second time.
+        organization_id: (row as { organization_id?: string | null }).organization_id,
       });
       (row as Record<string, unknown>).monthlyEquivalent = Math.round(monthlyEquiv);
       const planKey = (row.plan as string) || 'starter';

@@ -134,7 +134,7 @@ export function CheckoutShell({
         ) : null}
         <div className="flex justify-between gap-2">
           <span className="text-[var(--color-text-secondary)]">{t('summary.shipping')}</span>
-          <span className="tabular-nums">{gov ? formatCurrency(shipFee, locale) : ','}</span>
+          <span className="tabular-nums">{gov ? formatCurrency(shipFee, locale) : tCommon('notAvailable')}</span>
         </div>
         {gov ? <p className="text-[11px] text-[var(--color-text-tertiary)]">{zoneLabel}</p> : null}
         <div className="flex justify-between gap-2 pt-2 border-t border-[var(--color-border-subtle)] font-bold">
@@ -269,7 +269,7 @@ export function CheckoutShell({
                   ) : null}
                   <div className="flex justify-between gap-2">
                     <span className="text-[var(--color-text-secondary)]">{t('summary.shipping')}</span>
-                    <span className="tabular-nums">{gov ? formatCurrency(shipFee, locale) : ','}</span>
+                    <span className="tabular-nums">{gov ? formatCurrency(shipFee, locale) : tCommon('notAvailable')}</span>
                   </div>
                   {gov ? <p className="text-[11px] text-[var(--color-text-tertiary)]">{zoneLabel}</p> : null}
                   <div className="flex justify-between gap-2 pt-2 border-t border-[var(--color-border-subtle)] font-bold">
