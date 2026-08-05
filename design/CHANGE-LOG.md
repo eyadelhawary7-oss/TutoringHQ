@@ -123,6 +123,7 @@ was at **v45** when this PR branched — PRs between `#298` and here bumped the 
 adding their rows. The jump from v42 to v45→v46 in the two adjacent rows is that gap, not a
 miscount. The missing rows are not reconstructed here because their screens/routes would have to be
 inferred rather than read, and an inferred row in this table is worse than an absent one.*
+| [#353](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/353) | `(on merge)` | 2026-08-05 | `Public-Marketing §03` — the design's `.diffs` "what changes with size" block built with its 3 live-sourced rows (new shared `DiffRows` marketing primitive); D29 amended, D34 corrected and extended to two further surfaces | `/{locale}/pricing` | v46 |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, `#214`'s by that
@@ -139,6 +140,11 @@ Whoever next surveys those files should fill their own rows from the diffs.
 placeholder for one commit, then was filled in from the opened PR — the same two-step the `(on
 merge)` SHA goes through, for the same reason: neither value exists at the moment the file has to
 be written.*
+*The `v42 → v46` jump between the last two rows is real, not a typo. The table stopped being filled
+in after `#298`; the PRs between it and `#353` — including `#310`, `#312`, `#313`, `#314`, `#317`,
+`#318`, `#319`, `#321`, `#327`, `#330`, `#333` and `#337`, all on master — bumped `SW_VERSION` four
+times without adding rows here. Their narrative write-ups DO exist further down under "Notes per PR";
+only the table rows are missing. Do not read the gap as "nothing shipped."*
 
 ### Notes per PR
 
@@ -2251,3 +2257,53 @@ per-referral rate/countdown cards, the referral-detail rate schedule) reads that
   "wrong ledger" is the argument that actually holds.
 
 `SW_VERSION` v45 → v46.
+**Public-Marketing §03 (5 August 2026) — the "what changes with size" block built, 3 live rows of 5,
+and two ledger entries corrected because their evidence did not survive being re-run.**
+
+Row 15, already at a full IA rebuild since `#314`. Re-surveyed all four screens against the live
+catalog and the four live components read in full, not against the prior pass's notes: **34 of 34
+drawn blocks present** (§01 9/9, `/centers` 9/9, `/teachers` 8/8, §03 8/8, §04 5/5), with every
+remaining gap detail-level and all of it inside §03. `/center` and `/teacher/landing` re-confirmed as
+live redirects to `/centers` and `/teachers`, the latter still threading `?ref=`.
+
+**Built: the design's `.diffs` readout block, absent entirely before this pass.** New
+`src/components/marketing/DiffRows.tsx`, a display primitive alongside the `PlanRows`/`DoesCard`/
+`ComparisonCards` set the same rebuild established. Three of its five drawn rows have a live source
+and ship: center **Students a week** (`pricing_plans.weekly_student_limit`), teacher **Active
+students a month** (`platform_config.teacher_subscription_plan*.student_limit`), and teacher
+**Advanced analytics** (`TeacherPlanDef.proFeatures` — a real entitlement `isProOrAbove()` enforces
+across 14 files, not a marketing line). §03's detail rows go **1/14 → 4/14**; add-ons stay at 1 of 6.
+
+Two words deviate from the design on purpose. The teacher row is labelled "Active students a
+**month**", not the design's "a week", because the live cap is a monthly active-student count — the
+same correction `capLabelTeacher` already carried. And the negative analytics reading is "Not
+included", not the design's "Add-on", because asserting purchasability when **D13** is closed
+"no purchase flow" is a fabricated claim; same single-word fix already adjudicated for **F30**.
+
+**Withheld, each with the exact missing column named.** "Branches" and "Team seats": `pricing_plans`
+has exactly nine columns, and a schema-wide `information_schema.columns` search across `public` for
+`%seat%`, `%max_branch%`, `%branch_limit%`, `%max_teacher%`, `%max_staff%`, `%notification_quota%`,
+`%message_limit%` and `%wa_limit%` returns zero rows. **The WhatsApp-notifications row is the one
+worth remembering**, because it is the case where the data exists and the section still cannot ship:
+`platform_config` carries `blast_credits_monthly: 100` on the Pro and Scale teacher plans, mirrored
+onto `TeacherPlanDef.blastCreditsMonthly` — but that field has **zero readers in `src/` outside its
+own definition**. Nothing grants, meters or enforces the allowance. "The column exists" and "the
+section can honestly ship" are not the same test, and this row is where they come apart.
+
+**D34 corrected on two counts, both found by re-running its own cited evidence rather than trusting
+it.** First, its "zero readers/writers in `src/`" is false: `payout_destination` has 10 hits across
+four files in `src/lib/collectionPayout/`, which is a **built** payout engine — 10 modules, plus
+`POST /api/payouts/request`, `/api/admin/payouts`, `/api/admin/center-payouts/[id]/approve` and
+`/release`, `/api/webhooks/payout-provider`, and a `payout-reconciliation` cron. The bullet is still
+untrue today, but the accurate description is *built and switched off*, not *nonexistent*: the engine
+refuses at gate 1 on placeholder `COLLECTION_PAYOUT_RAIL_*` credentials and on
+`digital_student_fee_collection.enabled`, read live this pass and holding `false`, before verification
+is even consulted. Second, the same claim is live on two surfaces D34 never named —
+`landing.centerOnly.rows[3]` on `/centers` ("split to each teacher's own account", a *stronger* claim
+than `/pricing`'s, sitting on **X1** and on **D16**'s dormant commission engine) and
+`splash.pair.center.pills[2]` on `/`. None of the three rewritten: there is no narrower true
+replacement, the replacement wording *is* the product call, and all three describe money movement
+reserved to the protected `Center-Money`/`Teacher-Money`/`Verification-Payouts` files.
+
+`design/BUILD-AFTER-REDESIGN.md`'s **D29** and **D34** amended in place with the live queries behind
+each claim. `design/FILE-COMPLETION-TABLE.md` row 15 updated. No migration needed and none written.

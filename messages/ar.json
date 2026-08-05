@@ -53,6 +53,15 @@
     "teacherNotePro": "التحليلات المتقدمة داخلة في الحجم ده.",
     "teacherNoteScale": "أكبر سعر ثابت. بعد كده بيكبر معاك.",
     "teacherNoteScalePlus": "مفيش سقف. كل طالب بتضيفه بيطلع أرخص للراس من اللي قبله.",
+    "diffs": {
+      "heading": "اللي بيتغيّر مع الحجم",
+      "studentsPerWeek": "طلاب في الأسبوع",
+      "activeStudentsPerMonth": "طلاب نشطين في الشهر",
+      "noCeiling": "بلا سقف",
+      "advancedAnalytics": "تحليلات متقدمة",
+      "included": "داخلة",
+      "notIncluded": "مش داخلة"
+    },
     "same": {
       "kick": "واحد في كل الأحوال",
       "heading": "مفيش نسخة أرخص من البرنامج.",
