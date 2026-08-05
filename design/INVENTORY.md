@@ -72,8 +72,9 @@ Anyone treating a "Verified" screen as a restyle will produce a screen that rend
 | `Merged-Public-App` §03 Public Self Enrollment ⚠ | `/{locale}/join/g/[groupId]` | `src/app/[locale]/join/g/[groupId]/page.tsx` → `JoinFlowClient.tsx` | `auth` `state` |
 | `Merged-Public-App` §05 Referral Landing ⚠ | `/{locale}/refer/[code]` | `src/app/[locale]/refer/[code]/page.tsx` | `money` |
 | `Merged-Public-App` §06 Offline ⚠ | `/{locale}/offline` | `src/app/[locale]/offline/page.tsx` | `layout` |
-| `Merged-Public-Legal` §01 Public Legal ⚠ | `/{locale}/legal/privacy` · `/terms` · `/cookie` · `/dpa` | `src/app/[locale]/legal/*/page.tsx` → `legal/LegalDoc.tsx`, `legal/layout.tsx` | `layout` |
-| ” | `/{locale}/legal/privacy-request` | `src/app/[locale]/legal/privacy-request/page.tsx` | `layout` |
+| `Merged-Public-Legal` §01 Public Legal ⚠ | `/{locale}/legal` (index) · `/legal/privacy` · `/legal/terms` · `/legal/cookie` · `/legal/dpa` | `src/app/[locale]/legal/page.tsx` + `legal/*/page.tsx` → `legal/LegalDoc.tsx`, `legal/legalContent.ts`, `legal/layout.tsx` | `layout` |
+| ” | `/{locale}/legal/privacy-request` | `src/app/[locale]/legal/privacy-request/page.tsx` → `POST /api/privacy-request` | `layout` |
+| ” | `/{locale}/privacy` · `/terms` · `/cookies` | permanent redirects into the three `/legal/*` addresses above — old public URLs, kept alive, no content of their own | `layout` |
 
 ⚠ **Self enrollment, referral landing, offline and the legal surface are all live.**
 `TutoringHQ-Screen-Tracker.md` lists them as "designed, not yet in the platform". They are restyles,
@@ -82,9 +83,16 @@ not new builds. Detail in *Corrections*.
 ⚠ `/teacher/pricing` — the design folds center and teacher plans into **one** `/pricing` page with a
 toggle. Live has two routes. Consolidating them is a routing change, not a restyle; decide before building.
 
-**Legal caveat:** the four documents render section headings with `[This section will be completed
-upon legal review]` placeholders and a draft-notice banner (`legal/LegalDoc.tsx`). The chrome is real;
-the text is not. Applying the design does not close the Adsero dependency.
+**Legal caveat — rewritten 5 August 2026; the previous wording was two PRs out of date.** It read:
+*"the four documents render section headings with `[This section will be completed upon legal
+review]` placeholders and a draft-notice banner. The chrome is real; the text is not."* That string
+returns **zero** matches in `src/` today. Since **#311** (`81639a14`) the four documents carry the
+design's real prose in both languages, and **13 of the 23** contents sections are drafted. The
+remaining **10** keep their contents entry and their anchor and render one explicit "Pending Adsero
+draft." line. So: the chrome is real, and so is most of the text — but **applying the design still
+does not close the Adsero dependency**, which is the one sentence above that was always right. The
+exact 10 are tabulated under **X4** in `BUILD-AFTER-REDESIGN.md` and locked by
+`tests/unit/legalCorpusParity.test.ts`.
 
 ## Center
 
@@ -297,8 +305,9 @@ resolved silently while screens are being built.
 | `/{locale}/teacher/subscription/upgrade` | `teacher/(portal)/subscription/upgrade/page.tsx` → `components/teacher/PlanComparison.tsx` | Standard → Pro upgrade surface. | **Needs a design** or fold into `Merged-Teacher-Money` §03, which already carries an upgrade card. |
 | `/{locale}/settings/money` | `[locale]/settings/money/page.tsx` | Center money settings: InstaPay number, card-order opt-in. | **Needs a design.** It is the only place the InstaPay destination is set, and no Setup section covers it. |
 | `/{locale}/settings/referrals` | `[locale]/settings/referrals/page.tsx` | Second center referral surface. Uses the same `ReferralWithdrawalPanel` as `/referrals`. | **Probably delete.** Duplicate of `/referrals`, which has a design (`Merged-Center-Insight` §03). Pick one. |
-| `/{locale}/privacy` | `[locale]/privacy/page.tsx` | Placeholder privacy page reading `legal.privacy.placeholderBody`. | **Delete.** Superseded by `/legal/privacy`, which has the design and the real chrome. Two live privacy pages today. |
-| `/{locale}/terms` | `[locale]/terms/page.tsx` | Placeholder terms page. Also renders the 20 EGP processing-fee disclosure, gated on `processing_fee_enabled`. | **Do not delete blind.** Superseded by `/legal/terms` for layout, **but** it carries a fee disclosure `/legal/terms` does not. Move the disclosure first. |
+| `/{locale}/privacy` | `[locale]/privacy/page.tsx` | ✅ **Resolved (#311).** Now a `permanentRedirect` into `/legal/privacy`. No content of its own. | **Done.** Redirect not delete — public legal URLs get pasted into contracts and store listings. Needs no design. |
+| `/{locale}/terms` | `[locale]/terms/page.tsx` | ✅ **Resolved (#311).** Now a `permanentRedirect` into `/legal/terms`. The 20 EGP processing-fee disclosure **moved first**, into `legal/terms/page.tsx`, on the same `processing_fee_enabled` → `amount > 0` gate. | **Done.** The "do not delete blind" warning was honoured: the disclosure was ported before the route was retired. |
+| `/{locale}/cookies` | `[locale]/cookies/page.tsx` | ✅ **Resolved (5 Aug).** Now a `permanentRedirect` into `/legal/cookie`. Previously it held the Cookie Policy's only definition, **outside `legal/layout.tsx`** — so the reader rendered there with no flex column. See `DUPLICATE-ROUTES.md` §4. | **Done.** This row did not exist before; the route was never listed as a duplicate because it re-exported rather than forked. |
 | `/{locale}/students/print` | `[locale]/students/print/page.tsx` → `PrintClient.tsx` | Printable roster. Print CSS is an RTL exemption per `docs/RTL.md`. | **Needs a decision.** Print output is not in any merged file. |
 | `/parent/[token]` | `src/app/parent/[token]/page.tsx` | Public parent portal by token: balance, scan history, next sessions, WhatsApp-the-center. Read-only, no pay action. Outside `[locale]`. | **Needs a design.** The only parent-facing authenticated-ish surface, and `Merged-Public-App` §04 (Parent Payment) is a different screen. |
 | `/{locale}/admin/orders` | `[locale]/admin/orders/page.tsx` → `AdminOrdersClient.tsx` | Admin card-order queue. | **Needs a design.** No admin orders screen exists in any merged file. |

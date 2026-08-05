@@ -2,6 +2,8 @@
 
 import { ChevronLeft, ChevronRight, MoreVertical } from 'lucide-react';
 import { useLocale } from 'next-intl';
+import type { LucideIcon } from 'lucide-react';
+import { Link } from '@/i18n/routing';
 
 interface ListRowProps {
   /** Initials or a short mark for the design's `.av` tile. Omit for a row with no avatar. */
@@ -11,18 +13,27 @@ interface ListRowProps {
    * is not initials on a mint tile — `Merged-Center-Home` §01's `.sess` puts a
    * 52px two-line start time there ("2:00" over "PM"), which is the same slot
    * in the same row, not a different pattern.
-   *
-   * Mutually exclusive with `avatar` in practice; if both are passed, `avatar`
-   * wins, because the mint initials tile is the documented §03 default and a
-   * row should never grow two leading blocks.
    */
   leading?: React.ReactNode;
+  /**
+   * A leading glyph instead of the initials tile, for rows that name a place
+   * rather than a person — the §03 frames use both.
+   */
+  icon?: LucideIcon;
   title: string;
   meta?: React.ReactNode;
   /** Right-hand badge — a status pill, an amount, anything short. */
   badge?: React.ReactNode;
   /** Row tap. Omit for a non-interactive row. */
   onOpen?: () => void;
+  /**
+   * Where the row goes, when it goes somewhere. A row whose whole job is
+   * navigation renders as a real anchor rather than a button with a
+   * `router.push` inside it — otherwise the row loses middle-click, open-in-new-tab
+   * and prefetch, which is a functional regression dressed up as adoption.
+   * `href` wins over `onOpen` when both are passed.
+   */
+  href?: string;
   /** Opens the shared ActionSheet. When omitted the three-dot is not rendered. */
   onActions?: () => void;
   actionsLabel?: string;
@@ -50,10 +61,12 @@ interface ListRowProps {
 export default function ListRow({
   avatar,
   leading,
+  icon: Icon,
   title,
   meta,
   badge,
   onOpen,
+  href,
   onActions,
   actionsLabel,
   chevron = true,
@@ -62,8 +75,29 @@ export default function ListRow({
   const isRtl = locale === 'ar' || locale.startsWith('ar-');
   const Chevron = isRtl ? ChevronLeft : ChevronRight;
 
+  const inner = (
+    <>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-md font-semibold text-[var(--color-ink)]">{title}</span>
+        {meta && <span className="mt-1 block text-sm text-[var(--color-muted)]">{meta}</span>}
+      </span>
+      {chevron && <Chevron className="h-3 w-3 shrink-0 text-[var(--color-faint)]" aria-hidden />}
+    </>
+  );
+  const openClass =
+    'flex min-w-0 flex-1 items-center gap-2 text-start min-h-[44px] btn-press chq-focus';
+
   return (
     <div className="flex items-center gap-3 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 shadow-sm">
+      {/* Exactly ONE leading block, in this order: avatar > leading > icon.
+          `avatar` and `icon` arrived with #340's adoption pass, `leading` with
+          #351's §01 schedule row; they are three ways to fill the same `.av`
+          slot, so they must not stack. A naive merge of the two branches
+          rendered `leading` AND `icon` together whenever both were passed,
+          which is the "row grows two leading blocks" case the design has no
+          shape for. The order is by specificity: the mint initials tile is
+          §03's documented default and wins; a caller-rendered node is a
+          deliberate override and beats the generic glyph. */}
       {avatar ? (
         <span
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--color-mint)] text-base font-semibold text-[var(--color-accent-deep)]"
@@ -71,21 +105,19 @@ export default function ListRow({
         >
           {avatar}
         </span>
-      ) : (
+      ) : leading ? (
         leading
-      )}
+      ) : Icon ? (
+        <Icon className="h-5 w-5 shrink-0 text-[var(--color-muted)]" aria-hidden />
+      ) : null}
 
-      {onOpen ? (
-        <button
-          type="button"
-          onClick={onOpen}
-          className="flex min-w-0 flex-1 items-center gap-2 text-start min-h-[44px] btn-press chq-focus"
-        >
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-md font-semibold text-[var(--color-ink)]">{title}</span>
-            {meta && <span className="mt-1 block text-sm text-[var(--color-muted)]">{meta}</span>}
-          </span>
-          {chevron && <Chevron className="h-3 w-3 shrink-0 text-[var(--color-faint)]" aria-hidden />}
+      {href ? (
+        <Link href={href} className={openClass}>
+          {inner}
+        </Link>
+      ) : onOpen ? (
+        <button type="button" onClick={onOpen} className={openClass}>
+          {inner}
         </button>
       ) : (
         <div className="min-w-0 flex-1">

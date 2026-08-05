@@ -9,6 +9,8 @@ import { AdminHeader } from '@/components/admin/AdminHeader';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { useLayout } from '@/contexts/LayoutContext';
 import { mergeMissingPlatformConfigRows } from '@/lib/platformConfigUi';
+import IntegrationHealthPanel from '@/components/admin/IntegrationHealthPanel';
+import type { IntegrationHealthView } from '@/lib/adminIntegrationHealth';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import { useToast } from '@/hooks/useToast';
 import { ArrowLeft, Settings } from 'lucide-react';
@@ -135,6 +137,10 @@ export default function PlatformConfigPage() {
   const [byKey, setByKey] = useState<Record<string, unknown>>({});
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [savingKey, setSavingKey] = useState<string | null>(null);
+  // Merged-Admin-Platform §03, vendors frame. Null until loaded; a failure here
+  // must not take the config editor down with it, so the panel simply does not
+  // render rather than showing a health state it could not read.
+  const [integrations, setIntegrations] = useState<IntegrationHealthView[] | null>(null);
 
   const getSession = useCallback(async () => {
     const {
@@ -205,6 +211,21 @@ export default function PlatformConfigPage() {
     setDrafts(d);
   }, [getAuthHeaders, t]);
 
+  const loadIntegrations = useCallback(async () => {
+    const headers = await getAuthHeaders();
+    if (!headers) return;
+    try {
+      const res = await fetch('/api/admin/integration-health', { headers });
+      if (!res.ok) return;
+      const data = (await res.json().catch(() => ({}))) as {
+        integrations?: IntegrationHealthView[];
+      };
+      setIntegrations(Array.isArray(data.integrations) ? data.integrations : null);
+    } catch {
+      setIntegrations(null);
+    }
+  }, [getAuthHeaders]);
+
   useEffect(() => {
     if (!gateOk) return;
     let cancelled = false;
@@ -220,11 +241,12 @@ export default function PlatformConfigPage() {
       } finally {
         if (!cancelled) setLoading(false);
       }
+      if (!cancelled) await loadIntegrations();
     })();
     return () => {
       cancelled = true;
     };
-  }, [gateOk, load, t]);
+  }, [gateOk, load, loadIntegrations, t]);
 
   const patchToggle = useCallback(
     async (key: string, nextVal: boolean, prevVal: boolean) => {
@@ -514,6 +536,12 @@ export default function PlatformConfigPage() {
                 </div>
               </section>
             ) : null}
+
+            {/*
+              §03's vendors frame sits after FEATURES and SYSTEM — the design's
+              own order across its two frames.
+            */}
+            <IntegrationHealthPanel integrations={integrations} />
 
             {lateKeys.length > 0 ? (
               <section>

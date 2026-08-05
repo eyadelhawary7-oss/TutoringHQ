@@ -11,11 +11,20 @@
  * computed server-side as created_at + 30d — there is no due column and none is
  * needed.
  *
- * OMITTED: the design's request-detail sheet with a "WILL BE DELETED · Student
- * records 95" breakdown. `privacy_requests` carries the requester as free text
- * (`full_name`, `phone`, `email`, `relationship`) and has NO link to a centre or
- * account, so there is nothing to join the counts to. Rendering a number there
- * would mean inventing it.
+ * The design's request-detail sheet is now PARTLY built, and the earlier
+ * "nothing to join the counts to" note was too strong. `privacy_requests` still
+ * has no centre or account foreign key — that part stands — but the deletion
+ * flow on this screen already resolves a requester to real student rows by
+ * phone (`GET /api/admin/privacy-requests/anonymize?phone=`), and that match is
+ * exactly what "WILL BE DELETED · Student records N" is counting. The count is
+ * therefore the number of matched student records, labelled as a phone match,
+ * not an invented account roll-up.
+ *
+ * STILL OMITTED from the detail sheet, each with its cause:
+ *  - **Identity · Verified** — V1. There is no identity check on the platform,
+ *    so there is no verified/unverified state to report.
+ *  - **Approve / Reject buttons** — a write, and a legally consequential one.
+ *    The existing anonymize action is the only write this screen performs.
  */
 
 import { useLocale, useTranslations } from 'next-intl';
@@ -62,6 +71,42 @@ export function privacyQueueCounts(
     if (r.due_at && new Date(r.due_at).getTime() - now.getTime() < soonMs) dueSoon += 1;
   }
   return { open, dueSoon, closed };
+}
+
+/**
+ * Whole days from now until `due_at`, or null when there is no due date.
+ *
+ * Negative means overdue and is returned as-is rather than clamped to zero —
+ * "3 days late" and "due today" must not render identically. Rounded UP so a
+ * request with 18 hours left reads "1 day", not "0 days".
+ */
+export function daysUntilDue(dueAt: string | null, now: Date = new Date()): number | null {
+  if (!dueAt) return null;
+  const due = new Date(dueAt).getTime();
+  if (Number.isNaN(due)) return null;
+  return Math.ceil((due - now.getTime()) / 86400000);
+}
+
+/**
+ * The design's three request-type tags. `privacy_requests.request_types` is a
+ * free-form text array, so an unrecognised value falls through to null and the
+ * row simply carries no tag rather than being mislabelled as one of the three.
+ *
+ * `portability` is the value the intake API actually stores for what the design
+ * and the UI both call "Export" — see the filter note above.
+ */
+export type PrivacyTag = 'access' | 'deletion' | 'portability';
+
+const KNOWN_TAGS: PrivacyTag[] = ['deletion', 'access', 'portability'];
+
+/**
+ * The tag a row leads with. The design draws one tag per row; a request can
+ * carry several, so deletion wins (it is the most consequential and the only
+ * one with an action attached), then access, then portability.
+ */
+export function primaryPrivacyTag(requestTypes: string[] | null): PrivacyTag | null {
+  const types = requestTypes ?? [];
+  return KNOWN_TAGS.find((tag) => types.includes(tag)) ?? null;
 }
 
 export function filterByPrivacyType(
