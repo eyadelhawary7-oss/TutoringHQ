@@ -2314,3 +2314,109 @@ the recorded 4.4 to confirm the ledger rather than correct it.
   references in `src/`. Not built: the teacher chip is derived from `student_groups.teacher_id` today
   and re-deriving it from `kind` would change which groups show the chip — a behaviour change needing
   the same drop-or-document decision, not a display fix.
+## R13 · DECLINED, twice — `Merged-Teacher-Students` §01's brass group tag has no rule to key it off, and §02 has no brass tag at all
+
+**Status: not built, and the reason is durable — this is not a backlog item waiting for effort.** `#310`
+declined it (3 Aug) as *"no stated rule and no live column distinguishes them."* `#343` overrode that
+refusal (4 Aug), built it as a hash, and was **rejected by Eyad for breaking the never-fabricate rule.**
+This entry exists so a third pass does not re-litigate it from the design file alone.
+
+### The two defects in `#343`, each re-verified from source this pass, not taken from the rejection note
+
+**1. It painted an element into §02 that the design never draws there.** The `.tag.b` rule exists in
+exactly one place in the whole file — line 99, under `.mgd1` (§01). `grep -c 'mgd2 .tag.b'` returns
+**0**. §02's only tag rule is line 131, `.mgd2 .tag{…color:#0A514A;background:#DFEEEB;border-radius:999px}`,
+and both of §02's tag instances — line 248 (EN), line 283 (AR) — are plain `class="tag"`. `#343` still
+routed `students/[studentId]/page.tsx:274` (§02's `.ptags` pill) through the tint helper. **The brass
+pill it shipped to §02 is an element with no design source of any kind.** Its PR body justified this by
+asserting *"the design shows `Physics` mint in both sections"* — true but empty: §02 draws one tag total,
+so it is evidence of nothing about a second tone.
+
+**2. The tint encoded nothing, and its doc comment claimed otherwise.** `groupTagTone` was
+`TONES[fnv1a(groupId) % 2]`. The comment shipped with it claimed *"one tone per group"* and *"it encodes
+group identity and nothing else."* A two-element array indexed by a hash mod 2 delivers neither:
+
+- **At two groups**, two distinct ids land on the *same* tone — measured **50.02%** over 200,000 random
+  UUID pairs (FNV-1a/32 mod 2 is a fair coin on the low bit; this is the expected 1/2, not a tuning
+  problem). One group in two renders a roster where both groups are the same colour.
+- **At three or more groups**, at least two *always* collide. Pigeonhole: two tones cannot carry three
+  identities. Nothing caps a teacher at two private groups.
+
+A property that fails half the time at N=2 and always at N≥3 is not a property. **The doc comment was the
+fabrication, not the colour** — it asserted a guarantee the code could not make.
+
+### Why the hash looked like it worked, which is the trap worth recording
+
+There is exactly **one** teacher with private groups live (`68718be7-059f-4fc9-b822-346de7651aab`), and
+exactly two of them. Run the shipped hash over their real ids:
+
+| Group | `student_groups.id` | Shipped hash sends it to |
+|---|---|---|
+| `Physics` | `267a63f9-e249-4210-8a8d-1306bd0c16e0` | **mint** `.tag` |
+| `Physics Sun 4PM` | `990b9d87-e922-4203-a2bb-1b24df6c7177` | **brass** `.tag.b` |
+
+That reproduces the design mock exactly — mock and live even share the two group names. **It is a coin
+flip that landed right on the only case anybody could look at.** A 50% coincidence on a sample of one
+read as confirmation. Anyone re-checking this against the live app will see the "correct" colours and
+conclude the hash works; it does not, and the next group created flips a colour for no reason a teacher
+can perceive.
+
+> **Correction to the rejection note itself, since it must not propagate:** the note cited the live group
+> as *"Physics 1" = `99e8ff21-b619-4b0d-a368-e38d081cc24c` → BRASS.* That row is real and does hash to
+> brass, but its `kind` is **`center`**, not `private` — and `GET /api/teacher/private/students` filters
+> `.eq('kind','private')`, so **"Physics 1" never renders in §01 at all.** The two rows above are the
+> ones §01 actually draws. Separately, `public.groups` is a *different table* and is **empty (0 rows)**;
+> the teacher portal reads `public.student_groups`. Verified live, `lczmjpnbuhnsislcvzar`, 5 Aug 2026.
+
+### Why no honest version exists today
+
+`information_schema.columns` for `public.student_groups`, live, 5 Aug 2026 — all 16 columns: `id`,
+`center_id`, `name`, `subject`, `whatsapp_group_id`, `created_at`, `max_capacity`, `kind`, `teacher_id`,
+`teacher_split_pct`, `fee_per_class`, `approval_mode`, `is_self_enroll_open`, `status`, `capacity_cap`,
+`center_cut_egp`. **There is no `tone`, `colour`, `color`, `rank`, `priority`, `sort_order` or
+`display_order` column.** Nothing in the schema says which group is brass.
+
+Nor does the data. The two live private groups are **identical on every column that could carry a rule** —
+both `status='active'`, both `subject=NULL`, both `approval_mode='manual'`, both
+`is_self_enroll_open=false`, both `kind='private'`. They differ only in `id`, `name`, `created_at`
+(13 Jun vs 20 Jul) and enrolled count (1 vs 0). None of those is tied to a tone by anything in the design.
+
+Nor does the design. §01's masthead describes *"search plus a group filter, then each student with the
+group they belong to and their contact number"* — no tone semantics anywhere. The brass appears on one of
+three static sample rows, in a mock holding exactly two groups, in a palette holding exactly two tones.
+**The mock is consistent with "one tone per group" only because 2 fits in 2.** It states no rule for which
+of the two, and cannot state one for a third.
+
+Every candidate rule and why it fails:
+
+| Candidate | Verdict |
+|---|---|
+| Brass = group identity (one tone per group) | Needs N tones for N groups; design supplies 2, schema supplies no colour column. Not expressible. |
+| Brass = a status (overdue / full / pending) | Design states no such rule, and live both groups are `active` — structurally zero signal. This is the reading `#310` correctly rejected. |
+| Brass = second by `created_at` | No design rule, and position carries no meaning to a teacher. Inventing semantics. |
+| Brass = name contains a schedule (`"… Sun 4PM"`) | Parsing free text for meaning the schema does not assert. A mock naming coincidence, not a rule. |
+
+**This is R13's whole point: a second tint is an affirmative visual claim.** A teacher who sees one chip
+brass and one mint will read it as *status* — overdue, full, needs action — because that is what a colour
+break means in every other screen in this product. Shipping a tint with nothing behind it makes that claim
+falsely, and a disclaimer buried in a doc comment does not reach the teacher looking at the phone. **A
+colour that means nothing is not neutral; it means whatever the user infers.**
+
+### What is live today, and is correct
+
+Both sections already render the one tag rule their section actually draws, and match it:
+
+- §01 `AllStudentsList.tsx` — `rounded-[var(--radius-xs)] bg-[var(--color-mint)] px-2 py-1 text-[11px] font-semibold text-[var(--color-teal-deep)]` ↔ `.mgd1 .tag` (4px radius, `#DFEEEB`/`#0A514A`, 4px/8px padding, 600).
+- §02 `students/[studentId]/page.tsx` — `rounded-[var(--radius-pill)] bg-[var(--color-mint)] px-3 py-1 …` ↔ `.mgd2 .tag` (999px radius, 4px/12px padding).
+
+Nothing was changed in either file this pass. **The correct diff for this element is empty.**
+
+### Unblocking it needs a decision from Eyad, not a build
+
+Either would make it buildable; both are Eyad's call, neither is written here:
+
+1. **A stated design rule** for which group gets brass — e.g. "the group whose next session is today." Cheapest, needs no migration, but it is a product decision about what the colour *means*.
+2. **A per-group colour/tone column** on `student_groups` — **a migration, so it stops here per the standing rule.** This is the only option that makes the design's literal "one tone per group" reading true, and it would need more than two tones to survive a third group.
+
+- **Found:** `#310`, 3 August 2026. **Re-litigated and rejected:** `#343`, 4 August 2026. **Re-verified and logged durably:** 5 August 2026.
+- **Related:** R11 (*"Design wins. Identical means identical."* — the converse case: the design not drawing something is itself the instruction). The §02 half of this entry is that same rule applied straight.
