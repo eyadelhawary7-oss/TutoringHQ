@@ -202,7 +202,7 @@ export async function GET(
     metrics = await fetchCenterAccountMetrics(
       supabaseAdmin,
       centerId,
-      center as { parent_pack_enabled?: boolean | null },
+      center as { parent_pack_enabled?: boolean | null; organization_id?: string | null },
       (invoicesRes.data ?? []).length,
     );
   } catch {

@@ -995,6 +995,36 @@ Nothing in this section can start until V1 lands. Ordered so that V1 unblocks th
 - **Blocked by:** **Adsero.** The routes and layout exist; only the text is missing.
 - **Drawn in:** `Merged-Public-Legal` §01.
 - **Touches:** none. This is the only external blocker with no money or auth attached, so it can land the moment the text arrives.
+- **Re-measured, 5 August 2026 (Public-Legal second parity pass).** "Only the text is missing" is
+  still right, but it was being read as *all* the text, which stopped being true when **#311**
+  (`81639a14`) landed. The accurate size is **10 of 23 sections**, not 23:
+
+  | Document | Contents entries | Drafted | Pending |
+  |---|---|---|---|
+  | Privacy Policy | 6 | 1, 3, 5 | **2** How we use it · **4** How long we keep it · **6** Contact our DPO |
+  | Terms and Conditions | 6 | 1, 2, 3, 4 | **5** Acceptable use · **6** Liability |
+  | Cookie Policy | 5 | 2, 3, 4 | **1** What cookies are · **5** How to control them |
+  | Data Processing Agreement | 6 | 1, 3, 5 | **2** What we process · **4** Sub-processors · **6** Deletion |
+
+  The 13 drafted sections are live in both languages. The 10 pending ones keep their contents
+  entry and their `#sN` anchor and render one explicit "Pending Adsero draft." line — deliberately,
+  so a reader who clicks "4 · How long we keep it" lands somewhere instead of on a dead anchor.
+  This is a **known deviation from the design**, which simply omits the undrafted sections from the
+  reader body while still listing them in the contents; the design can afford a dead anchor because
+  its contents entries are not links. Do not "restore parity" by deleting the pending sections.
+
+  **Why the remaining 10 stay unbuilt, stated once so it is not re-litigated:** these are PDPL
+  (Law 151/2020) commitments — retention periods, the sub-processor list, the DPO contact point,
+  the erasure procedure. Unlike a wrong figure, a wrong sentence here is *binding on the company*.
+  Drafting them from the surrounding text would be fabrication in the most expensive place it
+  could happen. They become real copy with an edit to `legalContent.ts` and nothing else.
+
+  **Now guarded.** `tests/unit/legalCorpusParity.test.ts` derives the contents lists and the
+  drafted/pending split from `design/Merged-Public-Legal.html` at test time and asserts
+  `legalContent.ts` matches, in both languages and in order. It fails in both directions: on
+  invented copy appearing under a pending heading, and on a pending section being deleted to make
+  the file look finished. When Adsero's text lands, update the design file and `legalContent.ts`
+  together and it goes green — that is the intended workflow, not a test to edit around.
 
 ## X5 · Self-enrollment and the minor-consent question
 - **Blocked by:** **Adsero** for the consent question, **Meta** for the template.

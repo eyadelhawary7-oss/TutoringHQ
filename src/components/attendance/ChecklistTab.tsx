@@ -29,7 +29,9 @@ import { formatNumber, formatCurrency } from '@/lib/formatNumber';
 import { formatStudentNumberForDisplay } from '@/lib/studentNumberDisplay';
 import { cairoDateKey } from '@/lib/cairo/day';
 import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
-import { ListChecks, BookOpen, Search, X, Check, Banknote, Smartphone, Gift, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ListChecks, BookOpen, Search, X, Check, Banknote, Smartphone, Gift, ChevronLeft, ChevronRight, Users } from 'lucide-react';
+import { ListSkeleton } from '@/components/patterns';
+import { EmptyState } from '@/components/shared';
 
 interface ChecklistGroup {
   id: string;
@@ -389,11 +391,14 @@ export default function ChecklistTab({ initialGroupId }: { initialGroupId?: stri
       {/* Group picker */}
       {!selectedGroup ? (
         loadingGroups ? (
-          <div className="py-16 text-center text-sm text-[var(--color-text-secondary)]">{tCommon('loading')}</div>
+          /* §02 · the word "Loading" is not a loading state; group cards are
+             arriving, so the skeleton stands in at their shape. */
+          <ListSkeleton rows={3} />
         ) : groups.length === 0 ? (
-          <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-8 text-center">
-            <BookOpen className="mx-auto mb-3 h-8 w-8 text-[var(--color-text-tertiary)]" />
-            <p className="text-sm text-[var(--color-text-secondary)]">{t('noGroups')}</p>
+          /* §01 quiet variant · groups are created on the Groups screen, not
+             here, so this state offers no action of its own. */
+          <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] py-4">
+            <EmptyState icon={BookOpen} title={t('noGroups')} quiet />
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -458,9 +463,12 @@ export default function ChecklistTab({ initialGroupId }: { initialGroupId?: stri
 
           {/* Roster */}
           {rosterLoading ? (
-            <div className="py-12 text-center text-sm text-[var(--color-text-secondary)]">{tCommon('loading')}</div>
+            /* §02 · the roster is a list; the skeleton shows its shape. */
+            <ListSkeleton rows={5} />
           ) : roster.length === 0 ? (
-            <div className="py-12 text-center text-sm text-[var(--color-text-secondary)]">{t('noStudents')}</div>
+            /* §01 quiet variant · this group's roster is managed on the group,
+               not from the attendance checklist. */
+            <EmptyState icon={Users} title={t('noStudents')} quiet />
           ) : (
             <ul className="space-y-2">
               {roster.map((s) => {

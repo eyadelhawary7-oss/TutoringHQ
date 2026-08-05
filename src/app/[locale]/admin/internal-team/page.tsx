@@ -13,7 +13,7 @@ import { RoleBadge, EmptyState } from '@/components/shared';
 import { ListRow } from '@/components/patterns';
 import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
 import { ArrowLeft, RefreshCw, Users } from 'lucide-react';
-import { formatDate, formatNumber } from '@/lib/formatNumber';
+import { formatDate, formatNumber, formatRelativeMinutesAgo } from '@/lib/formatNumber';
 import { initialsOf } from '@/lib/initials';
 import { normalizePhone } from '@/lib/utils/phone';
 
@@ -25,6 +25,13 @@ interface TeamMember {
   role: string;
   custom_permissions?: string[];
   created_at?: string;
+  /**
+   * `auth.users.last_sign_in_at`. Named for what it is: the design's §02 caption
+   * says "Last active", but no activity column exists on `admin_users` and a
+   * sign-in is not activity — see the note on `fetchLastSignInAt` in
+   * `/api/admin/team`.
+   */
+  last_sign_in_at?: string | null;
 }
 
 type RoleKey =
@@ -305,6 +312,16 @@ export default function AdminInternalTeamPage() {
                   {detailMember.created_at && (
                     <span className="text-xs text-[var(--color-text-muted)]">
                       {t('internalTeam.joinedOn', { date: formatDate(detailMember.created_at, locale) })}
+                    </span>
+                  )}
+                  {/* §02's recency line. Absent for a member who has never
+                      signed in — no line beats "never", which reads as a
+                      finding when it is really just an empty column. */}
+                  {detailMember.last_sign_in_at && (
+                    <span className="text-xs text-[var(--color-text-muted)]">
+                      {t('internalTeam.lastSignedIn', {
+                        ago: formatRelativeMinutesAgo(detailMember.last_sign_in_at, locale),
+                      })}
                     </span>
                   )}
                 </div>

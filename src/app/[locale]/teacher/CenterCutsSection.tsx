@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Building2, HandCoins, Loader2, Unlink } from 'lucide-react';
 import { useRouter } from '@/i18n/routing';
+import { EmptyState } from '@/components/shared';
 import { supabase } from '@/lib/supabase';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import { formatCurrency, formatPercent } from '@/lib/formatNumber';
@@ -176,10 +177,16 @@ export default function CenterCutsSection({
       <section>
         {header}
         <CenterRequestsTracker />
-        <div className="rounded-[var(--radius-card)] border border-dashed border-[var(--color-border)] bg-[var(--color-surface-1)] p-8 text-center">
-          <Building2 size={28} className="mx-auto mb-3 text-[var(--color-text-muted)]" aria-hidden />
-          <h3 className="mb-2 font-bold text-[var(--color-text-primary)]">{t('emptyTitle')}</h3>
-          <p className="text-sm text-[var(--color-text-secondary)]">{t('emptyBody')}</p>
+        {/* §01 quiet variant · the join-a-center flow is the tracker directly
+            above this, so the empty state does not offer a second route to it —
+            §01's "one action, never two of equal weight". */}
+        <div className="rounded-[var(--radius-card)] border border-dashed border-[var(--color-border)] bg-[var(--color-surface-1)] py-4">
+          <EmptyState
+            icon={Building2}
+            title={t('emptyTitle')}
+            description={t('emptyBody')}
+            quiet
+          />
         </div>
       </section>
     );

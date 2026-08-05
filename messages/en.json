@@ -1,7 +1,11 @@
 {
   "legal": {
-    "terms": { "title": "Terms and Conditions" },
-    "privacy": { "title": "Privacy Policy" }
+    "terms": {
+      "title": "Terms and Conditions"
+    },
+    "privacy": {
+      "title": "Privacy Policy"
+    }
   },
   "plan": {
     "solo": "Solo",
@@ -601,6 +605,7 @@
     "loadCommissionsError": "Load Commissions Error",
     "loadError": "Load Error",
     "loadingRetry": "Loading Retry",
+    "stillWorking": "Slower than usual. Still waiting for the connection.",
     "login": "Login",
     "logoToastError": "Logo Toast Error",
     "logoToastSuccess": "Logo Toast Success",
@@ -1385,7 +1390,8 @@
     "noWithdrawalBalance": "No balance available",
     "withdrawalModalTitle": "Request withdrawal",
     "submitWithdrawal": "Submit request",
-    "instapayInvalid": "InstaPay number must be 11 digits starting with 01"
+    "instapayInvalid": "InstaPay number must be 11 digits starting with 01",
+    "rewardStatusExpired": "Expired"
   },
   "referral": {
     "referralCodeOptional": "Referral Code (optional)",
@@ -4091,6 +4097,7 @@
       "emptyAlt": "Roles can be changed at any time.",
       "permissionSummary": "{count} areas",
       "joinedOn": "Joined {date}",
+      "lastSignedIn": "Last signed in {ago}",
       "customRoleNote": "Ticking anything the chosen role does not already grant saves this person as a custom role. Confirm with your own password.",
       "lockedRoleNote": "Owner and admin permissions are fixed and cannot be edited here.",
       "permissionsSaved": "Permissions saved.",
@@ -4943,7 +4950,6 @@
       "col_period": "Period",
       "col_status": "Status",
       "col_held_until": "Payable After",
-      "status_pending": "Pending",
       "status_held": "Held",
       "status_available": "Available",
       "status_paid": "Paid",
@@ -4956,10 +4962,9 @@
       "no_records": "No reward records yet",
       "no_records_description": "Cron runs on the 2nd of each month and will populate this list.",
       "filter_all": "All",
-      "filter_pending": "Pending",
-      "filter_held": "Held",
+      "filter_pending": "Outstanding",
       "filter_paid": "Paid",
-      "select_payable": "Select payable rows (pending or available) to mark paid.",
+      "select_payable": "Select payable rows (held past their hold date, or withdrawable) to mark paid. Forfeited rows can never be paid.",
       "errors": {
         "unauthorized": "Unauthorized",
         "config": "Server configuration error",
@@ -4967,7 +4972,11 @@
         "superAdminOnly": "Super admin only",
         "invalidBody": "Invalid request body",
         "recordIdsRequired": "Record IDs are required"
-      }
+      },
+      "filter_hold": "Held",
+      "filter_forfeited": "Forfeited",
+      "status_forfeited": "Forfeited",
+      "col_total_forfeited": "Total Forfeited"
     },
     "centerNotes": {
       "title": "Internal Notes",
@@ -5146,6 +5155,7 @@
         "invoices": "Invoices",
         "students": "Students",
         "staff": "Teachers & staff",
+        "branches": "Branches",
         "activityLog": "Activity log",
         "notes": "Internal notes"
       },
@@ -5197,7 +5207,9 @@
       "topEmptyAlt": "Trial accounts are not ranked.",
       "teacherPlan_standard": "Teacher · Standard",
       "teacherPlan_pro": "Teacher · Pro",
-      "teacherPlan_scale": "Teacher · Scale"
+      "teacherPlan_scale": "Teacher · Scale",
+      "revenueLastMonthsHeading": "Revenue collected, last {count} months",
+      "revenueLastMonthsNote": "Cash collected from paid invoices, whole platform. This month so far: {amount}. Not the same measure as the recurring revenue above."
     },
     "privacyQueue": {
       "open": "Open",
@@ -5219,7 +5231,31 @@
       "title": "Sender templates",
       "subtitle": "The platform WhatsApp sender's Meta templates and their approval state.",
       "groupingNote": "Grouped by Meta category. The design groups these by who funds the message — customer credit, company paid, separate credit — but no column records funding, so that split is not shown rather than guessed."
-    }
+    },
+    "integrationHealth": {
+      "heading": "Integrations",
+      "service_api": "Database",
+      "service_payments": "App & payments",
+      "service_scanner": "Scanner service",
+      "purpose_api": "Supabase read check",
+      "purpose_payments": "App health endpoint",
+      "purpose_scanner": "Attendance edge function",
+      "status_operational": "Operational",
+      "status_degraded": "Degraded",
+      "status_outage": "Outage",
+      "status_unknown": "Not checked",
+      "lastCheck": "Last check",
+      "successRate24h": "Success rate 24h",
+      "responseTime": "Response time",
+      "percentOfChecks": "{pct}% of {checks} checks",
+      "milliseconds": "{ms} ms",
+      "note": "Pinged every five minutes. These are the three services the platform actually probes. Payment-provider and identity-vendor health are not measured anywhere, so they are not listed rather than shown as connected."
+    },
+    "privacyDaysLeft": "{days} days",
+    "privacyDetailRequestedBy": "Requested by",
+    "privacyDetailDueBy": "Due by",
+    "privacyDetailStudentRecords": "Student records matched",
+    "privacyRetentionNote": "Records are matched on the requester phone number. Financial records are anonymised rather than deleted, to meet tax-retention law."
   },
   "notFound": {
     "heading": "Page Not Found",

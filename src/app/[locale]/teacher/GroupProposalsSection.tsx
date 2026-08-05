@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Handshake, Loader2 } from 'lucide-react';
+import { ListSkeleton } from '@/components/patterns';
+import { EmptyState } from '@/components/shared';
 import { supabase } from '@/lib/supabase';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import { formatCurrency, formatDate, formatNumber } from '@/lib/formatNumber';
@@ -583,9 +585,13 @@ export default function GroupProposalsSection({
       )}
 
       {loading ? (
-        <div className="h-16 animate-pulse rounded-lg bg-[var(--color-surface-2)]" />
+        /* §02 · a list is arriving, so it takes the list skeleton rather than a
+           single grey bar that matches nothing that follows it. */
+        <ListSkeleton rows={2} />
       ) : proposals.length === 0 ? (
-        <p className="text-sm text-[var(--color-text-secondary)]">{t('empty')}</p>
+        /* §01 quiet variant · a proposal arrives from a center; the teacher
+           cannot create one here, so there is no action to offer. */
+        <EmptyState icon={Handshake} title={t('empty')} quiet />
       ) : (
         <ul className="flex flex-col gap-3">
           {proposals.map((p) => {

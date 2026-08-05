@@ -1,7 +1,11 @@
 {
   "legal": {
-    "terms": { "title": "الشروط والأحكام" },
-    "privacy": { "title": "سياسة الخصوصية" }
+    "terms": {
+      "title": "الشروط والأحكام"
+    },
+    "privacy": {
+      "title": "سياسة الخصوصية"
+    }
   },
   "plan": {
     "solo": "فردي",
@@ -601,6 +605,7 @@
     "loadCommissionsError": "تحميل العمولات خطأ",
     "loadError": "تحميل خطأ",
     "loadingRetry": "جاري التحميل إعادة",
+    "stillWorking": "أبطأ من المعتاد. لسه بنستنى الاتصال.",
     "login": "تسجيل الدخول",
     "logoToastError": "Logo Toast خطأ",
     "logoToastSuccess": "Logo Toast نجاح",
@@ -2126,6 +2131,7 @@
       "emptyAlt": "الأدوار تقدر تتغيّر في أي وقت.",
       "permissionSummary": "{count} أقسام",
       "joinedOn": "انضم في {date}",
+      "lastSignedIn": "آخر تسجيل دخول {ago}",
       "customRoleNote": "لو فعّلت أي حاجة الدور المختار مش بيديها، الشخص ده هيتحفظ كدور مخصّص. أكّد بكلمة السر بتاعتك.",
       "lockedRoleNote": "صلاحيات المالك والمشرف ثابتة ومش بتتعدّل من هنا.",
       "permissionsSaved": "تم حفظ الصلاحيات.",
@@ -2978,7 +2984,6 @@
       "col_period": "الفترة",
       "col_status": "الحالة",
       "col_held_until": "قابلة للسحب بعد",
-      "status_pending": "في الانتظار",
       "status_held": "محجوزة",
       "status_available": "متاحة",
       "status_paid": "مدفوعة",
@@ -2991,10 +2996,9 @@
       "no_records": "لا توجد سجلات مكافآت بعد",
       "no_records_description": "يعمل الكرون في الثاني من كل شهر وسيقوم بتعبئة هذه القائمة.",
       "filter_all": "الكل",
-      "filter_pending": "معلق",
-      "filter_held": "محجوز",
+      "filter_pending": "مستحق",
       "filter_paid": "مدفوع",
-      "select_payable": "اختر الصفوف القابلة للدفع (معلق أو متاح) لتأكيد الدفع.",
+      "select_payable": "اختر الصفوف القابلة للدفع (المحجوزة التي انتهت مدة حجزها أو القابلة للسحب) لتأكيد الدفع. الصفوف الملغاة لا يمكن دفعها أبدًا.",
       "errors": {
         "unauthorized": "غير مصرح",
         "config": "خطأ في إعداد الخادم",
@@ -3002,7 +3006,11 @@
         "superAdminOnly": "للمشرف الأعلى فقط",
         "invalidBody": "محتوى الطلب غير صالح",
         "recordIdsRequired": "معرفات السجلات مطلوبة"
-      }
+      },
+      "filter_hold": "محجوز",
+      "filter_forfeited": "ملغاة",
+      "status_forfeited": "ملغاة",
+      "col_total_forfeited": "إجمالي الملغى"
     },
     "centerNotes": {
       "title": "ملاحظات داخلية",
@@ -3181,6 +3189,7 @@
         "invoices": "الفواتير",
         "students": "الطلاب",
         "staff": "المعلمون والفريق",
+        "branches": "الفروع",
         "activityLog": "سجل النشاط",
         "notes": "ملاحظات داخلية"
       },
@@ -3232,7 +3241,9 @@
       "topEmptyAlt": "حسابات التجربة مش داخلة في الترتيب.",
       "teacherPlan_standard": "معلم · ستاندرد",
       "teacherPlan_pro": "معلم · برو",
-      "teacherPlan_scale": "معلم · سكيل"
+      "teacherPlan_scale": "معلم · سكيل",
+      "revenueLastMonthsHeading": "الإيراد المحصّل، آخر {count} أشهر",
+      "revenueLastMonthsNote": "النقد المحصّل من الفواتير المدفوعة على مستوى المنصة. هذا الشهر حتى الآن: {amount}. وهو مقياس مختلف عن الإيراد المتكرر أعلاه."
     },
     "privacyQueue": {
       "open": "مفتوحة",
@@ -3254,7 +3265,31 @@
       "title": "قوالب المُرسِل",
       "subtitle": "قوالب واتساب الخاصة بمُرسِل المنصة وحالة اعتمادها.",
       "groupingNote": "مجمّعة حسب تصنيف ميتا. التصميم بيجمّعها حسب مين بيدفع تكلفة الرسالة — رصيد العميل، أو على حساب الشركة، أو رصيد منفصل — لكن مفيش عمود بيسجّل ده، فالتقسيم ده مش معروض بدل ما يتخمّن."
-    }
+    },
+    "integrationHealth": {
+      "heading": "التكاملات",
+      "service_api": "قاعدة البيانات",
+      "service_payments": "التطبيق والمدفوعات",
+      "service_scanner": "خدمة المسح",
+      "purpose_api": "فحص قراءة Supabase",
+      "purpose_payments": "نقطة فحص صحة التطبيق",
+      "purpose_scanner": "دالة الحضور الطرفية",
+      "status_operational": "يعمل",
+      "status_degraded": "أداء متدهور",
+      "status_outage": "انقطاع",
+      "status_unknown": "لم يُفحص",
+      "lastCheck": "آخر فحص",
+      "successRate24h": "معدل النجاح ٢٤ ساعة",
+      "responseTime": "زمن الاستجابة",
+      "percentOfChecks": "{pct}٪ من {checks} فحصًا",
+      "milliseconds": "{ms} م.ث",
+      "note": "يتم الفحص كل خمس دقائق. هذه هي الخدمات الثلاث التي تفحصها المنصة فعليًا. حالة مزوّد الدفع ومزوّد التحقق من الهوية غير مقاسة في أي مكان، لذلك لا تُعرض بدلًا من إظهارها كمتصلة."
+    },
+    "privacyDaysLeft": "{days} يومًا",
+    "privacyDetailRequestedBy": "مقدّم الطلب",
+    "privacyDetailDueBy": "الاستحقاق",
+    "privacyDetailStudentRecords": "سجلات الطلاب المطابقة",
+    "privacyRetentionNote": "تُطابق السجلات برقم هاتف مقدّم الطلب. تُخفى هوية السجلات المالية بدلًا من حذفها، امتثالًا لقانون الاحتفاظ الضريبي."
   },
   "ceo": {
     "brandTitle": "TutoringHQ",
@@ -6242,7 +6277,8 @@
     "noWithdrawalBalance": "لا يوجد رصيد متاح",
     "withdrawalModalTitle": "طلب سحب العمولات",
     "submitWithdrawal": "إرسال الطلب",
-    "instapayInvalid": "رقم إنستاباي يجب أن يكون ١١ رقماً ويبدأ بـ ٠١"
+    "instapayInvalid": "رقم إنستاباي يجب أن يكون ١١ رقماً ويبدأ بـ ٠١",
+    "rewardStatusExpired": "منتهية"
   },
   "resetPassword": {
     "title": "تغيير الرمز السري",
