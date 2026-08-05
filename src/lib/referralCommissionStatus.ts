@@ -9,8 +9,9 @@
  *   retired  `referral_reward_records`: pending | held | available | paid
  *   canonical `referral_commissions`:   hold | withdrawable | paid | forfeited
  *
- * `referral_reward_records` is written only by POST /api/referrals/calculate-rewards,
- * which has no cron registration in vercel.json and no caller in src/. Its
+ * `referral_reward_records` was written only by POST /api/referrals/calculate-rewards,
+ * which had no cron registration in vercel.json and no caller in src/, and which
+ * was DELETED on 5 August 2026 once the three read sites moved. Its
  * 'available' bucket was therefore structurally empty, and every centre
  * withdrawal was refused because the balance check could never see a non-zero
  * figure. `referral_commissions` is written monthly by

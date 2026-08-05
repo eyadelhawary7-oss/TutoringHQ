@@ -72,8 +72,9 @@ export async function POST(request: NextRequest) {
     // Withdrawable balance from `referral_commissions` — the canonical ledger.
     //
     // D22: this read was `referral_reward_records` WHERE status='available'. That
-    // table's only writer is POST /api/referrals/calculate-rewards, which has no
-    // cron registration in vercel.json and no caller anywhere in src/, so the
+    // table's only writer was POST /api/referrals/calculate-rewards, which had no
+    // cron registration in vercel.json and no caller anywhere in src/ — it was
+    // DELETED on 5 August 2026 along with the table itself, so the
     // 'available' bucket was structurally empty and `available` was always 0 —
     // every withdrawal failed the `amountRequested > available` check below.
     // `referral_commissions` is written monthly by /api/cron/referral-automation,
