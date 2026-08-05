@@ -252,7 +252,12 @@ const FULL_EXPORT_TABLES = [
   'commission_payouts',
   'commission_audit_log',
   'referrals',
-  'referral_reward_records',
+  // `referral_reward_records` was here until 5 August 2026 and is deliberately
+  // gone: D22 established `referral_commissions` as the canonical ledger, the
+  // table's only writer (POST /api/referrals/calculate-rewards) has been
+  // deleted, and the table itself is dropped by a migration Eyad applies by
+  // hand. Nothing is lost from the backup - `referral_commissions` is already
+  // in this same array below.
   'staff',
   'center_assignments',
   'plan_requests',

@@ -64,8 +64,9 @@ export async function GET(request: NextRequest) {
     // `referral_commissions` — the canonical monthly commission ledger.
     //
     // D22: this read was `referral_reward_records`, whose only writer
-    // (POST /api/referrals/calculate-rewards) has no cron registration and no
-    // caller in src/, so every figure on this page was structurally 0.
+    // (POST /api/referrals/calculate-rewards) had no cron registration and no
+    // caller in src/, so every figure on this page was structurally 0. That
+    // route was DELETED on 5 August 2026 and the table is dropped by hand.
     // `referral_commissions` is written monthly by /api/cron/referral-automation
     // — the only referral cron in vercel.json.
     //

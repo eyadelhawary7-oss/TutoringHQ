@@ -15,9 +15,11 @@ const supabaseAdmin =
     : null;
 
 /**
- * D22: this route read `referral_reward_records`. That table's only writer,
- * POST /api/referrals/calculate-rewards, has no cron registration in vercel.json
- * and no caller in src/, so this admin screen was structurally empty.
+ * D22: this route read `referral_reward_records`. That table's only writer was
+ * POST /api/referrals/calculate-rewards, which had no cron registration in
+ * vercel.json and no caller in src/, so this admin screen was structurally
+ * empty. That route was DELETED on 5 August 2026 and the table is dropped by a
+ * migration applied by hand; nothing writes it any more.
  * `referral_commissions` is the canonical ledger, written monthly by
  * /api/cron/referral-automation.
  *

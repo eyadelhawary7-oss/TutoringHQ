@@ -6,8 +6,9 @@
  *  (a) A 'withdrawable' row produces a NON-ZERO available balance.
  *      This is the bug. The withdrawal check used to sum
  *      `referral_reward_records` rows with status 'available', a bucket whose
- *      only writer (POST /api/referrals/calculate-rewards) has no cron
- *      registration in vercel.json and no caller in src/. The sum was therefore
+ *      only writer (POST /api/referrals/calculate-rewards) had no cron
+ *      registration in vercel.json and no caller in src/, and which was deleted
+ *      on 5 August 2026. The sum was therefore
  *      always 0 and every centre withdrawal was refused forever. If someone
  *      repoints the balance at a source nothing writes again, this fails.
  *
