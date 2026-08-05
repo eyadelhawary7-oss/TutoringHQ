@@ -105,6 +105,7 @@ If a row ever names one, that row is a mistake.
 | [#296](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/296) | `4c5e29b` | 2026-08-01 | `Center-Home §01` — Schedule section empty-state (balance card confirmed still blocked, not built); merged by Eyad directly, held for review per this file's history | `/{locale}/dashboard` | v42 |
 | [#297](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/297) | `aa8115d4` | 2026-08-01 | none — doc only (logged #296, closed out the Center-Home §01 investigation episode) | none | v42 |
 | [#298](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/298) | `(on merge)` | 2026-08-01 | `Center-Groups` — full re-survey + waitlist-integrity fix (stale entries never cleared, position-assignment race) | `/{locale}/groups` | v42 |
+| [#338](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/338) | `(on merge)` | 2026-08-05 | `CEO §01` board view built (revenue hero + 6-month Cairo chart, MRR/accounts/net-new KPIs, both segment cards, churn + ARPU); `CEO §02` overview strip built (active teachers, classes this month, billable subs, teacher MRR, plan-mix bars). `§03` not built — V5/V1. | `/{locale}/ceo`, `/{locale}/ceo/teachers`, `/api/ceo/board` (**new**), `/api/ceo/teacher-overview` (**new**) | v45 → **v46** |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, `#214`'s by that

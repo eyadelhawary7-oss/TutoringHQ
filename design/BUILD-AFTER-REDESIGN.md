@@ -674,6 +674,11 @@ whose core Add-branch flow sits on top of this unresolved billing question.
 - **Touches:** money (a live, wrong number).
 - **Blocked by:** Eyad's decision on which fix is correct.
 - **Reconfirmed 4 Aug 2026** (structural-parity survey pass, `claude/parity-teacher-groups-w2`): re-pulled `pg_get_functiondef('finish_class_and_bill')` live — the `insert into transactions (...)` still omits all four columns, unchanged since 29 July. Also checked `information_schema.columns` for `transactions.teacher_commission_amt` / `teacher_net` / `platform_gross` / `platform_net`: all four are `NOT NULL DEFAULT 0`, confirming every private-lesson charge silently writes zero into them rather than erroring — this is why the wrong number is invisible in normal use. No action taken; still Eyad's call.
+- **Now also blocks three `Merged-CEO` §01/§02 tiles, 5 August 2026 (CEO build pass, `claude/parity-ceo-w17`).** The CEO board was built this pass, and D19 + D16 between them are what keep three of its designed figures unbuilt — worth naming here so the cost of leaving this decision open is visible in one place:
+  - **§02 hero, "Teacher fee revenue this month."** The platform's cut of a teacher's classes *is* `transactions.teacher_net` / `teacher_commission_amt`. Both are permanently 0.
+  - **§02 "Top earners," ranked by net earned.** Same two columns. Ranking by them today orders every teacher at 0; ranking by `amount_billed` instead is not a display choice, it *is* D19's decision ("wire `compute_lesson_money`" vs "repoint at `amount_billed`") made silently by a restyle pass. Left for Eyad.
+  - **§01 KPI quad tile 2 and the teachers-segment third row, both "Fee revenue."** Same source, same 0.
+  The other five §01 blocks and the rest of §02 were built, because they are arithmetic over columns that are real and populated (`invoices`, `centers`, `teacher_subscriptions`, `mrr_snapshots`) rather than over the dormant ledger. That line — build pure arithmetic on live columns, hold anything resting on a ledger nothing writes — is the one D16 itself drew when it shipped the proposal-card "You earn" figure while holding the "Owed" hero.
 
 ## D20 · Two divergent "run a class" builds exist; only one is reachable
 - **What:** `src/app/[locale]/teacher/(portal)/groups/[groupId]/sessions/[sessionId]/page.tsx` is the route `INVENTORY.md` maps §04/§05 to. It is fully built and correct, but **zero live navigation reaches it** — confirmed by grepping every `href`/`router.push`/`Link` in the teacher app for that route pattern. The actual live surface for running a class is `SlotActionSheet.tsx`, opened from `/teacher/schedule`.
@@ -942,6 +947,9 @@ Nothing in this section can start until V1 lands. Ordered so that V1 unblocks th
 - **Touches:** money (read only).
 - **Blocked by:** V1 — technically buildable today, but **every row reads 0 / 100% until verification ships**, which is worse than not having it.
 - **Re-confirmed, 31 July 2026 (CEO survey).** Fresh `grep -i verified` across `/ceo`, `/ceo/teachers`, and both translation namespaces: zero matches, independently reproducing this entry's own claim rather than trusting it. Still holds exactly as written.
+- **Re-confirmed against the live catalog, 5 August 2026 (CEO build pass, `claude/parity-ceo-w17`).** Previous re-confirmations were greps over the repo; this one queried the database. `select table_name, column_name from information_schema.columns where table_schema='public' and (column_name ilike '%verif%' or ilike '%national_id%' or ilike '%kyc%' or ilike '%valify%')` on project `lczmjpnbuhnsislcvzar` returns **six rows, none of them a verification state**: `backup_log.last_verified_at`, `enrollment_otps.verified_at`, `phone_verifications.verified_at`, `students.parent_phone_verified`, `students.phone_verified`, `teacher_signup_otps.verified_at`. All six are phone/OTP or backup bookkeeping on unrelated tables.
+  **The exact missing columns, named:** `centers.verification_status` (and any `centers.verified_at`) for §03's benchmark split; `teacher_profiles.verification_status` / `teacher_profiles.national_id` for §02's "Verified" KPI and its unverified-count banner. Neither table has any such column — `centers` has 128 columns and `teacher_profiles` has 24, and none of them carry verification state.
+  §03 stays at **0/2 states built**. Both §02 tiles stay omitted. Nothing was rendered as 0, greyed or "coming soon".
 
 ## V6 · `Center-Setup` §08 Team Verified · `Center-Home` §01 verified dashboard · `Center-Attendance` §01–§02 · `Center-Students` §03
 - Verified state end to end. `Center-Attendance` is blocked **wholesale** — worth knowing before it comes up in the restyle order.
@@ -1690,6 +1698,32 @@ Surfaced by the 19-file design-parity sweep, 3 August 2026, then **re-verified b
 - **Section H of `/ceo` is dead weight, not a security control.** A hardcoded client-side string (`'CENTERHQ-ADMIN'`, visible in the shipped JS) gates 4 "danger" buttons that set the exact same `platform_config` keys already exposed as plain checkboxes in Section G — the real protection, `requireSuperAdminApi`, is server-side and identical either way. Section H adds confusion (a fake sense of an extra security layer) without adding any actual one. Likely worth deleting outright rather than "fixing" — a product call on whether Section H should exist at all, not made here.
 - **`legacyPayload` in `/api/ceo/dashboard` — CLOSED, PR #288.** Built a full extra response object (`mrr, arr, netNew30d, monthlyChurnRate, ...`) that nothing in `page.tsx` read — confirmed by a fresh full grep of the only reachable caller before removing — yet drove 7 real extra Supabase queries every 30-second poll, plus unused `from`/`to` range-param parsing that only fed them. Removed; the route now returns exactly `CeoDashboardData`, the type it already claimed to satisfy.
 - **The sales-lead form hardcodes `governorate: 'cairo'`** with no field to change it — every lead entered through the CEO dashboard is tagged Cairo regardless of where the center actually is. Needs a real governorate selector, not a one-line fix.
+
+### Two missing columns found while building `Merged-CEO` §01/§02 — 5 August 2026, `claude/parity-ceo-w17`
+
+Both stop a designed figure, both need schema, so under the standing migration rule neither was
+written. Named here precisely so the decision can be made without re-deriving them.
+
+- **No teacher payout record exists anywhere — blocks `Merged-CEO` §02's "Paid out" KPI.** The design
+  draws money paid out to teachers alongside fee revenue. There is no table that records it. Checked
+  every candidate live: `payout_requests` is **`center_id`**-scoped (`id, center_id, amount_requested,
+  status, payment_method, payment_details, requested_at, processed_at` — no `teacher_id`), and
+  `commission_payouts` is **`staff_id`**-scoped, i.e. internal sales-staff commission, not teachers.
+  A `%teacher%|%payout%` sweep of `information_schema.tables` returns ten tables and none of them is a
+  teacher payout ledger. **Needs:** a new `teacher_payouts` table (or a `teacher_id` path on
+  `payout_requests`). Not written — new schema, comes to Eyad. Related: X1 (Paymob split payouts) and
+  `design/PAYOUT-SYSTEM-SPEC.md` cover the same ground from the payments side.
+
+- **Teacher cancellations have no date, so platform churn cannot be computed — narrows `Merged-CEO`
+  §01's churn and net-new tiles to centers only.** `centers.cancellation_approved_at` exists and dates
+  a center cancellation cleanly. `teacher_subscriptions` has **no cancellation timestamp at all** — its
+  30 columns include `created_at` and a `status` that can read `'cancelled'`, but nothing records
+  *when* it became cancelled, and a `%cancel%|%churn%|%ended_at%|%deactivat%` sweep across the whole
+  public schema returns only `card_orders.cancelled_at` and the three `centers.cancellation_*` columns.
+  A status with no timestamp cannot be bucketed into a month. **Built as center-scoped and labelled
+  that way in the UI** (`ceoBoard.basis` says so in both locales) rather than counting center churn and
+  presenting it as platform churn, which would have been a fabricated figure of exactly the kind rule 1
+  exists to prevent. **Needs:** `teacher_subscriptions.cancelled_at timestamptz`. Not written.
 
 ## F35 · The schema-drift gate cannot verify a REVOKE at all, and goes green on the exact class of change it exists to catch
 
