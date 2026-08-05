@@ -234,6 +234,37 @@ function hour12AndPeriodTo24(hour12: number, period: string): number {
 }
 
 /**
+ * `formatTime`, split into its clock run and its day-period run.
+ *
+ * For screens that stack the two as separate type runs rather than printing one
+ * string — `Merged-Center-Home` §01's `.tm` is a 52px leading column with
+ * `.tm b` (13px/700, tabular) over `.tm span` (11px, muted).
+ *
+ * This lives here, not on the screen, because `formatTime` is the only place
+ * the locale's clock digits and day-period glyph are chosen ("PM" vs "م",
+ * Western vs Arabic-Indic numerals). Re-deriving the glyph at a call site would
+ * be a second, drifting copy of that decision.
+ *
+ * THE SEPARATOR IS NOT ALWAYS U+0020. Modern ICU emits U+202F (narrow no-break
+ * space) before "PM" in en-US, and ar-EG output can carry U+200F (RLM). The
+ * split covers both: JS `\s` already includes U+202F and U+00A0, and U+200F is
+ * listed explicitly because it is a formatting mark, not whitespace.
+ *
+ * When there is no day-period run at all — a 24-hour rendering, or a string
+ * `formatTime` passed through unchanged — `period` is `''` and the whole
+ * formatted value stays in `time`. It never invents an "AM".
+ */
+export function splitFormattedTime(
+  timeInput: string | Date,
+  locale: string,
+): { time: string; period: string } {
+  const formatted = formatTime(timeInput, locale);
+  const parts = formatted.split(/[\s‏]+/).filter(Boolean);
+  if (parts.length < 2) return { time: formatted, period: '' };
+  return { time: parts.slice(0, -1).join(' '), period: parts[parts.length - 1]! };
+}
+
+/**
  * Locale-aware time for display. Accepts ISO strings, "HH:MM", "HH:MM:SS",
  * or 12h strings (e.g. "9:00 AM", "1:00 PM") including Arabic ص/م suffixes.
  */
@@ -279,8 +310,31 @@ export function formatTime(timeInput: string | Date, locale: string): string {
     if (periodMatch) {
       hour24 = hour12AndPeriodTo24(hour24, periodMatch[1]!);
     }
-    const d = new Date(2000, 0, 1, hour24, mm, ss);
-    return d.toLocaleTimeString(l, mergeDateOpts(locale, timeFmtOpts));
+    // A BARE "HH:MM" IS A WALL-CLOCK TIME, NOT AN INSTANT — so no timezone
+    // conversion may be applied to it. `schedule_slots.start_time` is the
+    // canonical example: a recurring weekly template that means "14:00 in
+    // Cairo", with no date and therefore no UTC instant to convert from.
+    //
+    // This used to build `new Date(2000, 0, 1, hour24, ...)`, which anchors the
+    // digits in the DEVICE's timezone, and then render them with
+    // `timeZone: CAIRO_TZ` — applying the device→Cairo offset to a string that
+    // never had an offset. On a device set to Cairo the two cancelled and the
+    // output was right, which is why it survived: real Egyptian phones showed
+    // the correct time. Anywhere else it was wrong by the offset — a 14:00
+    // class rendered "4:00 PM" under UTC (verified directly, 5 Aug 2026, and by
+    // the TZ=UTC unit suite this repo runs precisely to surface this class of
+    // bug). That also made it a server/client hydration hazard, since Vercel's
+    // runtime is UTC and these screens are client components.
+    //
+    // Building the anchor in UTC and rendering it in UTC means no offset exists
+    // in either direction, so the digits pass through untouched and only the
+    // LOCALE formatting applies — 12-hour clock, AM/PM vs ص/م, Arabic-Indic
+    // numerals. Output on a Cairo device is byte-identical to before.
+    //
+    // The ISO / Date branches above are deliberately NOT changed: those carry a
+    // real instant, and converting them into Cairo is exactly right.
+    const d = new Date(Date.UTC(2000, 0, 1, hour24, mm, ss));
+    return d.toLocaleTimeString(l, mergeDateOpts(locale, { ...timeFmtOpts, timeZone: 'UTC' }));
   }
 
   if (isArabicLocale(locale)) {

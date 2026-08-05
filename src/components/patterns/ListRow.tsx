@@ -6,6 +6,17 @@ import { useLocale } from 'next-intl';
 interface ListRowProps {
   /** Initials or a short mark for the design's `.av` tile. Omit for a row with no avatar. */
   avatar?: string;
+  /**
+   * A caller-rendered leading block in the `.av` position, for rows whose lead
+   * is not initials on a mint tile — `Merged-Center-Home` §01's `.sess` puts a
+   * 52px two-line start time there ("2:00" over "PM"), which is the same slot
+   * in the same row, not a different pattern.
+   *
+   * Mutually exclusive with `avatar` in practice; if both are passed, `avatar`
+   * wins, because the mint initials tile is the documented §03 default and a
+   * row should never grow two leading blocks.
+   */
+  leading?: React.ReactNode;
   title: string;
   meta?: React.ReactNode;
   /** Right-hand badge — a status pill, an amount, anything short. */
@@ -38,6 +49,7 @@ interface ListRowProps {
  */
 export default function ListRow({
   avatar,
+  leading,
   title,
   meta,
   badge,
@@ -52,13 +64,15 @@ export default function ListRow({
 
   return (
     <div className="flex items-center gap-3 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 shadow-sm">
-      {avatar && (
+      {avatar ? (
         <span
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--color-mint)] text-base font-semibold text-[var(--color-accent-deep)]"
           aria-hidden
         >
           {avatar}
         </span>
+      ) : (
+        leading
       )}
 
       {onOpen ? (
