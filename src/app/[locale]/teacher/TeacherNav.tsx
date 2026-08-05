@@ -11,6 +11,7 @@ import {
   Users,
   UserRound,
   ClipboardList,
+  MessageCircle,
   Settings,
   Lock,
   LogOut,
@@ -59,6 +60,7 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'analytics', icon: BarChart3, route: '/teacher/analytics', lockable: true },
   { key: 'groups', icon: Users, route: '/teacher/groups', lockable: true },
   { key: 'students', icon: UserRound, route: '/teacher/students', lockable: true },
+  { key: 'whatsapp', icon: MessageCircle, route: '/teacher/whatsapp', lockable: true },
   { key: 'billing', icon: ClipboardList, route: '/teacher/billing', lockable: true },
   { key: 'settings', icon: Settings, route: '/teacher/settings' },
 ];
@@ -67,7 +69,7 @@ const NAV_ITEMS: NavItem[] = [
 const MOBILE_KEYS = ['home', 'schedule', 'centers', 'income'];
 
 // Everything the More sheet holds — the nav items the tab bar no longer shows.
-const MORE_KEYS = ['analytics', 'groups', 'students', 'billing', 'settings'];
+const MORE_KEYS = ['analytics', 'groups', 'students', 'whatsapp', 'billing', 'settings'];
 
 export default function TeacherNav({
   privateAccess,

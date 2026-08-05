@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
-import { PLANS, isPlanKey, type PlanKey } from '@/lib/pricing';
+import { getBranchAddonMonthlyPrice } from '@/lib/pricingConfig';
 import { parseBodyWithLimit } from '@/lib/validate';
 import { centerAccessGateResponse } from '@/lib/centerAccessGate';
 import { validateCSRFRequest } from '@/lib/csrf';
@@ -103,10 +103,11 @@ export async function POST(request: NextRequest) {
     const districtRaw = typeof body.district === 'string' ? body.district.trim() : '';
     const district = districtRaw.length > 0 ? districtRaw.slice(0, 200) : null;
 
-    // Get first center in org for plan/billing defaults
+    // Get first center in org for the NON-MONEY defaults a branch inherits.
+    // `billing_amount` / `all_in_price` are deliberately NOT read here — see below.
     const { data: firstCenter } = await supabaseAdmin
       .from('centers')
-      .select('plan, billing_type, billing_period, billing_amount, all_in_price, phone, owner_name')
+      .select('plan, billing_type, billing_period, phone, owner_name')
       .eq('organization_id', organizationId)
       .limit(1)
       .maybeSingle();
@@ -115,30 +116,45 @@ export async function POST(request: NextRequest) {
       plan?: string;
       billing_type?: string;
       billing_period?: string;
-      billing_amount?: number;
-      all_in_price?: number;
       phone?: string;
       owner_name?: string;
     } | null;
-    const pk: PlanKey = isPlanKey(fc?.plan) ? (fc!.plan as PlanKey) : 'starter';
-    const parentAllInPerMonth =
-      fc?.all_in_price != null && Number(fc.all_in_price) > 0
-        ? Number(fc.all_in_price)
-        : pk === 'top_centers'
-          ? 0
-          : PLANS[pk].quarterlyAllIn;
-    // Quarterly is retired — the centers CHECK only allows monthly/annual, so
-    // a missing parent billing_period defaults to monthly (one month's charge),
-    // never the old ×3 quarterly invoice.
-    const defaultMonthlyInvoice = parentAllInPerMonth > 0 ? Math.round(parentAllInPerMonth) : 0;
+
+    /**
+     * D23 FIX — a branch is an ADD-ON, not a second subscription.
+     *
+     * This route used to clone the parent's `billing_amount` and `all_in_price`
+     * onto the new branch's own `centers` row. That was wrong in two distinct,
+     * separately harmful ways:
+     *
+     *  1. **MRR double-count (live today).** `getImpliedMonthlyMrr` counts any
+     *     centre row by `status` + `is_test` alone (`src/lib/pricing.ts`), so a
+     *     cloned branch added a whole second plan price to admin/CEO subscription
+     *     MRR — a reported-revenue figure inflated by a branch nobody billed.
+     *  2. **A latent second invoice.** The row carried a full plan price while
+     *     only `next_payment_due IS NULL` kept `runSubscriptionBillingCron` from
+     *     invoicing it. Any path that later stamped a due date on a branch would
+     *     have started charging the org twice, silently and correctly-looking.
+     *
+     * A branch therefore stores **no independent price**: `billing_amount` 0 and
+     * `all_in_price` NULL, and (as before) no `next_payment_due`. The org's charge
+     * for it is the flat add-on, added to the PRIMARY centre's existing renewal
+     * invoice by `runSubscriptionBillingCron` — one org, one subscription, one
+     * invoice, one processing fee.
+     *
+     * `plan` is still inherited: it is NOT NULL in the live catalog and drives
+     * feature entitlement (capacity caps etc.), which a branch genuinely shares
+     * with its parent. It no longer implies a price, because the price columns
+     * it used to be read alongside are now empty.
+     */
     const insert: Record<string, unknown> = {
       name,
       organization_id: organizationId,
       plan: fc?.plan ?? 'starter',
       billing_type: fc?.billing_type ?? 'fixed',
       billing_period: fc?.billing_period ?? 'monthly',
-      billing_amount: fc?.billing_amount ?? defaultMonthlyInvoice,
-      all_in_price: fc?.all_in_price ?? parentAllInPerMonth,
+      billing_amount: 0,
+      all_in_price: null,
       status: 'active',
       owner_name: fc?.owner_name ?? '',
       phone: fc?.phone ?? null,
@@ -357,27 +373,18 @@ export async function GET(request: NextRequest) {
       .single();
 
     /**
-     * THE ONE CONFIG POINT for the design's "Extra branch add-on · 199 EGP/mo"
-     * notice: platform_config key `branch_addon.monthly_price_egp`. The key
-     * does not exist live today, so this returns null and the client renders
-     * NO price notice — not an invented 199, not a billing claim the engine
-     * does not make. Pricing the add-on (the key's value AND the billing-engine
-     * line that would actually charge it) is Eyad's decision; setting the key
-     * turns the notice on with no code change.
+     * THE ONE CONFIG POINT for the design's "Extra branch add-on" notice:
+     * platform_config key `branch_addon.monthly_price_egp`, read through the
+     * shared `getBranchAddonMonthlyPrice()` so the price a centre is SHOWN here
+     * is read from the same place the billing engine CHARGES from — the two can
+     * never drift apart.
+     *
+     * The key does not exist live (re-verified 2026-08-05), so this returns null,
+     * the client renders no price notice, and `runSubscriptionBillingCron` adds
+     * exactly 0.00 to the invoice. Setting the key turns both on together, with
+     * no code change. Never an invented 199.
      */
-    let branchAddonMonthlyPriceEgp: number | null = null;
-    try {
-      const { data: addonRow } = await supabaseAdmin
-        .from('platform_config')
-        .select('value')
-        .eq('key', 'branch_addon.monthly_price_egp')
-        .maybeSingle();
-      const raw = (addonRow as { value?: unknown } | null)?.value;
-      const n = typeof raw === 'number' ? raw : Number(raw);
-      if (Number.isFinite(n) && n > 0) branchAddonMonthlyPriceEgp = n;
-    } catch {
-      branchAddonMonthlyPriceEgp = null;
-    }
+    const branchAddonMonthlyPriceEgp = await getBranchAddonMonthlyPrice();
 
     return NextResponse.json({
       branches: centers ?? [],

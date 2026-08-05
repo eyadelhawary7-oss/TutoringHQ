@@ -17,6 +17,7 @@ import { usePublicWhatsappPackPrice } from '@/hooks/usePublicWhatsappPackPrice';
 import { usePublicAnnualMultiplier } from '@/components/summer/useSummerPublicConfig';
 import MarketingNav from '@/components/marketing/MarketingNav';
 import Kicker from '@/components/marketing/Kicker';
+import DiffRows, { type DiffRow } from '@/components/marketing/DiffRows';
 import SummerLine from '@/components/marketing/SummerLine';
 import MarketingFooter from '@/components/landing/MarketingFooter';
 
@@ -29,16 +30,39 @@ import MarketingFooter from '@/components/landing/MarketingFooter';
  * which is the argument made visually rather than written out. The audience
  * tablist is gone too; both blocks are always on screen.
  *
- * Two things the design draws are deliberately NOT built, because nothing in
- * the live database can source them:
+ * The "What changes with size" block (`.diffs`) IS built, but only out of the
+ * rows that have a live source — the design's own script comment says three of
+ * its five rows "have NO source in the database … PROPOSALS for Eyad to set or
+ * reject", and that is still true:
  *
- *  1. The "What changes with size" rows inside the readout — Branches, Team
- *     seats and WhatsApp notifications a month. There is no branch limit, no
- *     seat limit and no notification quota on `pricing_plans`, on `centers`, or
- *     anywhere in `public`; the design file says so itself. Rendering
- *     "Branches: 3" beside a real price would be a fabricated commitment. Only
- *     `weekly_student_limit` exists, and it is already the chip.
- *  2. The Add-ons rows OTHER THAN the parent WhatsApp pack — extra branch,
+ *  · Built — "Students a week" on the center readout, from
+ *    `pricing_plans.weekly_student_limit`; "Active students a month" on the
+ *    teacher readout, from `platform_config.teacher_subscription_plan*`'s
+ *    `student_limit` (relabelled from the design's "a week" because the live
+ *    cap is a monthly active-student count — the same correction
+ *    `capLabelTeacher` already carries); and "Advanced analytics", from
+ *    `TeacherPlanDef.proFeatures`, which is a real entitlement `isProOrAbove()`
+ *    enforces across 14 files, not a marketing line.
+ *  · Withheld — "Branches" and "Team seats": confirmed live 5 Aug 2026 that
+ *    `pricing_plans` has exactly nine columns and NO column anywhere in
+ *    `public` matches `%seat%`, `%max_branch%`, `%branch_limit%` or
+ *    `%max_teacher%`. Rendering "Branches: 3" beside a real price would be a
+ *    fabricated commitment.
+ *  · Withheld — "WhatsApp notifications a month": `blast_credits_monthly` DOES
+ *    exist in `platform_config` (100 on Pro and Scale) and is mirrored on
+ *    `TeacherPlanDef.blastCreditsMonthly`, but that field has zero readers in
+ *    `src/` outside its own definition, so no allowance is granted, metered or
+ *    enforced anywhere. Printing it would promise a quota that does not exist —
+ *    the same class of claim as D34.
+ *  · The design's negative label for analytics is "Add-on", implying a
+ *    purchase. There is none (D13 is closed "no purchase flow"), so the
+ *    negative reading is "Not included" — the wording matches what is true,
+ *    the same single-word correction already adjudicated for F30's wallet claim.
+ *
+ * One thing the design draws is deliberately NOT built at all, because nothing
+ * in the live database can source it:
+ *
+ *  1. The Add-ons rows OTHER THAN the parent WhatsApp pack — extra branch,
  *     team seat, standalone advanced analytics, blast packs "from 200", and
  *     instant payout. No live price table or `platform_config` key exists for
  *     any of those, so rendering their prices would fabricate commitments the
@@ -147,6 +171,31 @@ export default function PricingPageClient() {
     annualMultiplier,
     students: OVERAGE_EXAMPLE_STUDENTS,
   });
+
+  // ── "What changes with size" ───────────────────────────────────────
+  // One row per live-sourced entitlement, rebuilt on every chip move. See the
+  // header comment for the three drawn rows that are withheld and why.
+  const centerDiffs: DiffRow[] = [
+    { id: 'students', label: t('diffs.studentsPerWeek'), value: n(center.cap) },
+  ];
+  const teacherDiffs: DiffRow[] = [
+    {
+      id: 'students',
+      // Scale bills overage instead of hard-capping (`overagePerStudent > 0`,
+      // the same test `teacherHasHardCap` uses), so the no-ceiling chip reads
+      // "No ceiling" rather than repeating the cap it does not enforce.
+      label: t('diffs.activeStudentsPerMonth'),
+      value: teacher.overage > 0 ? t('diffs.noCeiling') : n(teacher.def.studentCap),
+      plain: teacher.overage > 0,
+    },
+    {
+      id: 'analytics',
+      label: t('diffs.advancedAnalytics'),
+      value: teacher.def.proFeatures ? t('diffs.included') : t('diffs.notIncluded'),
+      tone: teacher.def.proFeatures ? 'yes' : 'no',
+      plain: true,
+    },
+  ];
 
   const sameItems = t.raw('same.items') as string[];
   const notes = ['vat', 'annual', 'trial', 'cancel'] as const;
@@ -292,6 +341,7 @@ export default function PricingPageClient() {
                   b: bold,
                 })}
               </p>
+              <DiffRows heading={t('diffs.heading')} rows={centerDiffs} />
               <p className="mt-3 border-t border-[var(--color-hairline)] pt-3 text-[11px] leading-snug text-[var(--color-muted)]">
                 {billing === 'monthly'
                   ? t.rich('altMonthly', {
@@ -399,6 +449,7 @@ export default function PricingPageClient() {
                           b: bold,
                         })}
                   </p>
+                  <DiffRows heading={t('diffs.heading')} rows={teacherDiffs} />
                   <p className="mt-3 border-t border-[var(--color-hairline)] pt-3 text-[11px] leading-snug text-[var(--color-muted)]">
                     {billing === 'monthly'
                       ? t.rich('exampleMonthly', {
@@ -423,6 +474,7 @@ export default function PricingPageClient() {
                       b: bold,
                     })}
                   </p>
+                  <DiffRows heading={t('diffs.heading')} rows={teacherDiffs} />
                   <p className="mt-3 border-t border-[var(--color-hairline)] pt-3 text-[11px] leading-snug text-[var(--color-muted)]">
                     {billing === 'monthly'
                       ? t.rich('altMonthly', {

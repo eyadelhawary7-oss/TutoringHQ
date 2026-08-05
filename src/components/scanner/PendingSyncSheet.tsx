@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
+import { CloudUpload } from 'lucide-react';
+import { EmptyState } from '@/components/shared';
 import { formatDate } from '@/lib/formatNumber';
 import {
   getPendingScanRows,
@@ -100,7 +102,9 @@ export default function PendingSyncSheet({ open, onClose, probeOk, centerId, onQ
         </div>
         <div className="flex-1 overflow-y-auto divide-y divide-[var(--color-border-subtle)]">
           {rows.length === 0 ? (
-            <p className="p-6 text-center text-sm text-[var(--color-text-secondary)]">{t('empty')}</p>
+            /* §01 quiet variant: an empty sync queue is the good state, not a
+               task. Nothing to do, so no action and the muted tile. */
+            <EmptyState icon={CloudUpload} title={t('empty')} quiet />
           ) : (
             rows.map((r) => (
               <div key={`${r.localId}-${r.timestamp}`} className="flex items-center gap-3 px-4 py-3">
