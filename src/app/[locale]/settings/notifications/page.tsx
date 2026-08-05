@@ -10,6 +10,11 @@ import { PageHeader } from '@/components/shared';
 import { MessageCircle, Calendar, ChevronRight } from 'lucide-react';
 import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
 import { SettingsSwitch } from '@/components/settings/SettingsSwitch';
+import {
+  SettingsControlRow,
+  SettingsGroup,
+  SettingsGroupLabel,
+} from '@/components/settings/SettingsRows';
 
 export default function NotificationSettingsPage() {
   const t = useTranslations('settings');
@@ -121,55 +126,53 @@ export default function NotificationSettingsPage() {
           </Link>
         </div>
 
-        <div className="space-y-4">
-          <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow">
-            <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
-              <div className="p-2 bg-teal-100 rounded-xl shrink-0">
-                <MessageCircle className="w-4 h-4 text-teal-600" aria-hidden />
-              </div>
-              <div className="min-w-0">
-                <h3 className="font-semibold text-[var(--color-text-primary)]">{t('dailySummary')}</h3>
-                <p className="text-sm text-[var(--color-text-muted)] mt-0.5">{t('dailySummaryDesc')}</p>
-              </div>
-            </div>
-            <div className="p-6">
-              <div className="flex items-center justify-between gap-4">
-                <div id={dailySummarySwitchId} className="min-w-0">
-                  <p className="text-sm font-medium text-[var(--color-text-primary)]">{t('dailySummaryToggle')}</p>
-                  <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{t('dailySummaryDesc')}</p>
-                </div>
+        {/* §05 Notifications, drawn as the design's labelled group of toggle
+            rows rather than two full-width cards.
+
+            The design's six "NOTIFY ME ABOUT" rows (payments recorded,
+            absences, new students, card orders, teacher payout requests,
+            billing & add-ons), the HOW group (push / email) and QUIET HOURS are
+            NOT drawn, and were not skipped for effort: D9 (decided 28 July, do
+            not build) — there is no owner-level notification-preference model
+            anywhere. Re-checked live this pass: the only `notify_*` columns in
+            `public` are `students.notify_on_absence` / `notify_on_balance` /
+            `notify_on_scan`, which are per-STUDENT parent toggles, a different
+            feature. `centers` carries no quiet-hours, push or email column.
+
+            The two rows below are the real centre-wide toggles this screen has
+            always written: `centers.daily_summary_enabled` and
+            `centers.summer_mode`. Both confirmed present in
+            information_schema.columns. */}
+        <div className="space-y-5">
+          <div>
+            <SettingsGroupLabel>{t('sectionNotifications')}</SettingsGroupLabel>
+            <SettingsGroup>
+              <SettingsControlRow
+                icon={MessageCircle}
+                label={t('dailySummary')}
+                description={t('dailySummaryDesc')}
+                labelId={dailySummarySwitchId}
+              >
                 <SettingsSwitch
                   checked={dailySummaryEnabled}
                   onCheckedChange={handleDailySummaryToggle}
                   aria-labelledby={dailySummarySwitchId}
                 />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow">
-            <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
-              <div className="p-2 bg-teal-100 rounded-xl shrink-0">
-                <Calendar className="w-4 h-4 text-teal-600" aria-hidden />
-              </div>
-              <div className="min-w-0">
-                <h3 className="font-semibold text-[var(--color-text-primary)]">{t('summerMode')}</h3>
-                <p className="text-sm text-[var(--color-text-muted)] mt-0.5">{t('summerModeDesc')}</p>
-              </div>
-            </div>
-            <div className="p-6">
-              <div className="flex items-center justify-between gap-4">
-                <div id={summerSwitchId} className="min-w-0">
-                  <p className="text-sm font-medium text-[var(--color-text-primary)]">{t('summerModeToggle')}</p>
-                  <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{t('summerModeDesc')}</p>
-                </div>
+              </SettingsControlRow>
+              <SettingsControlRow
+                icon={Calendar}
+                iconClassName="bg-[var(--color-sand)] text-[var(--color-brass)]"
+                label={t('summerMode')}
+                description={t('summerModeDesc')}
+                labelId={summerSwitchId}
+              >
                 <SettingsSwitch
                   checked={summerModeEnabled}
                   onCheckedChange={handleSummerModeToggle}
                   aria-labelledby={summerSwitchId}
                 />
-              </div>
-            </div>
+              </SettingsControlRow>
+            </SettingsGroup>
           </div>
         </div>
       </div>

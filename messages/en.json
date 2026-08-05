@@ -1,7 +1,11 @@
 {
   "legal": {
-    "terms": { "title": "Terms and Conditions" },
-    "privacy": { "title": "Privacy Policy" }
+    "terms": {
+      "title": "Terms and Conditions"
+    },
+    "privacy": {
+      "title": "Privacy Policy"
+    }
   },
   "plan": {
     "solo": "Solo",
@@ -2868,8 +2872,24 @@
       "notificationsDesc": "Daily summary and summer mode",
       "billingMoneyDesc": "InstaPay, card ordering, plan & invoices",
       "supportDesc": "Contact us on WhatsApp",
-      "accountDesc": "Change PIN, sign out"
-    }
+      "accountDesc": "Change PIN, sign out",
+      "referralsDesc": "Your referral code, invited centers and rewards"
+    },
+    "groupCenter": "CENTER",
+    "groupYou": "YOU",
+    "groupPlan": "PLAN",
+    "groupHelp": "HELP",
+    "groupGetInTouch": "GET IN TOUCH",
+    "groupAbout": "ABOUT",
+    "supportFastest": "Fastest",
+    "groupMembers": "MEMBERS",
+    "groupTeachers": "TEACHERS",
+    "ownerKeepsEveryPermission": "The owner keeps every permission",
+    "reactivate": "Reactivate",
+    "fullAccess": "Full access",
+    "pausedNoAccess": "Paused · no access",
+    "noPermissionsGranted": "No permissions granted",
+    "teamMembersCountOnly": "{current} team members"
   },
   "centerCut": {
     "label": "Center cut per student per lesson (EGP)",
@@ -3013,7 +3033,14 @@
     "errorCodeNotFound": "No teacher has that code.",
     "errorAlreadyMember": "That teacher is already linked to your center.",
     "errorAlreadyPending": "A request to that teacher is already pending.",
-    "errorGeneric": "Something went wrong. Please try again."
+    "errorGeneric": "Something went wrong. Please try again.",
+    "monitorEmptyTitle": "No teachers yet",
+    "monitorEmptyAlt": "A teacher joins with your centre code, then proposes a group. You approve the fee and the cut before it goes live.",
+    "shareCenterCodeTitle": "Share your centre code",
+    "shareCenterCodeHint": "A teacher enters this code to bring a group to your centre. You approve the fee and the cut before it goes live.",
+    "centerCodeCopy": "Copy",
+    "centerCodeCopied": "Copied",
+    "headerCounts": "{teachers} teachers · {groups} groups"
   },
   "groups": {
     "title": "Groups",

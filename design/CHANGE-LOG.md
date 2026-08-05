@@ -105,6 +105,7 @@ If a row ever names one, that row is a mistake.
 | [#296](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/296) | `4c5e29b` | 2026-08-01 | `Center-Home §01` — Schedule section empty-state (balance card confirmed still blocked, not built); merged by Eyad directly, held for review per this file's history | `/{locale}/dashboard` | v42 |
 | [#297](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/297) | `aa8115d4` | 2026-08-01 | none — doc only (logged #296, closed out the Center-Home §01 investigation episode) | none | v42 |
 | [#298](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/298) | `(on merge)` | 2026-08-01 | `Center-Groups` — full re-survey + waitlist-integrity fix (stale entries never cleared, position-assignment race) | `/{locale}/groups` | v42 |
+| [#PR](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/PR) | `(on merge)` | 2026-08-05 | `Center-Setup §02` (hub rebuilt to the drawn shape: centre identity row, four labelled groups, Referrals row, sign out), `§05` Support + Notifications regrouped, `§06` Scanner regrouped, `§07` members table → the drawn `.mcard` list + shared `ActionSheet`, fabricated seat denominator removed, `§09` header counts, centre-code share card, real empty/loading states | `/{locale}/settings/general`, `/settings/support`, `/settings/notifications`, `/settings/scanner`, `/settings/team`, `/{locale}/my-teachers`, `/api/center/teacher-requests` | v46 |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, `#214`'s by that
@@ -1658,3 +1659,112 @@ description:**
 description in each entry). `design/FILE-COMPLETION-TABLE.md` row 11 updated: ~3.1/5 → ~3.0/5, §04's
 sub-estimate corrected down, blocked-by list gains D31/D32, D2 marked closed (confirmed already-resolved
 by `#248`, never formally closed in this table before now).
+
+---
+
+**Center-Setup, 5 August 2026 — build pass, not a survey. The instruction was explicitly reversed
+from the 31 July / 4 August passes: build the gaps rather than log them, and treat "logged a gap I
+could have built" as the failure.** Everything below was checked against the live catalog (project
+`lczmjpnbuhnsislcvzar`, `information_schema.columns`) before any code was written, per rule 2 — the
+prior entries were used to know where to look, never as evidence.
+
+**Structure coverage, counted as design sections rendered / design sections drawn across §02–§09:
+35/72 before → 41/72 after.** That is a different metric from the `~2.9/5` quality score
+`FILE-COMPLETION-TABLE.md` row 14 has been carrying, and the two are NOT interchangeable — the 0–5
+score rates how faithfully a rendered section matches; this fraction counts whether the section is
+rendered at all. Both are kept, labelled, rather than one being silently restated as the other.
+Per-section: §02 7→10 of 14 · §03 5/8 (untouched) · §04 7/10 (untouched) · §05 2/7 · §06 1/3 ·
+§07 7/9 · §08 0/9 · §09 6→9 of 12.
+
+**Built:**
+- **§02 the settings hub was the largest structural gap and is now the drawn screen.** `/settings/general`
+  (which is the hub, not a General/Region page — the route-identity gap D11 named) rendered a flat,
+  unlabelled list of eight cards. It now renders the design's shape: a centre identity row
+  (`centers.logo_url` / `name` / `governorate` / `plan`, all already in the `/api/me` payload — no new
+  fetch, the `UserContext` type was widened by one already-returned field), four labelled groups
+  (CENTER / YOU / PLAN / HELP) of hairline-divided rows, a plan pill on the Billing row, a Referrals
+  row pointing at the live `/referrals` route the design draws under PLAN, and the sign-out button the
+  design puts at the bottom of the hub.
+- **§07 the members table became the drawn `.mcard` list.** It was an `840px`-min-width table — on the
+  phone width every frame in this file is drawn at, it could only be read by scrolling sideways. Each
+  member is now a card with the avatar mark, a permission summary line, the role pill, the footer link
+  and a three-dot that opens the **shared `ActionSheet`** from `src/components/patterns/` (the
+  mandatory primitive — no local menu was rolled). Same data, same handlers, same gates; the inline
+  permission editor and `PasswordConfirmModal` flow are untouched.
+- **§07's permission summary line is derived from each member's real granted flags**, not from their
+  role. Two people with the same role can hold different permissions and a role-shaped label would be
+  a false claim about access.
+- **§09 header now reads the real "N teachers · M groups"**, reported up from the same
+  `/api/center/teacher-monitor` payload the monitor already renders — no second request, and the line
+  falls back to the static subtitle until the counts have actually loaded rather than showing a zero.
+- **§09 Add tab gains the drawn "Share your centre code" card.** `centers.center_code` is real
+  (confirmed live: 2 of 2 centre rows carry one) and is the same value the TEACHER side already posts
+  as `center_code` when bringing a group to a centre — a real key to a real flow. Surfaced by adding
+  `centerCode` to the owner/admin-gated `GET /api/center/teacher-requests`, which the Add tab already
+  calls, and passing it up through a callback rather than issuing a duplicate request.
+- **§09 loading and empty frames are now the drawn ones** — `ListSkeleton` from
+  `src/components/patterns/` and the shared `EmptyState` (Design-Patterns §01), replacing a single grey
+  bar and a bare centred sentence.
+- **§05 Support, §05 Notifications and §06 Scanner regrouped** into the design's labelled-group /
+  hairline-row shape. No new data on any of the three; this half is styling, and is counted as styling
+  above (none of them gained a drawn section).
+
+**One number was REMOVED rather than restyled, and this is the part to read carefully.** `/settings/team`
+printed "*X* of *Y* team members". `Y` came from `GET /api/settings/limits`, which selects
+`max_teachers, max_students` from `centers`. **Neither column exists** — re-confirmed this pass with a
+direct count against `information_schema.columns`, which returns `0` for both. The route therefore
+404s before it counts anything, the client falls back to a hardcoded `2`, and every centre in
+production — Growth plan included — was being told it had two seats. Printing a restyled seat meter on
+top of that would have made a fabricated cap look more authoritative, so the denominator is gone and
+only the real member count remains. **The invite button's disabled state was NOT touched** — that is an
+entitlement gate, and changing it is Eyad's call (F19.3 / D8).
+
+**Not built, each with the exact reason — no section here was skipped for effort:**
+- **§03 Settings Billing — not touched at all, deliberately.** It is a wall-to-wall money surface
+  (plan price, invoice totals, upgrade previews, pack charges), and the standing rule is that a money
+  figure comes to Eyad wherever it lives, not just inside the six named files. **S8's two remaining
+  CSRF gaps are still open on this exact screen** (`/api/parent-pack/request`, `/api/invoices/[id]/pay`
+  — re-checked on this branch, neither calls `validateCSRFRequest`), as are its three
+  misleading-money-figure findings. Restyling a screen with unfixed money bugs on it would make them
+  harder to see, not easier.
+- **§02 "Identity verification" row, §08 in its entirety** — V1/V6. Live check, not inherited: zero
+  columns anywhere in `public` matching `%verif%`/`%kyc%`/`%national_id%` that relate to centre KYC
+  (the only hits are `enrollment_otps.verified_at`, `phone_verifications.verified_at`,
+  `students.phone_verified`, `students.parent_phone_verified` and `teacher_signup_otps.verified_at` —
+  all a different feature). There is no verified state to render. §08's two owner-locked money rows
+  ("Withdraw money", "Change payout account") additionally have no permission column of any kind.
+- **§02 "General" row and the whole General screen** — D11. `centers` and `users` carry no `currency`,
+  `week_start`, `time_format` or `date_format` column (live search returns only the unrelated
+  `weekly_report_log.week_start`). Only `users.preferred_locale` exists, written from the app-shell
+  switcher.
+- **§02 "TutoringHQ · v2.4.0" and §05 "App version"** — F32. No app-version value reaches the client;
+  there is no `NEXT_PUBLIC_APP_VERSION` and `package.json`'s version is never surfaced.
+- **§02 Team-row member count** — the only omission here whose data genuinely exists. Reading it from
+  the hub needs either a new `/api/db` caller (banned by `CLAUDE.md`) or a new REST route.
+  `/api/settings/limits` cannot supply it: it 404s on the two missing columns above before it reaches
+  its count. Named rather than quietly dropped.
+- **§04 Address field** — needs a new `centers.address` column. Confirmed absent live (the only
+  address-shaped column on `centers` is `delivery_address jsonb`, which is card-order shipping).
+  **Stops under the migration rule. No migration written.**
+- **§04 Subjects on/off toggle and the entire Grades group** — F33, re-confirmed live: `public.subjects`
+  is exactly `id, center_id, name, monthly_fee, created_at`, no `is_active`; no grades table exists.
+- **§05 Notifications' six event toggles, HOW (push/email) and QUIET HOURS** — D9, decided "do not
+  build". No owner-level preference model exists.
+- **§06 camera front/back, sound, vibrate, auto-mark attendance, duplicate window** — D10. `centers`
+  has exactly one scanner column, `scanner_default_mode`, already exposed. "Mark attendance
+  automatically" additionally changes what is written to `attendance_scans`.
+- **§07 seat meter and "per extra seat · •• EGP/mo"** — D8 + F19.3. The design's own copy says the
+  price is "still to be set", and the free-seat allowance it would sit on is the dead code described
+  above.
+- **§07's "Or invite by phone" on the §09 Add tab** — not added. `POST /api/invite-user` 500s on every
+  call (F19.1: `center_invites` has no `status` column and no `(center_id, phone)` unique constraint).
+  A second entry point to a route that always fails multiplies the failure.
+- **§09 the "center 30%" cut chip and the percentage split** — D16, still open (flat-cut vs
+  percentage-split). The live monitor shows a flat `centerCutEgp`; drawing a percentage would assert a
+  model that has not been chosen.
+- **§09 Slots as a marketplace** — F24. Live is "an already-attached teacher proposes a meeting time,
+  the centre confirms it"; the design is "the centre posts an open slot, several teachers bid". No
+  open-slot or multi-proposal table exists. A new table, not a restyle.
+- **§01 Onboarding** — D28, unchanged. Structural product divergence, still awaiting a scope call.
+
+`SW_VERSION` bumped `v45` → `v46`.

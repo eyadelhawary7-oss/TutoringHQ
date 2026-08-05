@@ -9,6 +9,12 @@ import { useUser } from '@/contexts/UserContext';
 import { PageHeader } from '@/components/shared';
 import { QrCode, ChevronRight } from 'lucide-react';
 import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
+import {
+  SettingsControlRow,
+  SettingsGroup,
+  SettingsGroupHelp,
+  SettingsGroupLabel,
+} from '@/components/settings/SettingsRows';
 
 export default function ScannerSettingsPage() {
   const t = useTranslations('settings');
@@ -93,40 +99,45 @@ export default function ScannerSettingsPage() {
           </Link>
         </div>
 
-        <div className="bg-[var(--color-surface-1)] rounded-xl border border-[var(--color-border-subtle)] card-shadow">
-          <div className="flex items-center gap-4 p-6 border-b border-[var(--color-border-subtle)]">
-            <div className="p-2 bg-teal-100 rounded-xl shrink-0">
-              <QrCode className="w-4 h-4 text-teal-600" aria-hidden />
-            </div>
-            <div className="min-w-0">
-              <h3 className="font-semibold text-[var(--color-text-primary)]">{t('scannerTitle')}</h3>
-              <p className="text-sm text-[var(--color-text-muted)] mt-0.5">{t('defaultMode')}</p>
-            </div>
-          </div>
-          <div className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-[var(--color-text-primary)]">{t('defaultMode')}</p>
-                <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">{t('defaultMode')}</p>
-              </div>
-              <div className="flex gap-1 bg-[var(--color-surface-2)] p-1 rounded-lg">
+        {/* §06 Scanner, drawn as the design's "SCAN INPUT" group.
+
+            The design's other three groups are NOT drawn, and were not skipped
+            for effort — D10, decided 28 July, do not build, re-confirmed
+            against the live catalog this pass:
+              · "Camera · Back/Front", "Sound", "Vibrate" and "Ignore repeat
+                scans within 5 min" have no backing column. The full live
+                `centers` column list contains exactly ONE column whose name
+                mentions the scanner — `scanner_default_mode` — which is the row
+                below.
+              · "Mark attendance automatically" is a different class of thing
+                again: it changes what gets WRITTEN to `attendance_scans` on
+                every scan, so it is Eyad's call regardless of where the
+                preference would be stored. */}
+        <div>
+          <SettingsGroupLabel>{t('scannerTitle')}</SettingsGroupLabel>
+          <SettingsGroup>
+            <SettingsControlRow icon={QrCode} label={t('defaultMode')}>
+              <div className="flex gap-1 rounded-sm bg-[var(--color-tile)] p-1">
                 <button
                   type="button"
                   onClick={() => handleScannerMode('camera')}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${scannerMode === 'camera' ? 'bg-[var(--color-surface-1)] shadow-sm text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
+                  aria-pressed={scannerMode === 'camera'}
+                  className={`rounded-xs px-3 py-1.5 text-base font-medium transition-colors ${scannerMode === 'camera' ? 'bg-[var(--color-panel)] text-[var(--color-ink)] shadow-sm' : 'text-[var(--color-mid)] hover:text-[var(--color-ink)]'}`}
                 >
                   {t('camera')}
                 </button>
                 <button
                   type="button"
                   onClick={() => handleScannerMode('bluetooth')}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${scannerMode === 'bluetooth' ? 'bg-[var(--color-surface-1)] shadow-sm text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
+                  aria-pressed={scannerMode === 'bluetooth'}
+                  className={`rounded-xs px-3 py-1.5 text-base font-medium transition-colors ${scannerMode === 'bluetooth' ? 'bg-[var(--color-panel)] text-[var(--color-ink)] shadow-sm' : 'text-[var(--color-mid)] hover:text-[var(--color-ink)]'}`}
                 >
                   {t('bluetooth')}
                 </button>
               </div>
-            </div>
-          </div>
+            </SettingsControlRow>
+          </SettingsGroup>
+          <SettingsGroupHelp>{t('menu.scannerDesc')}</SettingsGroupHelp>
         </div>
       </div>
     </div>
