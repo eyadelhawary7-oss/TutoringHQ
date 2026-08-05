@@ -1,9 +1,19 @@
 'use client';
 
-import type { ReactNode } from 'react';
-import { useLocale } from 'next-intl';
+import { useEffect, useState, type ReactNode } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
 import { TrendingDown, TrendingUp } from 'lucide-react';
+import { StillWorking } from '@/components/patterns';
 import { formatGrowth, formatNumber, formatPercent } from '@/lib/formatNumber';
+
+/**
+ * How long a chart may stay skeletal before it says so, per
+ * `Merged-Design-Patterns` §02 ("After a few seconds, say so"). Six seconds:
+ * long enough that a normal load never trips it, short enough that the line
+ * arrives before the person decides the screen is broken. §02's own note gives
+ * the reason this matters more here than elsewhere — the database is in London.
+ */
+const SLOW_AFTER_MS = 6000;
 
 export interface ChartCardProps {
   title: string;
@@ -39,6 +49,22 @@ export function ChartCard({
   footer,
 }: ChartCardProps) {
   const locale = useLocale();
+  const t = useTranslations('common');
+  const [slow, setSlow] = useState(false);
+
+  useEffect(() => {
+    if (!loading) return;
+    const id = setTimeout(() => setSlow(true), SLOW_AFTER_MS);
+    // The reset lives in the cleanup rather than in the effect body: a
+    // synchronous setState in the body of an effect is a cascading-render
+    // warning under the React Compiler lint, and the cleanup already runs at
+    // exactly the moment the flag needs clearing — when `loading` flips.
+    return () => {
+      clearTimeout(id);
+      setSlow(false);
+    };
+  }, [loading]);
+
   const valueStr =
     value !== undefined && value !== null
       ? typeof value === 'number'
@@ -95,12 +121,24 @@ export function ChartCard({
         {actions ? <div className="shrink-0 flex items-center gap-2">{actions}</div> : null}
       </div>
       {loading ? (
-        <div className="flex items-center justify-center py-16" style={{ minHeight }}>
-          <div
-            className="w-6 h-6 border-2 border-teal-500 border-t-transparent rounded-full animate-spin"
-            aria-busy
-            role="status"
-          />
+        /* `Merged-Design-Patterns` §02: "Never a spinner in the middle of an
+           empty screen — it tells the person nothing about what they are
+           waiting for." This card previously did exactly that, and because it
+           is shared it did it on six screens at once (ceo, dashboard,
+           branches, admin, admin/analytics, dashboard/analytics). What replaces
+           it is the SHAPE of the chart that is coming — a plot block with an
+           axis strip under it — so nothing jumps when the series lands, plus
+           §02's slow line once the wait stops being ordinary. */
+        <div style={{ minHeight }} aria-busy="true" aria-live="polite">
+          <div className="flex h-full flex-col gap-2" aria-hidden>
+            <div className="chq-skeleton min-h-[120px] w-full flex-1 rounded-md" />
+            <div className="flex shrink-0 items-end gap-2">
+              {[3, 4, 3, 5, 4].map((w, i) => (
+                <div key={i} className="chq-skeleton h-2 rounded-xs" style={{ width: `${w * 8}px` }} />
+              ))}
+            </div>
+          </div>
+          {slow && <StillWorking message={t('stillWorking')} />}
         </div>
       ) : (
         <div style={{ minHeight }} className="min-h-0">

@@ -4,6 +4,12 @@ import { isSuperAdminPhone } from '@/lib/admin-access';
 import { phoneFromCenterhqAuthEmail } from '@/lib/ownerPhone';
 import { getStudentBalances, sumOutstanding } from '@/lib/studentBalance';
 import { centerAccessGateResponse } from '@/lib/centerAccessGate';
+import {
+  cairoMonthKey,
+  cairoMonthKeyPlusMonths,
+  cairoMonthUtcBounds,
+  startOfUtcInstantForCairoMonth,
+} from '@/lib/cairo/day';
 
 const EMPTY_ANALYTICS_PAYLOAD = {
   mrr: 0,
@@ -124,9 +130,27 @@ export async function GET(request: NextRequest) {
 
     const now = new Date();
 
-    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    /*
+     * CAIRO months, not the server's.
+     *
+     * These were `new Date(now.getFullYear(), now.getMonth(), 1)` — server-local,
+     * which is UTC on Vercel — while the analytics header labels the same window
+     * with `formatCalendarMonthYyyyMmInCairo()`. That is a real month-boundary
+     * defect, not a naming quibble: between 22:00/23:00 UTC on the last day of a
+     * Cairo month and 00:00 UTC, Cairo has rolled over and the server has not, so
+     * the header read the NEW month while `mrr`, the trend's emphasised final bar
+     * and the aging fallback were all still computing the OLD one. CLAUDE.md:
+     * Cairo time, not UTC, for any user-visible calendar window.
+     *
+     * Bounds are half-open [start, endExclusive) — the old `monthEnd` was the last
+     * day at 23:59:59, which silently dropped any payment in that final second.
+     */
+    const currentMonthKey = cairoMonthKey(now);
+    const { start: monthStart, endExclusive: monthEndExclusive } =
+      cairoMonthUtcBounds(currentMonthKey);
+    const sixMonthsAgo = startOfUtcInstantForCairoMonth(
+      cairoMonthKeyPlusMonths(currentMonthKey, -5),
+    );
 
     const [
       paymentsRes,
@@ -172,7 +196,7 @@ export async function GET(request: NextRequest) {
     const groupMap = new Map(groups.map((g) => [g.id, g.name]));
 
     const confirmedPayments = payments.filter((p) => p.status === 'confirmed' || p.status === 'paid');
-    const monthPayments = confirmedPayments.filter((p) => p.paid_at >= monthStart.toISOString() && p.paid_at <= monthEnd.toISOString());
+    const monthPayments = confirmedPayments.filter((p) => p.paid_at >= monthStart.toISOString() && p.paid_at < monthEndExclusive.toISOString());
 
     const mrr = monthPayments.reduce((s, p) => s + (p.amount ?? 0), 0);
     const outstanding_total = sumOutstanding(balances.values());
@@ -209,14 +233,13 @@ export async function GET(request: NextRequest) {
 
     const byMonth: Record<string, number> = {};
     for (let i = 5; i >= 0; i--) {
-      const m = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const key = `${m.getFullYear()}-${String(m.getMonth() + 1).padStart(2, '0')}`;
-      byMonth[key] = 0;
+      byMonth[cairoMonthKeyPlusMonths(currentMonthKey, -i)] = 0;
     }
     confirmedPayments.forEach((p) => {
       if (!p.paid_at) return;
-      const d = new Date(p.paid_at);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      // Bucket by the payment's CAIRO month so a payment made at 23:30 Cairo on
+      // the 31st does not land in the next month's bar.
+      const key = cairoMonthKey(new Date(p.paid_at));
       if (key in byMonth) byMonth[key] += p.amount ?? 0;
     });
     const mrr_trend = Object.entries(byMonth)
@@ -264,7 +287,7 @@ export async function GET(request: NextRequest) {
       if (gname) studentGroups.get(m.student_id)!.push(gname);
     }
 
-    const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    const firstOfMonth = monthStart.getTime();
     const todayMs = Date.now();
     const msPerDay = 24 * 60 * 60 * 1000;
 

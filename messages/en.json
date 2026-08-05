@@ -1,7 +1,11 @@
 {
   "legal": {
-    "terms": { "title": "Terms and Conditions" },
-    "privacy": { "title": "Privacy Policy" }
+    "terms": {
+      "title": "Terms and Conditions"
+    },
+    "privacy": {
+      "title": "Privacy Policy"
+    }
   },
   "plan": {
     "solo": "Solo",
@@ -49,6 +53,15 @@
     "teacherNotePro": "Advanced analytics is included at this size.",
     "teacherNoteScale": "The largest flat price. Past this it grows with you.",
     "teacherNoteScalePlus": "No ceiling. Every student you add costs less per head than the one before.",
+    "diffs": {
+      "heading": "What changes with size",
+      "studentsPerWeek": "Students a week",
+      "activeStudentsPerMonth": "Active students a month",
+      "noCeiling": "No ceiling",
+      "advancedAnalytics": "Advanced analytics",
+      "included": "Included",
+      "notIncluded": "Not included"
+    },
     "same": {
       "kick": "The same either way",
       "heading": "There is no cheaper version of the software.",
@@ -601,6 +614,7 @@
     "loadCommissionsError": "Load Commissions Error",
     "loadError": "Load Error",
     "loadingRetry": "Loading Retry",
+    "stillWorking": "Slower than usual. Still waiting for the connection.",
     "login": "Login",
     "logoToastError": "Logo Toast Error",
     "logoToastSuccess": "Logo Toast Success",
@@ -1385,7 +1399,8 @@
     "noWithdrawalBalance": "No balance available",
     "withdrawalModalTitle": "Request withdrawal",
     "submitWithdrawal": "Submit request",
-    "instapayInvalid": "InstaPay number must be 11 digits starting with 01"
+    "instapayInvalid": "InstaPay number must be 11 digits starting with 01",
+    "rewardStatusExpired": "Expired"
   },
   "referral": {
     "referralCodeOptional": "Referral Code (optional)",
@@ -1648,7 +1663,8 @@
       "createGroup": "Create",
       "groupFeePlaceholder": "Fee per class (EGP)"
     },
-    "rosterMeta": "{active} active · {branches} branches",
+    "rosterMetaActive": "{count} active",
+    "rosterMetaBehind": "{count} behind",
     "acrossBranches": "across {count} branches",
     "standing_paid": "Paid",
     "standing_at_risk": "At risk",
@@ -2023,6 +2039,9 @@
     "noGroup": "No group",
     "mrrTrend": "MRR Trend",
     "agingReport": "Aging Report",
+    "agingBandsTitle": "Outstanding by age",
+    "agingBandsUnavailable": "Not available yet. Balances are held as one running total per student, so an amount cannot be split into 0–30, 31–60 and 60+ without guessing where it belongs. Every outstanding balance is listed in full below.",
+    "remind": "Remind",
     "studentName": "Student Name",
     "group": "Group",
     "daysOverdue": "Days Overdue",
@@ -2243,6 +2262,7 @@
   "benchmarks": {
     "title": "Benchmarks",
     "subtitle": "Compare your center's performance with your district",
+    "subtitleWithDistrict": "vs centers in {district}",
     "insufficientData": "We need {count} more centers in your area to enable comparison",
     "noDistrict": "Please set your district in settings to enable benchmark comparison",
     "referralCta": "Refer other centers and earn rewards",
@@ -2262,6 +2282,7 @@
     "retention": "30-day retention",
     "utilization": "Group utilization",
     "attendanceDesc": "You rank better than {percentile} of centers in your area for attendance",
+    "belowMedian": "Below median",
     "revenueDesc": "You rank better than {percentile} of centers for revenue per student",
     "retentionDesc": "You rank better than {percentile} of centers for student retention",
     "utilizationDesc": "You rank better than {percentile} of centers for group utilization",
@@ -2914,6 +2935,10 @@
     "counterCutLabel": "New cut (EGP)",
     "noteLabel": "Note (optional)",
     "counterAutonote": "Student rate stays {fee} · center would keep {keep}",
+    "centerKeeps": "Center keeps",
+    "theirOffer": "Their offer",
+    "perStudent": "per student",
+    "offeredYouLine": "{center} offered you {amount} per student · {date}",
     "send": "Send",
     "expiresOn": "Expires {date}",
     "teacherLabel": "Teacher",
@@ -3067,6 +3092,7 @@
     "enrolledOfCapacity": "{count}/{capacity}",
     "groupFull": "Full",
     "headerCount": "{groups} groups · {subjects} subjects",
+    "headerCountDigital": "{groups} groups · all collecting digitally",
     "headerCountEmpty": "None yet",
     "centerCutPct": "center {pct}",
     "membersCount": "Members · {count}",
@@ -3211,7 +3237,14 @@
     "roleStudent": "Student",
     "roleParent": "Parent",
     "call": "Call",
-    "whatsapp": "WhatsApp"
+    "whatsapp": "WhatsApp",
+    "more": "More",
+    "callStudent": "Call student",
+    "waStudent": "WhatsApp student",
+    "callParent": "Call parent",
+    "waParent": "WhatsApp parent",
+    "declineConfirmTitle": "Decline this request?",
+    "declineConfirmBody": "{name} will not be enrolled and will not appear on your roster. They can ask again through the same link."
   },
   "rooms": {
     "title": "Rooms",
@@ -3312,6 +3345,7 @@
     "overlapBadge": "overlap",
     "roomOpenAllDay": "Open all day · tap + to use it",
     "gridCaption": "Red outline marks a room clash · swipe for Fri–Sat",
+    "endsAt": "to {time}",
     "takeAttendance": "Take attendance",
     "moreActions": "More"
   },
@@ -4087,6 +4121,7 @@
       "emptyAlt": "Roles can be changed at any time.",
       "permissionSummary": "{count} areas",
       "joinedOn": "Joined {date}",
+      "lastSignedIn": "Last signed in {ago}",
       "customRoleNote": "Ticking anything the chosen role does not already grant saves this person as a custom role. Confirm with your own password.",
       "lockedRoleNote": "Owner and admin permissions are fixed and cannot be edited here.",
       "permissionsSaved": "Permissions saved.",
@@ -4939,7 +4974,6 @@
       "col_period": "Period",
       "col_status": "Status",
       "col_held_until": "Payable After",
-      "status_pending": "Pending",
       "status_held": "Held",
       "status_available": "Available",
       "status_paid": "Paid",
@@ -4952,10 +4986,9 @@
       "no_records": "No reward records yet",
       "no_records_description": "Cron runs on the 2nd of each month and will populate this list.",
       "filter_all": "All",
-      "filter_pending": "Pending",
-      "filter_held": "Held",
+      "filter_pending": "Outstanding",
       "filter_paid": "Paid",
-      "select_payable": "Select payable rows (pending or available) to mark paid.",
+      "select_payable": "Select payable rows (held past their hold date, or withdrawable) to mark paid. Forfeited rows can never be paid.",
       "errors": {
         "unauthorized": "Unauthorized",
         "config": "Server configuration error",
@@ -4963,7 +4996,11 @@
         "superAdminOnly": "Super admin only",
         "invalidBody": "Invalid request body",
         "recordIdsRequired": "Record IDs are required"
-      }
+      },
+      "filter_hold": "Held",
+      "filter_forfeited": "Forfeited",
+      "status_forfeited": "Forfeited",
+      "col_total_forfeited": "Total Forfeited"
     },
     "centerNotes": {
       "title": "Internal Notes",
@@ -5142,6 +5179,7 @@
         "invoices": "Invoices",
         "students": "Students",
         "staff": "Teachers & staff",
+        "branches": "Branches",
         "activityLog": "Activity log",
         "notes": "Internal notes"
       },
@@ -5193,7 +5231,9 @@
       "topEmptyAlt": "Trial accounts are not ranked.",
       "teacherPlan_standard": "Teacher · Standard",
       "teacherPlan_pro": "Teacher · Pro",
-      "teacherPlan_scale": "Teacher · Scale"
+      "teacherPlan_scale": "Teacher · Scale",
+      "revenueLastMonthsHeading": "Revenue collected, last {count} months",
+      "revenueLastMonthsNote": "Cash collected from paid invoices, whole platform. This month so far: {amount}. Not the same measure as the recurring revenue above."
     },
     "privacyQueue": {
       "open": "Open",
@@ -5215,7 +5255,31 @@
       "title": "Sender templates",
       "subtitle": "The platform WhatsApp sender's Meta templates and their approval state.",
       "groupingNote": "Grouped by Meta category. The design groups these by who funds the message — customer credit, company paid, separate credit — but no column records funding, so that split is not shown rather than guessed."
-    }
+    },
+    "integrationHealth": {
+      "heading": "Integrations",
+      "service_api": "Database",
+      "service_payments": "App & payments",
+      "service_scanner": "Scanner service",
+      "purpose_api": "Supabase read check",
+      "purpose_payments": "App health endpoint",
+      "purpose_scanner": "Attendance edge function",
+      "status_operational": "Operational",
+      "status_degraded": "Degraded",
+      "status_outage": "Outage",
+      "status_unknown": "Not checked",
+      "lastCheck": "Last check",
+      "successRate24h": "Success rate 24h",
+      "responseTime": "Response time",
+      "percentOfChecks": "{pct}% of {checks} checks",
+      "milliseconds": "{ms} ms",
+      "note": "Pinged every five minutes. These are the three services the platform actually probes. Payment-provider and identity-vendor health are not measured anywhere, so they are not listed rather than shown as connected."
+    },
+    "privacyDaysLeft": "{days} days",
+    "privacyDetailRequestedBy": "Requested by",
+    "privacyDetailDueBy": "Due by",
+    "privacyDetailStudentRecords": "Student records matched",
+    "privacyRetentionNote": "Records are matched on the requester phone number. Financial records are anonymised rather than deleted, to meet tax-retention law."
   },
   "notFound": {
     "heading": "Page Not Found",
@@ -5870,6 +5934,7 @@
       "attendance": "Attendance",
       "windowThisTerm": "this term",
       "windowAllTime": "all time",
+      "lastAttended": "Last attended {date}",
       "recentAttendance": "Recent attendance",
       "seeAll": "See all",
       "attendancePresent": "Present",
@@ -6038,7 +6103,9 @@
       "missingSession": "Payment session expired. Open your order from Orders.",
       "notAuthenticated": "Sign in again to continue payment.",
       "orderNotFound": "Order not found.",
-      "recoverFailed": "Could not start payment."
+      "recoverFailed": "Could not start payment.",
+      "total": "Total",
+      "securedBy": "Secured by Paymob"
     },
     "success": {
       "title": "Order placed",
@@ -6409,7 +6476,9 @@
     "totalEarned": "Total Earned",
     "totalReferrals": "Total Referrals",
     "whatsappPack": "WhatsApp Pack",
-    "you": "You"
+    "you": "You",
+    "heroTitle": "Order student cards",
+    "heroSubtitle": "Printed QR cards your students scan at the door."
   },
   "landing": {
     "subtitle": "Center Management System",
@@ -7224,7 +7293,11 @@
     "clearSearch": "Clear search",
     "noSearchResults": "No templates match your search.",
     "howParentsSeeIt": "How parents will see it",
-    "variablesUsed": "Variables used"
+    "variablesUsed": "Variables used",
+    "copyTemplateName": "Copy template name",
+    "copied": "Copied",
+    "more": "More",
+    "noStoredBody": "No stored preview for this template yet. The exact wording lives in Meta Business Manager."
   },
   "mobileShell": {
     "tab_bar_label": "Primary navigation",
@@ -8730,6 +8803,7 @@
       "analytics": "Analytics",
       "groups": "My groups",
       "students": "Students",
+      "whatsapp": "WhatsApp",
       "billing": "Billing",
       "settings": "Settings",
       "logout": "Log out",
@@ -8853,6 +8927,8 @@
       "greetingFallbackName": "there",
       "centersTile": "What centers owe me",
       "centersPending": "Pending from centers",
+      "centersNotTracked": "Not tracked yet",
+      "centersNotTrackedHint": "Center classes don't record your cut yet, so there's no figure to show.",
       "centersEmpty": "No centers linked",
       "joinCenterCta": "Join a center",
       "incomeTile": "Income this month",
@@ -8901,7 +8977,55 @@
       "statusPending": "Pending",
       "statusPaid": "Paid",
       "statusPendingBill": "Pending",
-      "attendees": "{count} present"
+      "attendees": "{count} present",
+      "whatsapp": "WhatsApp"
+    },
+    "whatsapp": {
+      "pageSubtitle": "Messages to your students and their parents.",
+      "lockedBody": "Your WhatsApp credit and the messages your parents receive show up here once you start your trial.",
+      "loadError": "Could not load your WhatsApp details.",
+      "retry": "Try again",
+      "balanceLabel": "WhatsApp credit",
+      "balanceIncluded": "Your plan includes {amount} a month",
+      "bucketMonthly": "Monthly credit",
+      "bucketPurchased": "Bought credit",
+      "balanceResetHint": "Monthly credit is topped back up on the 1st of each month. Bought credit carries over and does not expire.",
+      "balanceNotSpentNote": "Nothing draws on this credit yet. Messages sent today are not deducted from it, so the figure above only goes up.",
+      "templatesHeading": "Your messages",
+      "templatesSubtitle": "What your students and their parents can receive, and whether each one is delivering today. WhatsApp has to approve every message type before it can be sent.",
+      "trigger": {
+        "auto": "Automatic",
+        "autoAndManual": "Automatic and on request"
+      },
+      "delivery": {
+        "sending": "Delivering",
+        "sendingPaused": "Sending paused",
+        "awaitingApproval": "Awaiting WhatsApp approval",
+        "rejected": "Rejected by WhatsApp",
+        "notSubmitted": "Not submitted to WhatsApp yet"
+      },
+      "templates": {
+        "feeReminder": {
+          "name": "Fee reminder",
+          "when": "When a class you billed is still unpaid a day later, and once more about three days after that. Two per charge at most. You can also send it yourself from a student's page."
+        },
+        "classReminder": {
+          "name": "Class reminder",
+          "when": "On the morning of a day one of your private groups has a class."
+        },
+        "scheduleChanged": {
+          "name": "Schedule changed",
+          "when": "When you change a private group's weekly schedule."
+        },
+        "classCancelled": {
+          "name": "Class cancelled",
+          "when": "When you cancel a single class."
+        },
+        "classRescheduled": {
+          "name": "Class moved",
+          "when": "When you move a single class to another date or time."
+        }
+      }
     },
     "studentsList": {
       "searchPlaceholder": "Search students",
@@ -9070,6 +9194,8 @@
       "cutLabel": "your share {pct}",
       "unknownCenter": "Center",
       "fromCentersCaption": "From {count} centers · settled monthly",
+      "statThisMonth": "This month",
+      "statAllTime": "All time",
       "yourCenters": "Your centers",
       "centersActiveCount": "{count} active",
       "centersActiveCountOne": "{count} active",
@@ -9126,7 +9252,14 @@
         "shareWhatsapp": "Share on WhatsApp",
         "waMessage": "Join the {group} group on TutoringHQ: {url}",
         "note": "Students tap the link, verify their number, and they're enrolled automatically."
-      }
+      },
+      "perClassLabel": "per class",
+      "statStudents": "Students",
+      "statPerClass": "Per class",
+      "headerSummary": "{count} students · {fee} per session",
+      "recentClasses": "Recent classes",
+      "seeAllClasses": "See all",
+      "presentCount": "{count} present"
     },
     "groupTabs": {
       "tabOverview": "Overview",
@@ -9217,7 +9350,15 @@
       "contactStudent": "Student",
       "contactParent": "Parent",
       "callAction": "Call",
-      "messageAction": "Message on WhatsApp"
+      "messageAction": "Message on WhatsApp",
+      "joinedOn": "Joined {date}",
+      "enrolledHeading": "Enrolled · {count}",
+      "enrolledSub": "Tap a name for their details.",
+      "queueNote": "These asked to join through this group's link. Approving adds them to {group} only.",
+      "queueOtherGroupsNote": "Requests for your other groups sit in those groups. Each link only ever fills the group it belongs to.",
+      "more": "More",
+      "openStudent": "Open student",
+      "rowActions": "Actions for {name}"
     },
     "notes": {
       "toggle": "Private note",
@@ -9877,6 +10018,43 @@
       "clear": "Clear filters",
       "noMatch": "No rows match",
       "search": "Search"
+    }
+  },
+  "ceoBoard": {
+    "title": "Board",
+    "bySegment": "BY SEGMENT",
+    "hero": {
+      "totalRevenue": "Total revenue this month",
+      "vsLastMonth": "{pct} vs last month"
+    },
+    "chart": {
+      "title": "Revenue, last {count} months"
+    },
+    "kpi": {
+      "mrr": "MRR (subscriptions)",
+      "activeAccounts": "Active accounts",
+      "newAccounts": "New accounts this month",
+      "netNewCenters": "Net new centers",
+      "centerChurn": "Center churn",
+      "arpu": "ARPU"
+    },
+    "segment": {
+      "centers": "Centers",
+      "teachers": "Teachers",
+      "accounts": "Accounts",
+      "mrr": "MRR",
+      "revenueThisMonth": "Collected this month",
+      "growth": "Growth this month"
+    },
+    "basis": "Revenue counts paid invoices by Cairo calendar month. Churn and net new are center-only: teacher cancellations have no date column to count them by. Test accounts are excluded.",
+    "teachers": {
+      "title": "Teacher overview",
+      "activeTeachers": "Active teachers",
+      "classesThisMonth": "Classes this month",
+      "billableSubs": "Billable subscriptions",
+      "byPlan": "BY PLAN",
+      "planLine": "{tier} · {price}/mo",
+      "teacherCount": "{count} teachers"
     }
   },
   "supportFab": {

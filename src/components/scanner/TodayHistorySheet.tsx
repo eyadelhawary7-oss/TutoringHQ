@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
+import { ScanLine } from 'lucide-react';
+import { EmptyState } from '@/components/shared';
 import { formatDate } from '@/lib/formatNumber';
 import type { TodayHistoryRow, TodayHistoryScanStatus } from '@/lib/db';
 
@@ -71,7 +73,10 @@ export default function TodayHistorySheet({ open, onClose, rows }: TodayHistoryS
         </div>
         <div className="flex-1 overflow-y-auto divide-y divide-[var(--color-border-subtle)]">
           {filtered.length === 0 ? (
-            <p className="p-8 text-center text-sm text-[var(--color-text-secondary)]">{t('empty')}</p>
+            /* §01 quiet variant: today's scan log fills itself as the door is
+               worked. Nothing is waiting on the person reading it, so no action
+               and the muted tile rather than the mint one. */
+            <EmptyState icon={ScanLine} title={t('empty')} quiet />
           ) : (
             filtered.map((r) => (
               <div key={r.id} className="px-4 py-3 flex gap-3">

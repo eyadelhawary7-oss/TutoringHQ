@@ -4,9 +4,16 @@
  * `Merged-Admin-Platform` §02 — the growth header and the breakdown lists.
  *
  * The design's two frames in the design's order: the All / Centers / Teachers
- * segment, the MRR hero with month-over-month, the four growth tiles, then
- * TOP BY REVENUE and BY PLAN. The live screen's ratio KPIs and status donuts
- * stay underneath.
+ * segment, the MRR hero with month-over-month, the "Revenue, last 6 months"
+ * chart, the four growth tiles, then TOP BY REVENUE and BY PLAN. The live
+ * screen's ratio KPIs and status donuts stay underneath.
+ *
+ * The six-month chart is NOT a new figure. `/api/admin/overview` has always
+ * returned `monthlyRevenue` — six `{ month, revenue }` buckets summed from paid
+ * `invoices.payment_amount` — and `/admin` already charts it. §02 drew the same
+ * block and simply never rendered it here. It is labelled "revenue collected",
+ * not MRR: the hero above it is recurring revenue and these bars are cash in,
+ * two different measures that must not be read as one series.
  *
  * The segment filters the FIGURES, not just a list — picking Centers shows the
  * centre MRR, centre accounts and centre ARPU, because a segmented control that
@@ -33,6 +40,7 @@ import { EmptyState } from '@/components/shared';
 import { ListRow } from '@/components/patterns';
 import { initialsOf } from '@/lib/initials';
 import { formatCurrency, formatNumber, formatPercent } from '@/lib/formatNumber';
+import { barHeightPct, monthLabel } from '@/lib/adminPlatformDisplay';
 import type { CustomerSplitView } from '@/components/admin/PlatformOverviewHeader';
 
 export interface TopAccountView {
@@ -50,10 +58,17 @@ export interface PlanCountView {
   accounts: number;
 }
 
+/** One bucket of `/api/admin/overview`'s `monthlyRevenue`. `month` is `YYYY-MM`. */
+export interface MonthlyRevenueView {
+  month: string;
+  revenue: number;
+}
+
 interface Props {
   split: CustomerSplitView | null;
   topByRevenue: TopAccountView[] | null;
   planMix: PlanCountView[] | null;
+  monthlyRevenue: MonthlyRevenueView[] | null;
   mrrGrowthPct: number | null;
   churnRatePct: number | null;
   planLabel: (planKey: string) => string;
@@ -65,6 +80,7 @@ export default function AnalyticsGrowthHeader({
   split,
   topByRevenue,
   planMix,
+  monthlyRevenue,
   mrrGrowthPct,
   churnRatePct,
   planLabel,
@@ -91,6 +107,10 @@ export default function AnalyticsGrowthHeader({
     if (segment === 'teachers') return rows.filter((r) => r.kind === 'teacher');
     return rows;
   }, [topByRevenue, segment]);
+
+  const months = monthlyRevenue ?? [];
+  const maxMonthRevenue = months.reduce((max, m) => Math.max(max, Number(m.revenue) || 0), 0);
+  const maxPlanAccounts = (planMix ?? []).reduce((max, p) => Math.max(max, p.accounts), 0);
 
   if (!split || !figures) return null;
 
@@ -146,6 +166,56 @@ export default function AnalyticsGrowthHeader({
           )}
         </div>
       </div>
+
+      {/*
+        "Revenue, last 6 months". The design's own caption is just "Revenue" —
+        spelled out here as collected revenue because it sits directly under an
+        MRR hero and the two are different measures.
+
+        The segment above does NOT filter this: `monthlyRevenue` is summed from
+        paid invoices with no centre/teacher split, so re-labelling it under
+        Centers or Teachers would attribute a total to a segment the data does
+        not break down. It stays whole-platform, like the growth badge.
+      */}
+      {months.length > 0 && (
+        <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
+          <p className="text-sm font-semibold text-[var(--color-text-primary)]">
+            {t('revenueLastMonthsHeading', { count: formatNumber(months.length, locale) })}
+          </p>
+          <div className="mt-4 flex h-32 items-end gap-2" role="presentation">
+            {months.map((m) => (
+              <div
+                key={m.month}
+                className="flex min-w-0 flex-1 items-end self-stretch rounded-t-md bg-[var(--color-surface-2)]"
+              >
+                <div
+                  className={`w-full rounded-t-md ${
+                    m.month === months[months.length - 1]?.month
+                      ? 'bg-[var(--color-brand-500)]'
+                      : 'bg-[var(--color-mint)]'
+                  }`}
+                  style={{ height: `${barHeightPct(m.revenue, maxMonthRevenue)}%` }}
+                />
+              </div>
+            ))}
+          </div>
+          <div className="mt-2 flex gap-2">
+            {months.map((m) => (
+              <span
+                key={m.month}
+                className="min-w-0 flex-1 truncate text-center text-[11px] text-[var(--color-text-muted)]"
+              >
+                {monthLabel(m.month, locale)}
+              </span>
+            ))}
+          </div>
+          <p className="mt-3 text-xs text-[var(--color-text-muted)]">
+            {t('revenueLastMonthsNote', {
+              amount: formatCurrency(months[months.length - 1]?.revenue ?? 0, locale),
+            })}
+          </p>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Tile value={formatNumber(figures.accounts, locale)} label={t('activeAccounts')} />
@@ -212,18 +282,30 @@ export default function AnalyticsGrowthHeader({
           <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
             {t('byPlanHeading')}
           </h3>
+          {/*
+            The design draws each plan as a label/count row over a filled
+            track. The track is proportional to the LARGEST plan, not to the
+            total: with four plans a share-of-total bar is a sliver at every
+            realistic mix and stops being readable, which is the one job it has.
+          */}
           <div className="overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)]">
             {planMix.map((row, i) => (
               <div
                 key={row.plan}
-                className={`flex items-center justify-between gap-3 px-4 py-3 ${
-                  i > 0 ? 'border-t border-[var(--color-border)]' : ''
-                }`}
+                className={`px-4 py-3 ${i > 0 ? 'border-t border-[var(--color-border)]' : ''}`}
               >
-                <span className="text-sm text-[var(--color-text-primary)]">{planLabel(row.plan)}</span>
-                <span className="text-sm text-[var(--color-text-secondary)]">
-                  {t('accountsCount', { count: formatNumber(row.accounts, locale) })}
-                </span>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm text-[var(--color-text-primary)]">{planLabel(row.plan)}</span>
+                  <span className="text-sm text-[var(--color-text-secondary)]">
+                    {t('accountsCount', { count: formatNumber(row.accounts, locale) })}
+                  </span>
+                </div>
+                <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-[var(--color-surface-2)]">
+                  <div
+                    className="h-full rounded-full bg-[var(--color-brand-500)]"
+                    style={{ inlineSize: `${barHeightPct(row.accounts, maxPlanAccounts)}%` }}
+                  />
+                </div>
               </div>
             ))}
           </div>

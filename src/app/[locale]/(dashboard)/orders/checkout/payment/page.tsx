@@ -1,9 +1,11 @@
 'use client';
 
 import { Suspense, useEffect, useMemo, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
+import { Lock } from 'lucide-react';
 import { useRouter } from '@/i18n/routing';
+import { formatCurrency } from '@/lib/formatNumber';
 import { supabase } from '@/lib/supabase';
 import { clearCheckoutPaymentSession, readCheckoutPaymentSession } from '../CheckoutShell';
 
@@ -13,6 +15,7 @@ const TIMEOUT_SEC = 300;
 function PaymentInner() {
   const t = useTranslations('checkout.payment');
   const tCommon = useTranslations('common');
+  const locale = useLocale();
   const router = useRouter();
   const searchParams = useSearchParams();
   const orderIdFromUrl = searchParams?.get('orderId')?.trim() ?? '';
@@ -21,6 +24,13 @@ function PaymentInner() {
   const [orderId, setOrderId] = useState<string>(orderIdFromUrl);
   const [recoverError, setRecoverError] = useState<string | null>(null);
   const [remaining, setRemaining] = useState(TIMEOUT_SEC);
+  /**
+   * §03 step 4 shows the amount about to be charged. This is the order's own
+   * stored `total_amount`, echoed verbatim — nothing is recomputed here, so the
+   * figure on screen is the figure Paymob is being asked for. Null until the
+   * first poll returns; rendered as "not available" rather than as a zero.
+   */
+  const [totalAmount, setTotalAmount] = useState<number | null>(null);
 
   const shortRef = useMemo(() => (orderId ? orderId.replace(/-/g, '').slice(-8).toUpperCase() : ''), [orderId]);
 
@@ -64,6 +74,9 @@ function PaymentInner() {
         return;
       }
       const ord = (await ordRes.json()) as { payment_status?: string; total_amount?: number };
+      if (ord.total_amount != null && Number.isFinite(Number(ord.total_amount)) && !cancelled) {
+        setTotalAmount(Number(ord.total_amount));
+      }
       if (ord.payment_status === 'paid') {
         clearCheckoutPaymentSession();
         router.replace(`/orders/checkout/success/${encodeURIComponent(orderIdFromUrl)}`);
@@ -107,7 +120,10 @@ function PaymentInner() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) return;
-      const row = (await res.json()) as { payment_status?: string };
+      const row = (await res.json()) as { payment_status?: string; total_amount?: number };
+      if (row.total_amount != null && Number.isFinite(Number(row.total_amount)) && !cancelled) {
+        setTotalAmount(Number(row.total_amount));
+      }
       if (row.payment_status === 'paid' && !cancelled) {
         clearCheckoutPaymentSession();
         router.replace(`/orders/checkout/success/${encodeURIComponent(orderId)}`);
@@ -134,6 +150,12 @@ function PaymentInner() {
           {t('timeout', { mm, ss })}
         </p>
       </div>
+      <div className="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] px-4 py-3">
+        <span className="text-sm text-[var(--color-text-secondary)]">{t('total')}</span>
+        <span className="text-lg font-bold tabular-nums text-teal-700">
+          {totalAmount != null ? formatCurrency(totalAmount, locale) : tCommon('notAvailable')}
+        </span>
+      </div>
       <p className="text-sm font-medium text-amber-800 bg-amber-500/15 border border-amber-500/30 rounded-lg px-3 py-2">
         {t('iframeWarning')}
       </p>
@@ -148,6 +170,10 @@ function PaymentInner() {
       ) : !recoverError ? (
         <p className="text-sm text-[var(--color-text-secondary)]">{t('loadingIframe')}</p>
       ) : null}
+      <p className="flex items-center justify-center gap-1.5 text-[11px] text-[var(--color-text-tertiary)]">
+        <Lock className="h-3.5 w-3.5" aria-hidden />
+        {t('securedBy')}
+      </p>
     </div>
   );
 }

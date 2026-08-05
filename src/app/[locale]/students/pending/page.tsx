@@ -3,11 +3,19 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
-import { ChevronLeft, Inbox, Loader2, Phone, MessageCircle } from 'lucide-react';
+import { Check, ChevronLeft, Inbox, Loader2, Phone, MessageCircle, X } from 'lucide-react';
 import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
+import { ListSkeleton } from '@/components/patterns';
+import { EmptyState } from '@/components/shared';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/ToastProvider';
 import { Modal } from '@/components/ui/Modal';
+import {
+  ActionSheet,
+  ExpandableRow,
+  type InlineAction,
+  type SheetAction,
+} from '@/components/patterns';
 import {
   formatNumber,
   formatPhoneLeadPlus,
@@ -125,6 +133,18 @@ export default function PendingEnrollmentsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [rejecting, setRejecting] = useState(false);
   const [modalError, setModalError] = useState('');
+
+  // §04's Pending frame: exactly one row is open at a time, and the open row is
+  // the one carrying the action chips. `ExpandableRow` owns the shape; this only
+  // holds which id is open.
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [sheetTarget, setSheetTarget] = useState<PendingEnrollment | null>(null);
+  // Decline is a one-tap chip in the design. Live it is a real state write that
+  // cannot be undone from this screen, so it goes through a confirm first —
+  // the chip stays where the design puts it, the write does not become a slip.
+  const [declineTarget, setDeclineTarget] = useState<PendingEnrollment | null>(null);
+  const [listDeclining, setListDeclining] = useState(false);
+  const [listError, setListError] = useState('');
 
   const loadPending = async () => {
     setError('');
@@ -251,22 +271,21 @@ export default function PendingEnrollmentsPage() {
     }
   };
 
-  const handleReject = async () => {
-    if (!reviewing) return;
-    setModalError('');
-    setRejecting(true);
-
+  /**
+   * The one decline write. Both entry points — the review modal's Decline
+   * button and §04's inline Decline chip — call this, so the two can never
+   * drift into two different requests against the same endpoint.
+   *
+   * Returns an error message to display, or null on success.
+   */
+  const rejectRequest = async (target: PendingEnrollment): Promise<string | null> => {
     try {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      if (!session) {
-        setModalError(t('loadError'));
-        setRejecting(false);
-        return;
-      }
+      if (!session) return t('loadError');
 
-      const res = await fetch(`/api/students/pending/${reviewing.id}/reject`, {
+      const res = await fetch(`/api/students/pending/${target.id}/reject`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${session.access_token}`,
@@ -274,19 +293,137 @@ export default function PendingEnrollmentsPage() {
       });
 
       const data = (await res.json().catch(() => ({}))) as { error?: string };
-      if (!res.ok) {
-        setModalError(data.error || t('declineError'));
-        return;
-      }
+      if (!res.ok) return data.error || t('declineError');
 
       toast.success(t('declineSuccess'));
-      setList((prev) => (prev ?? []).filter((p) => p.id !== reviewing.id));
-      setReviewing(null);
+      setList((prev) => (prev ?? []).filter((p) => p.id !== target.id));
+      return null;
     } catch {
-      setModalError(t('declineError'));
-    } finally {
-      setRejecting(false);
+      return t('declineError');
     }
+  };
+
+  const handleReject = async () => {
+    if (!reviewing) return;
+    setModalError('');
+    setRejecting(true);
+    const err = await rejectRequest(reviewing);
+    if (err) setModalError(err);
+    else setReviewing(null);
+    setRejecting(false);
+  };
+
+  const handleDeclineFromList = async () => {
+    if (!declineTarget) return;
+    setListError('');
+    setListDeclining(true);
+    const err = await rejectRequest(declineTarget);
+    if (err) setListError(err);
+    else {
+      setExpandedId((id) => (id === declineTarget.id ? null : id));
+      setDeclineTarget(null);
+    }
+    setListDeclining(false);
+  };
+
+  /** The design's row meta: which group was asked for, and how long ago. */
+  const rowMeta = (p: PendingEnrollment): string =>
+    [p.group_name || null, t('asked', { ago: formatRelativeMinutesAgo(p.created_at, locale) })]
+      .filter(Boolean)
+      .join(' · ');
+
+  /**
+   * §04 draws two inline chips (Approve, Decline) plus More. Approve opens the
+   * request detail rather than posting straight from the list: the approve
+   * endpoint requires `guardianConsentConfirmed`, and that checkbox is a legal
+   * gate, not a form field to be defaulted past.
+   */
+  const inlineActionsFor = (p: PendingEnrollment): InlineAction[] => [
+    {
+      id: 'approve',
+      label: t('review'),
+      icon: Check,
+      onSelect: () => openReview(p),
+    },
+    {
+      id: 'decline',
+      label: t('decline'),
+      icon: X,
+      onSelect: () => {
+        setListError('');
+        setDeclineTarget(p);
+      },
+    },
+  ];
+
+  /**
+   * §04's kebab. Everything here is reachable without approving, which is what
+   * the design's "Reach either of them without approving first" asks for.
+   * A number that is absent produces no action rather than a dead one.
+   */
+  const sheetActionsFor = (p: PendingEnrollment): SheetAction[] => {
+    const studentDigits = formatPhoneLeadPlus(p.student_phone).replace(/\D/g, '');
+    const parentDigits = p.parent_phone
+      ? formatPhoneLeadPlus(p.parent_phone).replace(/\D/g, '')
+      : '';
+    const open = (href: string, external: boolean) => () => {
+      setSheetTarget(null);
+      window.open(href, external ? '_blank' : '_self', 'noopener,noreferrer');
+    };
+    return [
+      {
+        id: 'review',
+        label: t('review'),
+        icon: Check,
+        onSelect: () => {
+          setSheetTarget(null);
+          openReview(p);
+        },
+      },
+      ...(studentDigits
+        ? [
+            {
+              id: 'call-student',
+              label: t('callStudent'),
+              icon: Phone,
+              onSelect: open(`tel:+${studentDigits}`, false),
+            },
+            {
+              id: 'wa-student',
+              label: t('waStudent'),
+              icon: MessageCircle,
+              onSelect: open(`https://wa.me/${studentDigits}`, true),
+            },
+          ]
+        : []),
+      ...(parentDigits
+        ? [
+            {
+              id: 'call-parent',
+              label: t('callParent'),
+              icon: Phone,
+              onSelect: open(`tel:+${parentDigits}`, false),
+            },
+            {
+              id: 'wa-parent',
+              label: t('waParent'),
+              icon: MessageCircle,
+              onSelect: open(`https://wa.me/${parentDigits}`, true),
+            },
+          ]
+        : []),
+      {
+        id: 'decline',
+        label: t('decline'),
+        icon: X,
+        destructive: true,
+        onSelect: () => {
+          setSheetTarget(null);
+          setListError('');
+          setDeclineTarget(p);
+        },
+      },
+    ];
   };
 
   const totalCount = useMemo(() => (list ? list.length : 0), [list]);
@@ -296,7 +433,9 @@ export default function PendingEnrollmentsPage() {
       dir={isRTL ? 'rtl' : 'ltr'}
       className="min-h-screen w-full min-w-0 overflow-x-clip bg-[var(--color-surface-0)] page-enter max-md:pb-[calc(56px_+_env(safe-area-inset-bottom,0px))] md:pb-0"
     >
-      <div className="mx-auto w-full max-w-5xl px-4 pt-4 pb-3">
+      {/* max-w-3xl, matching the roster this screen hangs off. The old 5xl was
+          sized for the desktop table that §04's row list replaces. */}
+      <div className="mx-auto w-full max-w-3xl px-4 pt-4 pb-3">
         <div className="mb-4 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <Link
@@ -312,7 +451,10 @@ export default function PendingEnrollmentsPage() {
         <div className="mb-4">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{t('title')}</h1>
-            <span className="inline-flex items-center rounded-full bg-teal-600 px-2.5 py-0.5 text-xs font-semibold tabular-nums text-white shrink-0">
+            {/* §04's topbar count is a DANGER pill (#F4E5E2 on #9C3322), not
+                the teal it was: a queue of people waiting on an answer is a
+                backlog, and the design colours it as one. */}
+            <span className="inline-flex shrink-0 items-center rounded-full bg-[#F4E5E2] px-2.5 py-0.5 text-xs font-semibold tabular-nums text-[#9C3322]">
               {list === null ? '\u2013' : formatNumber(totalCount, locale)}
             </span>
           </div>
@@ -320,136 +462,66 @@ export default function PendingEnrollmentsPage() {
         </div>
 
         {list === null ? (
-          <div className="flex items-center justify-center rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] py-16">
-            <Loader2 size={20} className="animate-spin text-[var(--color-text-muted)]" />
-          </div>
+          /* §02 · "Never a spinner in the middle of an empty screen." This is a
+             list of pending signups, so it gets the list skeleton — the rows'
+             shape, at the rows' height. */
+          <ListSkeleton rows={4} />
         ) : list.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-md border border-dashed border-[var(--color-border)] bg-[var(--color-panel)] py-16 text-center">
-            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-surface-2)] text-[var(--color-text-muted)]">
-              <Inbox size={22} />
-            </div>
-            <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">
-              {t('emptyTitle')}
-            </h2>
-            <p className="mt-1 max-w-xs text-xs text-[var(--color-text-secondary)]">
-              {t('emptyDescription')}
-            </p>
+          /* §01 quiet variant · a pending signup arrives from a parent's
+             self-serve link; the owner cannot create one from here, so there is
+             no action and the tile is muted. The tile was a 48px `rounded-full`
+             circle, which is the older `empty-states/EmptyState` shape rather
+             than §01's 64×64 `rounded-lg`. The error line stays OUTSIDE the
+             empty state — an error is not §01's `.es-alt` quiet alternative. */
+          <div className="rounded-md border border-dashed border-[var(--color-border)] bg-[var(--color-panel)] py-6">
+            <EmptyState
+              icon={Inbox}
+              title={t('emptyTitle')}
+              description={t('emptyDescription')}
+              quiet
+            />
             {error ? (
-              <p className="mt-3 text-xs text-[var(--color-danger)]">{error}</p>
+              <p className="px-6 text-center text-xs text-[var(--color-danger)]">{error}</p>
             ) : null}
           </div>
         ) : (
           <>
-            <div className="hidden md:block overflow-hidden rounded-md border border-[var(--color-line)] bg-[var(--color-panel)]">
-              <table className="w-full text-sm">
-                <thead className="bg-[var(--color-surface-2)] text-xs uppercase tracking-wide text-[var(--color-text-muted)]">
-                  <tr>
-                    <th className="px-4 py-2.5 text-start font-semibold">{t('studentName')}</th>
-                    <th className="px-4 py-2.5 text-start font-semibold">{t('studentPhone')}</th>
-                    <th className="px-4 py-2.5 text-start font-semibold">{t('parentPhone')}</th>
-                    <th className="px-4 py-2.5 text-start font-semibold">{t('group')}</th>
-                    <th className="px-4 py-2.5 text-start font-semibold">{t('createdAt')}</th>
-                    <th className="px-4 py-2.5 text-end font-semibold">{t('actions')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {list.map((p) => (
-                    <tr
-                      key={p.id}
-                      className="border-t border-[var(--color-line)] hover:bg-[var(--color-surface-2)]/50"
-                    >
-                      <td className="px-4 py-3 text-[var(--color-text-primary)]">
-                        <span className="flex items-center gap-2.5">
-                          <span
-                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-surface-2)] text-[11px] font-semibold uppercase text-[var(--color-text-secondary)]"
-                            aria-hidden
-                          >
-                            {initialsOf(p.student_name)}
-                          </span>
-                          {p.student_name}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-[var(--color-text-secondary)]" dir="ltr">
-                        {p.student_phone}
-                      </td>
-                      <td className="px-4 py-3 text-[var(--color-text-secondary)]" dir="ltr">
-                        {p.parent_phone || '\u2014'}
-                      </td>
-                      <td className="px-4 py-3 text-[var(--color-text-secondary)]">
-                        {p.group_name || '\u2014'}
-                      </td>
-                      {/* Design frames this as "Asked 2 days ago" — how long
-                          someone has been waiting is the actionable fact. The
-                          exact timestamp stays underneath. */}
-                      <td className="px-4 py-3 text-xs text-[var(--color-text-muted)]">
-                        <span className="block text-[var(--color-text-secondary)]">
-                          {t('asked', { ago: formatRelativeMinutesAgo(p.created_at, locale) })}
-                        </span>
-                        <span className="block tabular-nums">
-                          {formatCreatedAt(p.created_at, locale)}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-end">
-                        <button
-                          type="button"
-                          onClick={() => openReview(p)}
-                          className="rounded-lg bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-teal-700"
-                        >
-                          {t('review')}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            {/* §04 Pending — the design's row list, not a table. One row opens
+                at a time and carries its chips inline; the three-dot on any row
+                jumps straight to the same sheet. Both come from the shared
+                primitives (`ExpandableRow`, `ActionSheet`), which is what
+                `Merged-Design-Patterns` §04/§06 require of any screen with a
+                row action or a quick menu.
 
-            <div className="md:hidden space-y-2">
+                NOT DRAWN, AND NOT INVENTED: §04 puts an origin badge on every
+                row ("Invite link" vs "Sign-up") and a "Came via" row in the
+                detail. `pending_enrollments` has no column carrying it —
+                re-read live this pass, the table is exactly id, center_id,
+                group_id, student_name, student_phone, parent_phone, notes,
+                status, created_at, student_id. Both live insert sites write the
+                identical set, so the fact is lost at insert, not merely
+                unrendered. Stamping it needs a new column (F12). Same for the
+                detail's "Grade" and "School" rows: there is no
+                `pending_enrollments.grade_level` and no `school` column
+                anywhere in the schema. */}
+            <div className="flex flex-col gap-2">
               {list.map((p) => (
-                <div
+                <ExpandableRow
                   key={p.id}
-                  className="rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] p-4"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex min-w-0 items-center gap-2.5">
-                      <span
-                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-surface-2)] text-[11px] font-semibold uppercase text-[var(--color-text-secondary)]"
-                        aria-hidden
-                      >
-                        {initialsOf(p.student_name)}
-                      </span>
-                      <div className="min-w-0">
-                        <h3 className="font-semibold text-[var(--color-text-primary)]">
-                          {p.student_name}
-                        </h3>
-                        <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]" dir="ltr">
-                          {p.student_phone}
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => openReview(p)}
-                      className="rounded-lg bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-teal-700"
-                    >
-                      {t('review')}
-                    </button>
-                  </div>
-                  <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
-                    <dt className="text-[var(--color-text-muted)]">{t('parentPhone')}</dt>
-                    <dd className="text-[var(--color-text-primary)]" dir="ltr">
-                      {p.parent_phone || '\u2014'}
-                    </dd>
-                    <dt className="text-[var(--color-text-muted)]">{t('group')}</dt>
-                    <dd className="text-[var(--color-text-primary)]">{p.group_name || '\u2014'}</dd>
-                    <dt className="text-[var(--color-text-muted)]">{t('createdAt')}</dt>
-                    <dd className="text-[var(--color-text-secondary)]">
-                      {t('asked', { ago: formatRelativeMinutesAgo(p.created_at, locale) })}
-                    </dd>
-                  </dl>
-                </div>
+                  avatar={initialsOf(p.student_name)}
+                  title={p.student_name}
+                  meta={rowMeta(p)}
+                  expanded={expandedId === p.id}
+                  onToggle={() => setExpandedId(expandedId === p.id ? null : p.id)}
+                  inlineActions={inlineActionsFor(p)}
+                  onMore={() => setSheetTarget(p)}
+                  moreLabel={t('more')}
+                />
               ))}
             </div>
+            {listError ? (
+              <p className="mt-3 text-xs text-[var(--color-danger)]">{listError}</p>
+            ) : null}
           </>
         )}
       </div>
@@ -637,6 +709,64 @@ export default function PendingEnrollmentsPage() {
               </button>
             </div>
           </form>
+        </Modal>
+      ) : null}
+
+      {/* §04's kebab and the expanded row's More chip open the same sheet —
+          `Merged-Design-Patterns` §04's "one sheet, one gesture". */}
+      <ActionSheet
+        open={sheetTarget !== null}
+        onClose={() => setSheetTarget(null)}
+        title={sheetTarget?.student_name ?? ''}
+        subtitle={sheetTarget ? rowMeta(sheetTarget) : undefined}
+        actions={sheetTarget ? sheetActionsFor(sheetTarget) : []}
+      />
+
+      {/* The confirm behind the inline Decline chip. Says what declining does
+          rather than only asking whether to do it. */}
+      {declineTarget ? (
+        <Modal
+          open
+          onClose={() => {
+            if (!listDeclining) setDeclineTarget(null);
+          }}
+          title={t('declineConfirmTitle')}
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-[var(--color-text-secondary)]">
+              {t('declineConfirmBody', { name: declineTarget.student_name })}
+            </p>
+            {listError ? (
+              <div className="rounded-lg border border-[var(--color-danger)]/30 bg-[var(--color-danger-muted)] px-3 py-2 text-sm text-[var(--color-danger)]">
+                {listError}
+              </div>
+            ) : null}
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                disabled={listDeclining}
+                onClick={() => setDeclineTarget(null)}
+                className="rounded-lg border border-[var(--color-border)] px-4 py-2 text-sm font-medium text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-text-primary)] disabled:opacity-60"
+              >
+                {t('cancel')}
+              </button>
+              <button
+                type="button"
+                disabled={listDeclining}
+                onClick={() => void handleDeclineFromList()}
+                className="flex items-center gap-2 rounded-lg border border-[var(--color-danger)]/30 bg-[var(--color-danger-muted)] px-4 py-2 text-sm font-semibold text-[var(--color-danger)] transition-colors hover:bg-[var(--color-danger)]/15 disabled:opacity-60"
+              >
+                {listDeclining ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" />
+                    <span>{t('declining')}</span>
+                  </>
+                ) : (
+                  t('decline')
+                )}
+              </button>
+            </div>
+          </div>
         </Modal>
       ) : null}
     </div>
