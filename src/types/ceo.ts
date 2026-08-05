@@ -195,6 +195,84 @@ export interface CeoTeacherCombined {
   total_teachers: number
 }
 
+/** One tier of `Merged-CEO` §02's plan-mix bars. */
+export interface CeoTeacherPlanMix {
+  plan_key: string
+  /** VAT-inclusive monthly list price from `TEACHER_PLANS`, EGP. */
+  price_gross: number
+  /** Teachers on this tier with a billable subscription. */
+  teachers: number
+}
+
+/**
+ * `Merged-CEO` §02 overview strip. See `getCeoTeacherOverview` for which of the
+ * design's tiles are omitted and the exact column missing behind each.
+ */
+export interface CeoTeacherOverview {
+  /** Cairo month these figures describe, `YYYY-MM`. */
+  month: string
+  /** Non-test teacher profiles. */
+  active_teachers: number
+  /** Subscriptions in a billable status (`active` | `past_due`). */
+  billable_subscriptions: number
+  /** Sessions finished this Cairo month on a non-test teacher's group. */
+  classes_this_month: number
+  teacher_mrr: number
+  plans: CeoTeacherPlanMix[]
+}
+
+/** One Cairo calendar month of paid-invoice revenue (`Merged-CEO` §01 chart). */
+export interface CeoBoardMonthPoint {
+  /** Cairo calendar month, `YYYY-MM`. */
+  month: string
+  /** Sum of `invoices.total_amount` for paid invoices in that month, EGP. */
+  revenue: number
+}
+
+/** One side of `Merged-CEO` §01's two segment cards. */
+export interface CeoBoardSegment {
+  accounts: number
+  mrr: number
+  /**
+   * Center MRR recorded in `mrr_snapshots` on the first Cairo day of the month,
+   * used for the segment's growth row. Null when no snapshot exists for that
+   * date — and null always on the teacher side, which `mrr_snapshots` does not
+   * cover (the table has `active_centers`, no teacher equivalent).
+   */
+  mrr_at_month_start: number | null
+  /** Paid-invoice revenue this Cairo month for this segment. */
+  revenue_this_month: number
+}
+
+/**
+ * `Merged-CEO` §01 board figures. Read-only aggregates — see `src/lib/ceoBoard.ts`
+ * for the source of each field and why churn/net-new are center-scoped.
+ */
+export interface CeoBoardData {
+  /** Cairo month these figures describe, `YYYY-MM`. */
+  month: string
+  revenue_this_month: number
+  revenue_prior_month: number
+  /** Oldest → newest, always `REVENUE_MONTHS` entries long. */
+  revenue_series: CeoBoardMonthPoint[]
+  mrr_total: number
+  active_accounts: number
+  /** Centers + teachers created this Cairo month. */
+  new_accounts: number
+  /** Centers whose cancellation was approved this Cairo month. */
+  churned_centers: number
+  /** `new centers − churned centers`. Center-scoped: teacher churn is undatable. */
+  net_new_centers: number
+  center: CeoBoardSegment
+  teacher: CeoBoardSegment
+  /** Center churn as a percent of centers active at month start. Null when unknown. */
+  churn_rate_pct: number | null
+  /** The churn denominator, surfaced so the UI can omit rather than mislead. */
+  active_centers_at_month_start: number | null
+  /** Total MRR per active account. Null when there are no accounts. */
+  arpu: number | null
+}
+
 // ActionQueueSummary and PipelineSummary already exist in this file — reference directly
 export interface CeoDashboardData {
   hero: CeoHero

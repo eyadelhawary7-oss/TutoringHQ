@@ -43,8 +43,16 @@
  * least-privilege control over it. The chip carries no ID and has no prop that
  * could take one.
  *
+ * **The Branches row is BUILT.** It was previously omitted as "no `branches`
+ * table exists" — true, and beside the point. A branch in this product is a
+ * `centers` row grouped by `centers.organization_id`, which is exactly what
+ * `/api/branches` creates and lists; the count now comes from that column. A
+ * centre with no organisation is one branch (itself), not zero — see
+ * `resolveBranchCount`. The row carries its figure and no chevron, the same as
+ * Students and Teachers & staff: the number is real, the admin-side destination
+ * is what does not exist.
+ *
  * OMITTED, each for a named missing column — never stubbed, never greyed:
- *  - **Branches row.** No `branches` table exists.
  *  - **"Log in as center" action.** No impersonation exists anywhere in the
  *    codebase; the row would be a button with nothing behind it.
  *
@@ -63,6 +71,7 @@ import {
   Users,
   GraduationCap,
   History,
+  Network,
   StickyNote,
   Ban,
   ChevronLeft,
@@ -80,6 +89,7 @@ export interface AccountMetrics {
   addOnCount: number;
   attendanceRatePct: number | null;
   attendanceWindowDays: number;
+  branchCount: number | null;
 }
 
 interface AccountDetailHeaderProps {
@@ -157,6 +167,16 @@ export default function AccountDetailHeader({
       icon: Users,
       label: t('manage.staff'),
       value: metrics ? formatNumber(metrics.teacherStaffCount, locale) : null,
+      anchor: null,
+    },
+    // Branches sits between staff and the activity log, the design's own order.
+    // `branchCount` is null only when the org count failed, and then the row
+    // shows its label with no figure rather than a number nothing established.
+    {
+      key: 'branches',
+      icon: Network,
+      label: t('manage.branches'),
+      value: metrics?.branchCount != null ? formatNumber(metrics.branchCount, locale) : null,
       anchor: null,
     },
     { key: 'activity', icon: History, label: t('manage.activityLog'), value: null, anchor: 'acct-activity' },

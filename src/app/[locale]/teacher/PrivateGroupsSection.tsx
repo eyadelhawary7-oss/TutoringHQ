@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { Archive, ChevronDown, Loader2, Plus, Users } from 'lucide-react';
+import { Archive, ChevronDown, ChevronLeft, ChevronRight, Loader2, Plus, Users } from 'lucide-react';
 import { Link, useRouter } from '@/i18n/routing';
+import { EmptyState } from '@/components/shared';
 import { supabase } from '@/lib/supabase';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import { formatCurrency, formatNumber } from '@/lib/formatNumber';
@@ -41,6 +42,7 @@ export default function PrivateGroupsSection({
   const tCaps = useTranslations('caps');
   const locale = useLocale();
   const router = useRouter();
+  const Chevron = locale === 'ar' || locale.startsWith('ar-') ? ChevronLeft : ChevronRight;
 
   const [planKey, setPlanKey] = useState<string | null>(null);
   const [groups, setGroups] = useState<PrivateGroup[] | null>(null);
@@ -147,7 +149,13 @@ export default function PrivateGroupsSection({
           {initialsOf(g.name)}
         </span>
         <div className="min-w-0">
-          <p className="truncate font-medium text-[var(--color-text-primary)]">{g.name}</p>
+          {/* §01 `.gn`: the name carries the chevron so the row reads as
+              tappable. The glyph is swapped, not CSS-mirrored - a
+              ChevronRight under dir=rtl still points right. */}
+          <p className="flex items-center gap-1 truncate font-medium text-[var(--color-text-primary)]">
+            <span className="truncate">{g.name}</span>
+            <Chevron size={13} className="shrink-0 text-[var(--color-text-muted)]" aria-hidden />
+          </p>
           <p className="mt-0.5 text-sm text-[var(--color-text-muted)]">
             {t('students', { count: formatNumber(g.activeStudents, locale) })}
             {g.pendingStudents > 0 && (
@@ -158,11 +166,12 @@ export default function PrivateGroupsSection({
           </p>
         </div>
       </div>
-      <span className="text-sm text-[var(--color-text-secondary)]">
-        {t('feePerClass')}{' '}
-        <span className="font-semibold text-[var(--color-text-primary)]">
+      {/* §01 `.gfee`: `.fv` 13px/700 over `.fl` 11px faint, end-aligned. */}
+      <span className="shrink-0 text-end">
+        <span className="block text-base font-bold tabular-nums text-[var(--color-ink)]">
           {formatCurrency(g.fee_per_class, locale)}
         </span>
+        <span className="mt-1 block text-xs text-[var(--color-faint)]">{t('perClassLabel')}</span>
       </span>
     </Link>
   );
@@ -208,9 +217,12 @@ export default function PrivateGroupsSection({
       ) : (
         <>
           {active.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 text-sm text-[var(--color-text-secondary)]">
-              {t('empty')}
-            </p>
+            /* §01 · this section's "new private group" control sits in its own
+               header, so the empty state does not repeat it — one action, never
+               two of equal weight. */
+            <div className="rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-surface-1)] py-4">
+              <EmptyState icon={Users} title={t('empty')} quiet />
+            </div>
           ) : (
             <ul className="flex flex-col gap-2">
               {active.map((g) => (

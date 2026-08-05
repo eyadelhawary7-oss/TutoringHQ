@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { dbSelect, dbInsert, dbUpdate, dbDelete, auditLog } from '@/lib/db-proxy';
 import { Plus, DoorOpen, MoreVertical, Users, Pencil, Trash2 } from 'lucide-react';
 import { ActionSheet, type SheetAction } from '@/components/patterns';
+import { EmptyState } from '@/components/shared';
 import { formatNumber } from '@/lib/formatNumber';
 import { cairoDateKey } from '@/lib/cairo/day';
 import { scheduleSlotsDayOfWeek } from '@/lib/cairo/week';
@@ -380,21 +381,26 @@ export default function RoomsPage() {
         )}
 
         {rooms.length === 0 && !isLoading && (
-          <div className="mx-auto flex max-w-md flex-col items-center gap-2 px-4 py-16 text-center">
-            <div className="flex h-24 w-24 items-center justify-center rounded-3xl border border-[#E2DDD1] bg-[#FFFDF8] text-teal-700">
-              <DoorOpen size={42} strokeWidth={1.6} aria-hidden />
-            </div>
-            <p className="mt-2 text-lg font-semibold text-[var(--color-text-primary)]">{t('noRoomsTitle')}</p>
-            <p className="max-w-[32ch] text-sm leading-relaxed text-[var(--color-text-secondary)]">
-              {t('noRoomsDescription')}
-            </p>
-            <button
-              type="button"
-              onClick={() => setShowAddModal(true)}
-              className="mt-3 inline-flex h-[46px] items-center gap-2 rounded-md bg-[var(--color-accent)] px-5 text-md font-semibold text-[var(--color-panel)] hover:bg-[var(--color-accent-deep)] btn-press chq-focus"
-            >
-              <Plus size={18} aria-hidden /> {t('addRoom')}
-            </button>
+          /* §01 · rooms ARE waiting on the owner, so this keeps the mint tile
+             and the one action. What changed is the tile itself: it was a 96×96
+             `rounded-3xl` outlined box, not the design's 64×64 `rounded-lg`
+             mint fill, and the action was a hugging pill rather than the
+             full-width `.btn` §01 draws. */
+          <div className="mx-auto max-w-md py-10">
+            <EmptyState
+              icon={DoorOpen}
+              title={t('noRoomsTitle')}
+              description={t('noRoomsDescription')}
+              action={
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(true)}
+                  className="flex w-full items-center justify-center gap-2 rounded-md bg-[var(--color-accent)] px-5 py-4 text-md font-semibold text-[var(--color-panel)] hover:bg-[var(--color-accent-deep)] btn-press chq-focus"
+                >
+                  <Plus size={18} aria-hidden /> {t('addRoom')}
+                </button>
+              }
+            />
           </div>
         )}
       </div>

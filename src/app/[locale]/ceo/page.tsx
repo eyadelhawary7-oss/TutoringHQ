@@ -7,9 +7,16 @@ import { supabase } from '@/lib/supabase';
 import { AdminSidebar } from '@/components/AdminSidebar';
 import { ChartCard } from '@/components/charts';
 import { MobileWrapper } from '@/components/shell/MobileWrapper';
-import type { CeoCenterHealthTierRow, CeoDashboardData, CeoTrialsWatch, LeadStage } from '@/types/ceo';
+import type {
+  CeoBoardData,
+  CeoCenterHealthTierRow,
+  CeoDashboardData,
+  CeoTrialsWatch,
+  LeadStage,
+} from '@/types/ceo';
 import { ChevronDown } from 'lucide-react';
 import { formatNumber, formatDateTime, formatCurrency } from '@/lib/formatNumber';
+import CeoBoardSection from './CeoBoardSection';
 
 const SECTION_IDS = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'] as const;
 
@@ -63,6 +70,7 @@ export default function CeoDashboardPage() {
   };
 
   const [data, setData] = useState<CeoDashboardData | null>(null);
+  const [board, setBoard] = useState<CeoBoardData | null>(null);
   const [trials, setTrials] = useState<CeoTrialsWatch | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastSync, setLastSync] = useState<Date | null>(null);
@@ -115,6 +123,15 @@ export default function CeoDashboardPage() {
       }
     } catch {
       // ignore — widget hidden when data unavailable
+    }
+    // §01 board figures — super_admin-only, same best-effort contract as above.
+    try {
+      const bRes = await fetch('/api/ceo/board', { headers: authHeader });
+      if (bRes.ok) {
+        setBoard((await bRes.json()) as CeoBoardData);
+      }
+    } catch {
+      // ignore — section hidden when data unavailable
     }
   }, []);
 
@@ -344,6 +361,11 @@ export default function CeoDashboardPage() {
           </div>
 
           <div className="px-4 py-6 space-y-10">
+
+            {/* Merged-CEO §01 board view. Renders only once its own endpoint
+                answers — an accountant who is not a super-admin gets a 403 and
+                simply doesn't see it, matching the trials-watch contract. */}
+            {board && <CeoBoardSection board={board} />}
 
             <section id="section-a">
               <h2 className="text-sm font-semibold text-[var(--color-text-primary)] mb-3">{t('sections.a')}</h2>
