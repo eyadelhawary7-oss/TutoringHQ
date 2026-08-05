@@ -5264,7 +5264,9 @@
     "todaySchedule": "الجدول",
     "chipBilled": "حُصِّلت",
     "chipNext": "التالية",
-    "chipLater": "لاحقًا"
+    "chipLater": "لاحقًا",
+    "attendanceUnknown": "نسبة الحضور غير متاحة — لا يوجد عدد متوقّع لليوم",
+    "attendanceScannedSuffix": "{count} تم مسحهم"
   },
   "forgotPassword": {
     "title": "إعادة تعيين الرمز السري",

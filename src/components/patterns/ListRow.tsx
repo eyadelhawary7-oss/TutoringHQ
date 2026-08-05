@@ -9,6 +9,13 @@ interface ListRowProps {
   /** Initials or a short mark for the design's `.av` tile. Omit for a row with no avatar. */
   avatar?: string;
   /**
+   * A caller-rendered leading block in the `.av` position, for rows whose lead
+   * is not initials on a mint tile — `Merged-Center-Home` §01's `.sess` puts a
+   * 52px two-line start time there ("2:00" over "PM"), which is the same slot
+   * in the same row, not a different pattern.
+   */
+  leading?: React.ReactNode;
+  /**
    * A leading glyph instead of the initials tile, for rows that name a place
    * rather than a person — the §03 frames use both.
    */
@@ -53,6 +60,7 @@ interface ListRowProps {
  */
 export default function ListRow({
   avatar,
+  leading,
   icon: Icon,
   title,
   meta,
@@ -81,17 +89,27 @@ export default function ListRow({
 
   return (
     <div className="flex items-center gap-3 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 shadow-sm">
-      {avatar && (
+      {/* Exactly ONE leading block, in this order: avatar > leading > icon.
+          `avatar` and `icon` arrived with #340's adoption pass, `leading` with
+          #351's §01 schedule row; they are three ways to fill the same `.av`
+          slot, so they must not stack. A naive merge of the two branches
+          rendered `leading` AND `icon` together whenever both were passed,
+          which is the "row grows two leading blocks" case the design has no
+          shape for. The order is by specificity: the mint initials tile is
+          §03's documented default and wins; a caller-rendered node is a
+          deliberate override and beats the generic glyph. */}
+      {avatar ? (
         <span
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-[var(--color-mint)] text-base font-semibold text-[var(--color-accent-deep)]"
           aria-hidden
         >
           {avatar}
         </span>
-      )}
-      {!avatar && Icon && (
+      ) : leading ? (
+        leading
+      ) : Icon ? (
         <Icon className="h-5 w-5 shrink-0 text-[var(--color-muted)]" aria-hidden />
-      )}
+      ) : null}
 
       {href ? (
         <Link href={href} className={openClass}>

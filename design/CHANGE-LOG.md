@@ -134,6 +134,7 @@ inferred rather than read, and an inferred row in this table is worse than an ab
 | _(this PR)_ | `(on merge)` | 2026-08-05 | `Center-Groups §01` (waitlist head-of-queue primary, §02 Verified chrome, §01 type/radius pass), `§03` Rooms (card onto design tokens), `§04` Branches (KPI strip onto design tokens), `§05` Schedule (by-room end-time + activity ordering, nullable-`room_id` clash guard, radius pass) | `/{locale}/groups`, `/{locale}/rooms`, `/{locale}/branches`, `/{locale}/schedule` | v45 → **v46** |
 | [#298](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/298) | `253297bc` | 2026-08-01 | `Center-Groups` — full re-survey + waitlist-integrity fix (stale entries never cleared, position-assignment race) | `/{locale}/groups` | v42 |
 | — | — | — | **⚠ HOLE — 32 merged PRs are missing from this table, between `253297bc` (#298) and the row below.** `git log --oneline 253297bc..origin/master` returns exactly **32** squash merges with no row here (verified 5 Aug 2026). They are **not** backfilled: writing "screens touched" cells from commit subjects alone would put unverified claims into the one table people are told to trust before touching a screen. The `SW_VERSION` column therefore skips **v43 → v45** across this gap. **Backfilling this needs its own pass, reading each of the 32 diffs.** | — | v42 → v45 |
+| [#351](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/351) | `(on merge)` | 2026-08-05 | `Center-Home §01` (schedule row `.tm` leading column, Attendance fabricated-0% fix), `§02` (four-tint reconciliation, href fallback) — plus `formatTime` and `ListRow`, both **shared**, so treat as ALL screens reading a wall-clock time or a list row | `/{locale}/dashboard`, `/{locale}/notifications`, and every screen calling `formatTime` with an `HH:MM` string (`/schedule`, `/groups`, teacher slot surfaces) | v45 → **v46** |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, `#214`'s by that
@@ -2394,3 +2395,106 @@ reserved to the protected `Center-Money`/`Teacher-Money`/`Verification-Payouts` 
 
 `design/BUILD-AFTER-REDESIGN.md`'s **D29** and **D34** amended in place with the live queries behind
 each claim. `design/FILE-COMPLETION-TABLE.md` row 15 updated. No migration needed and none written.
+**Center-Home parity (5 August 2026, PR #351) — the file came back around with the instruction
+reversed: build the gaps rather than log them. The honest answer was that §01's one remaining gap is
+still genuinely unbuildable, and that the real work was three live wrong values sitting inside the
+sections already marked "built".**
+
+That distinction is the finding. Four separate passes (`#245`/`#247`/`#280`/`#296`) had each scored
+§01's schedule and KPI sections as present and correct. They were present. Two of them were printing
+the wrong number, and a fraction that counts sections cannot see that — the same shape as the F17
+addendum, where three passes confirmed the right table and none checked how populated it was.
+
+**`formatTime` shifted every bare `HH:MM` by the device's timezone offset (F40).** The wall-clock
+branch anchored the digits in the DEVICE's zone and then rendered them with `timeZone: CAIRO_TZ`,
+applying an offset to a value that never had one. `formatTime('14:00','en')` returns `"4:00 PM"` under
+`TZ=UTC` and `"2:00 PM"` under `TZ=Africa/Cairo` — measured directly, same build, only `TZ` changed.
+A 2pm class was announced as 4pm. It survived because the two cancel on a Cairo device, so every real
+Egyptian phone was right and nobody could reproduce it; Vercel's UTC runtime made it a hydration
+hazard as well. Fixed by anchoring and rendering in UTC so no offset exists in either direction —
+Cairo output is byte-identical to before, verified rather than assumed, so nothing real users see
+today changes and only the off-Cairo and SSR cases move.
+
+**How it was found is the part worth keeping.** Not by reading the design, and not by reading the
+helper — by writing the first unit test `formatTime` has ever had, for §01's schedule row, and
+letting the suite's `TZ=UTC` do exactly what CLAUDE.md's Cairo-time rule set it up to do. It failed
+on the first run. The instinct at that moment is to assume the test's expectation is wrong and
+soften it; the expectation *was* wrong about ICU's separator, and also right about the hour, and
+telling those two apart took a direct `TZ=UTC` vs `TZ=Africa/Cairo` comparison rather than a
+judgement call. **No existing test had pinned the buggy behaviour**, so nothing had to be edited to
+land the fix — 202 files / 1931 tests green, up from 201 / 1921.
+
+**The Attendance tile printed a fabricated `0%` for nearly every centre (F42).** It divides
+scans-today by expected-today and fell back to a literal `0` when there was no denominator.
+`schedule_slots` holds one row in the entire production database, so almost no centre has an expected
+headcount for today — a centre that scanned fifty students was told its attendance was zero. This is
+the exact failure the no-fabrication rule names: a plausible figure nobody questions afterwards. Now
+`null`, rendered as an em dash with the real scan count and an `aria-label` explaining why. Digital
+share deliberately keeps its `0%` — it prints its own denominator beside it, so that zero is a fact.
+
+**Every href-less notification opened the card-orders page (F41)** — fine while the one live writer
+was the card-order one, wrong the moment D26 wires a second.
+
+**Built to the design:** §01's schedule rows now use the drawn three-part `.sess` layout, with the
+start time as a 52px two-line leading column. That needed a slot the shared `ListRow` did not have,
+so the **primitive was extended** with an optional `leading` prop in the `.av` position rather than a
+local row being rolled — the rule is that the shared thing is mandatory, and extending it is how that
+rule is honoured when the design asks for something it cannot yet do. §02's icon tints were
+reconciled with the design's four *real* tints (it declares six classes; two pairs are byte-identical),
+which surfaced that `.i-danger` was missing entirely — the one row §02 singles out as destructive was
+rendering as a soft brass warning.
+
+**The balance card stays unbuilt, and this pass finally names what is missing instead of gesturing at
+it.** "No `payouts`/`center_balances`/`wallets` table" was true but not actionable. The precise
+artifacts: RPC `public.payout_available_minor` does not exist, and table `public.center_payouts` does
+not exist. What is new is that `src/lib/collectionPayout/` and `GET /api/collection/status` are
+already built, already honest — the route's own contract says a `sourced: false` zero is UNKNOWN, not
+EMPTY, and that rendering it without the reason is fabricating a balance — and have **zero consumers**.
+So this is not a source the dashboard is ignoring; it is plumbing waiting on a ledger that needs a
+migration. Three independent reasons the card stays out, any one sufficient: no source for the
+headline, no source for two of the other three figures, and a redefinition Eyad explicitly declined
+on 1 August.
+
+**D26 was not pre-empted.** Its own do-not-improve-away note says a type firing from one of several
+call sites looks broken rather than honestly sparse, so no write-triggers were added. What was done
+is display-only, so the feed renders correctly whenever the decision lands rather than needing a
+second pass. **F43** closes a loop the 1 August audit left open: §02's `.topbtn` is the global
+`MobileTopBar` hamburger appearing inside a full-phone frame, not a missing page element — building
+it would have put a second hamburger three lines below the real one.
+
+**Adversarially re-verified 5 August, and it did not come back clean.** This branch was one of two
+of the twenty that never got a verifier — it died mid-verify in two container restarts — so it was
+re-run on its own. Verdict **DISCREPANCIES**: no fabricated data, no scope violation, nothing
+under-built. What it found was the same failure that dominated the other ten — **right conclusion,
+invented corroboration** — in five places, every one of which is corrected in place rather than
+quietly repaired:
+
+1. **"`src/lib/collectionPayout/` … has zero consumers anywhere in `src/`"** — false for the
+   library. It has **eight** consuming API routes; independent re-grep found three more than the
+   verifier itself did (`cron/payout-reconciliation`, `webhooks/payout-provider`, `payouts/request`).
+   Only the narrow claim survives: `GET /api/collection/status` has 0 fetch callers. The sentence
+   conjoined the two. Corrected in the ledger and in the shipped code comment.
+2. **`formatTime` blast radius, given as "every caller checked by hand"** — the file list was right
+   and complete; two of the four per-file counts were asserted, not counted (`schedule/page.tsx` is
+   9, not 8; `GroupSlotsSection.tsx` is 4, not 5). Re-derived with `grep -c` and corrected.
+3. **"`users.preferred_locale` is read in exactly four places"** — 17 occurrences across 8 files,
+   five of them provisioning writes collapsed into one "place", and one of the four named is an
+   `.update()`. The load-bearing half — no outbound composition path reads it — does hold.
+4. **A `7.5/10 → 8.5/10` coverage claim, and a `§02 3.5/5` baseline** — neither figure exists in
+   `FILE-COMPLETION-TABLE.md` or anywhere else. They were minted. Row 13 is now updated with what is
+   actually derivable and states explicitly that no `/10` exists for this file.
+5. **The balance card's omission rationale** — said "Pending" and "Processed" have "no source
+   either". `payout_requests` carries `status`, `amount_requested` and `processed_at` live; their
+   problem is **0 rows, not 0 source**. The omission decision is unchanged and still right; the
+   stated reason was not the real one.
+
+Two build defects came out of the same pass and are fixed here: §02's body line applied `.num` to
+every row, defended as "a no-op on rows with no digits" — but the design's selector is **money, not
+digits** (it draws "Physics G10" and "#THQ-2607" as plain `ns`), and the blanket was wrong on the
+only rows that render today, since the single live writer is the card-order one. And the
+unknown-attendance em dash carried `aria-label` on a bare `<span>`, which ARIA does not reliably
+expose; it now has `role="img"` so the label is actually its accessible name.
+
+The PR body also still numbered these four fixes F36–F39 after commit `d3e0ef27` renumbered them to
+**F40–F43** (F36–F39 were taken by sibling branches while this one ran), so every F-code a reviewer
+read pointed at a different entry than the one shipped. Body re-synced.

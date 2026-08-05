@@ -2025,7 +2025,9 @@
     "todaySchedule": "Schedule",
     "chipBilled": "Billed",
     "chipNext": "Next",
-    "chipLater": "Later"
+    "chipLater": "Later",
+    "attendanceUnknown": "Attendance rate unavailable — no expected headcount for today",
+    "attendanceScannedSuffix": "{count} scanned"
   },
   "analytics": {
     "title": "Financial Intelligence",
