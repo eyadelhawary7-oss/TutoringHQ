@@ -52,12 +52,23 @@ async function getUserContext(request: NextRequest) {
  * and `p50_group_utilization`. This reads them directly rather than changing
  * the RPC, so no migration is involved.
  *
- * The snapshot picked here is the SAME ONE the RPC picked: latest
- * `snapshot_date` for the centre's `(district, student_count_tier)`, both taken
- * from the RPC's own response so the two can never diverge. When the RPC
- * withheld the comparison (`insufficient_data`, or a district under the
- * 10-centre threshold) nothing is attached — the median is a district figure
- * and must inherit the same disclosure gate as the rest of the comparison.
+ * The snapshot picked here is the SAME ONE the RPC picked, and that is now
+ * enforced rather than asserted. An earlier version of this function claimed
+ * the two "can never diverge" while taking only `district` and `tier` from the
+ * RPC response and RE-DERIVING the date with its own
+ * `.order('snapshot_date', desc).limit(1)`. That is two independent round trips
+ * against a table a daily cron writes: a snapshot inserted between them, or a
+ * duplicate `snapshot_date` with no tie-break, and the medians attached here
+ * belong to a different row than the percentiles the RPC computed.
+ *
+ * `pg_get_functiondef(get_center_benchmarks)` — read live, not assumed —
+ * returns `'snapshot_date', v_snapshot.snapshot_date` in its jsonb. The one
+ * field that makes the claim true was already on the wire and was being
+ * ignored. It is now filtered on explicitly, so the lookup either hits the
+ * RPC's exact row or returns nothing. When the RPC withheld the comparison
+ * (`insufficient_data`, or a district under the 10-centre threshold) nothing is
+ * attached — the median is a district figure and must inherit the same
+ * disclosure gate as the rest of the comparison.
  */
 const MEDIAN_COLUMNS = {
   attendance: 'p50_attendance_rate',
@@ -74,14 +85,18 @@ async function withDistrictMedians(
 
   const district = typeof payload.district === 'string' ? payload.district : null;
   const tier = typeof payload.tier === 'string' ? payload.tier : null;
-  if (!district || !tier) return payload;
+  // The RPC's own snapshot_date. Without it there is no way to guarantee we
+  // read the same row it did, so withhold rather than guess with a fresh
+  // "latest" lookup — a median from the wrong snapshot is worse than none.
+  const snapshotDate = typeof payload.snapshot_date === 'string' ? payload.snapshot_date : null;
+  if (!district || !tier || !snapshotDate) return payload;
 
   const { data: snapshot, error } = await supabaseAdmin
     .from('benchmark_snapshots')
     .select(Object.values(MEDIAN_COLUMNS).join(', '))
     .eq('district', district)
     .eq('student_count_tier', tier)
-    .order('snapshot_date', { ascending: false })
+    .eq('snapshot_date', snapshotDate)
     .limit(1)
     .maybeSingle();
 

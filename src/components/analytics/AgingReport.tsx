@@ -27,37 +27,48 @@ function getRowBg(days: number): string {
 }
 
 /**
- * Merged-Center-Insight §01's "Aging · outstanding" card is three age BANDS
- * (`0–30`, `31–60` with a `watch` pill, `60+` with an `overdue` pill), each
- * carrying that band's outstanding total and its own Remind button — not the
- * flat per-student table this component shipped as. Both are kept: the bands
- * are the design's summary and the answer an owner actually wants first, the
- * table underneath is the live screen's existing per-student detail and is
- * strictly more capability, so replacing it with the summary would be a
- * regression dressed as design fidelity.
+ * `Merged-Center-Insight` §01's "Aging · outstanding" card draws three age
+ * BANDS (`0–30`, `31–60` with a `watch` pill, `60+` with an `overdue` pill),
+ * each carrying that band's outstanding total.
  *
- * The band totals are a pure client-side grouping of rows the API already
- * returns (`days_overdue`, `amount`). Nothing here is derived from a figure
- * the payload does not carry.
+ * THOSE BANDS ARE NOT BUILT, DELIBERATELY, AND THIS IS THE SECOND ATTEMPT.
  *
- * Not a `patterns/ListRow`: a band is an aggregate summary line with one
- * inline action, not a record row — there is no entity behind it to open, no
- * three-dot sheet, and the design draws `.agerow`/`.wabtn`, which is a
- * different shape from `.lrow`. The per-student rows below keep the inline
- * reminder button they already had.
+ * An earlier version of this component DID render them, by grouping the rows
+ * the API returns on `days_overdue` and summing `amount`. That produced a
+ * distribution the data cannot support, and it was caught in adversarial
+ * re-verification:
+ *
+ *   · `amount` is `balances.get(id).balance` from `getStudentBalances(...)` —
+ *     ONE RUNNING TOTAL PER STUDENT (`api/analytics/revenue/route.ts:159-168`),
+ *     not a per-invoice figure. It has no internal structure to split.
+ *   · `days_overdue` is ONE PROXY AGE PER STUDENT: days since the student's
+ *     last confirmed payment + 30d, falling back to the 1st of the current
+ *     month when they have never paid (`route.ts:272-283`).
+ *
+ * So a student five months in arrears who paid anything 20 days ago had their
+ * ENTIRE balance rendered under "0–30 days". A real aging report splits ONE
+ * student's balance ACROSS bands by invoice date; this data cannot, because
+ * per-invoice allocation does not exist yet.
+ *
+ * It was also degenerate in production, not merely imprecise: `payments` holds
+ * 0 rows, so every student falls back to the 1st of the month, every balance
+ * lands in `0–30`, and `31–60` and `60+` printed EGP 0 for every centre,
+ * always. Eyad's call, 5 August: **an honest empty state, not a relabel and
+ * not the chart.** A zero reads as a fact, and two bands reading zero
+ * unconditionally is worse than showing nothing.
+ *
+ * Tracked as its own feature entry with the migration it requires in
+ * `design/BUILD-AFTER-REDESIGN.md` (F45 · per-invoice allocation). When that
+ * lands, the bands come back here and this notice goes away.
+ *
+ * The per-student table below is untouched: it predates this pass, is real
+ * per-student data, and is strictly more capability than the summary.
  */
-const AGING_BANDS = [
-  { id: 'b0_30', min: 0, max: 30, tone: 'none' },
-  { id: 'b31_60', min: 31, max: 60, tone: 'watch' },
-  { id: 'b60_plus', min: 61, max: Infinity, tone: 'overdue' },
-] as const;
-
 export default function AgingReport({ data = [], onRefresh }: AgingReportProps) {
   const t = useTranslations('analytics');
   const locale = useLocale();
   const [sendingId, setSendingId] = useState<string | null>(null);
   const [sendingAll, setSendingAll] = useState(false);
-  const [sendingBand, setSendingBand] = useState<string | null>(null);
 
   const getSession = async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -115,25 +126,6 @@ export default function AgingReport({ data = [], onRefresh }: AgingReportProps) 
     }
   };
 
-  const sendBandReminders = async (bandId: string, rows: AgingRow[]) => {
-    if (rows.length === 0) return;
-    setSendingBand(bandId);
-    try {
-      await sendBatch(rows);
-    } finally {
-      setSendingBand(null);
-    }
-  };
-
-  const bands = AGING_BANDS.map((band) => {
-    const rows = data.filter((r) => r.days_overdue >= band.min && r.days_overdue <= band.max);
-    return {
-      ...band,
-      rows,
-      total: rows.reduce((s, r) => s + (Number(r.amount) || 0), 0),
-    };
-  });
-
   if (!data?.length) {
     return (
       <div className="rounded-lg border bg-[var(--color-surface-1)] p-6 text-center text-[var(--color-text-secondary)]">
@@ -157,47 +149,20 @@ export default function AgingReport({ data = [], onRefresh }: AgingReportProps) 
         </button>
       </div>
 
-      {/* §01 "Aging · outstanding": the three age bands, each with its own total
-          and Remind action. Band labels take their digits through formatNumber
-          so AR renders Eastern Arabic numerals. */}
-      <div className="border-b border-[var(--color-border)] px-4 py-1">
-        {bands.map((band) => {
-          const label =
-            band.max === Infinity
-              ? t('agingBandPlus', { from: formatNumber(band.min - 1, locale) })
-              : t('agingBandRange', {
-                  from: formatNumber(band.min, locale),
-                  to: formatNumber(band.max, locale),
-                });
-          const busy = sendingBand === band.id;
-          return (
-            <div
-              key={band.id}
-              className="flex items-center gap-2 border-t border-[var(--color-border)] py-3 first:border-t-0"
-            >
-              <span className="text-sm text-[var(--color-text-primary)]">{label}</span>
-              {band.tone === 'watch' && <span className="badge badge-gold">{t('agingBandWatch')}</span>}
-              {band.tone === 'overdue' && <span className="badge badge-danger">{t('agingBandOverdue')}</span>}
-              <b className="ms-auto text-sm font-semibold tabular-nums text-[var(--color-text-primary)]">
-                {formatCurrency(band.total, locale)}
-              </b>
-              <button
-                type="button"
-                onClick={() => sendBandReminders(band.id, band.rows)}
-                disabled={busy || band.rows.length === 0}
-                title={t('agingBandRemindTitle', { count: formatNumber(band.rows.length, locale) })}
-                className="inline-flex shrink-0 items-center gap-1 rounded-full bg-teal-500/12 px-3 py-1.5 text-[11px] font-semibold text-teal-700 hover:bg-teal-500/20 disabled:opacity-40"
-              >
-                {busy ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  <MessageCircle className="h-3 w-3" />
-                )}
-                {t('remind')}
-              </button>
-            </div>
-          );
-        })}
+      {/* §01 "Aging · outstanding" — empty state, not the bands.
+
+          Deliberately renders NO figure. The whole point is that no per-band
+          amount is derivable: a zero here would read as "nothing is that old",
+          which is a claim about the world, not about the data. See the block
+          comment at the top of this file for why, and F45 in
+          design/BUILD-AFTER-REDESIGN.md for what unblocks it. */}
+      <div className="border-b border-[var(--color-border)] px-4 py-4">
+        <p className="text-sm font-medium text-[var(--color-text-primary)]">
+          {t('agingBandsTitle')}
+        </p>
+        <p className="mt-1 text-xs leading-relaxed text-[var(--color-text-secondary)]">
+          {t('agingBandsUnavailable')}
+        </p>
       </div>
 
       <div className="overflow-x-auto">

@@ -229,8 +229,22 @@ export default function AnalyticsPage() {
   /**
    * §01's header subtitle is the centre and the month the figures cover
    * ("Al-Nahda · June"), which is the one thing the generic strapline did not
-   * say. Cairo month, per the standing rule — the API windows on the server's
-   * calendar month and this label must not disagree with it by a timezone.
+   * say. Cairo month, per CLAUDE.md's standing rule.
+   *
+   * This comment previously read "the API windows on the SERVER's calendar
+   * month and this label must not disagree with it by a timezone" — which was
+   * exactly backwards, and described the bug rather than the rule. The API DID
+   * window on the server's month (UTC on Vercel) while this label was Cairo,
+   * and mixing them is what CREATED the disagreement: for the two or three
+   * hours between Cairo midnight and UTC midnight on the last day of a month,
+   * the header read the next month while `mrr`, the emphasised final trend bar
+   * and the aging fallback were all still the previous one.
+   *
+   * Fixed on both sides, 5 August 2026: `/api/analytics/revenue` now builds
+   * every window from `cairoMonthUtcBounds()` (`src/lib/cairo/day.ts`), so the
+   * label and the figures are anchored to the same calendar. The invariant to
+   * preserve is that BOTH are Cairo — pinned by `tests/unit/cairoMonthWindow.test.ts`,
+   * which runs under `TZ=UTC` precisely so a server-local regression fails it.
    */
   const periodSubtitle = useMemo(() => {
     const centerName = user?.center?.name?.trim();

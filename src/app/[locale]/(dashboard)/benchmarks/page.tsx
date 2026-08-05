@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+import { formatDistrictDisplay } from '@/lib/formatDistrict';
 import { formatNumber, formatPercent } from '@/lib/formatNumber';
 import { supabase } from '@/lib/supabase';
 import { useBranchStore } from '@/stores/branchStore';
@@ -69,6 +70,7 @@ function hasAnyMetric(d: BenchmarksData): boolean {
 export default function BenchmarksPage() {
   const t = useTranslations('benchmarks');
   const tc = useTranslations('common');
+  const tDistricts = useTranslations('settings.districts');
   const locale = useLocale();
   const { activeCenterId } = useBranchStore();
   const [data, setData] = useState<BenchmarksData | null>(null);
@@ -132,6 +134,32 @@ export default function BenchmarksPage() {
   const districtNorm = String(d.district ?? '').trim();
   const isNoDistrict = !districtNorm || d.reason === 'no_district';
   const showLiveBenchmarks = !d.insufficient_data && !isNoDistrict;
+
+  /**
+   * §02's header subtitle. The design names the district in the topbar of BOTH
+   * frames — `Merged-Center-Insight.html` L409 (`add-on · locked`) and L435
+   * (`enabled · fitted`) both read "vs centers in Nasr City" — so the locked
+   * screen gets it too, as long as a district is actually known.
+   *
+   * Label resolution, in order: the localized `settings.districts.<slug>` entry
+   * (which is where the ten seeded districts live in both locales), then
+   * `formatDistrictDisplay` for a slug nobody has translated yet, so a district
+   * added to the DB later degrades to `some_slug` → "Some Slug" rather than
+   * rendering a raw slug or a missing-key crash.
+   *
+   * When no district is set at all there is nothing to name, so the existing
+   * "set your district" prompt stays — that is a call to action, not a label.
+   */
+  const districtLabel = districtNorm
+    ? tDistricts.has(districtNorm)
+      ? tDistricts(districtNorm)
+      : formatDistrictDisplay(districtNorm)
+    : '';
+  const headerSubtitle = districtLabel
+    ? t('subtitleWithDistrict', { district: districtLabel })
+    : isNoDistrict
+      ? t('noDistrictSubtitle')
+      : t('subtitle');
 
   /** API mismatch: metrics without an unlocked district - show sample overlay only. */
   const sampleOnlyMode = !showLiveBenchmarks && hasAnyMetric(d);
@@ -318,7 +346,7 @@ export default function BenchmarksPage() {
 
     return (
       <div className="min-h-screen w-full bg-[var(--color-surface-0)] px-4 py-6 md:py-10">
-        <PageHeader title={t('title')} subtitle={isNoDistrict ? t('noDistrictSubtitle') : t('subtitle')} />
+        <PageHeader title={t('title')} subtitle={headerSubtitle} />
         <div className="max-w-md mx-auto text-center pt-10 md:pt-16">
           <BenchmarkLockIllustration />
           <h2 className="text-xl font-bold text-[var(--color-text-primary)] mt-6">{t('districtTitle')}</h2>
@@ -379,7 +407,7 @@ export default function BenchmarksPage() {
 
   return (
     <div className="min-h-screen w-full bg-[var(--color-surface-0)] p-6">
-      <PageHeader title={t('title')} subtitle={t('subtitle')} />
+      <PageHeader title={t('title')} subtitle={headerSubtitle} />
       {standingCard}
       <h2 className="text-sm font-semibold text-[var(--color-text-secondary)] mb-3">
         {t('howYouCompare')}
