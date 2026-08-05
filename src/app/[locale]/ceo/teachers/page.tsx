@@ -3,11 +3,15 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { usePathname } from '@/i18n/routing';
+import { Inbox } from 'lucide-react';
+import { EmptyState } from '@/components/shared';
 import { supabase } from '@/lib/supabase';
 import { AdminSidebar } from '@/components/AdminSidebar';
 import { MobileWrapper } from '@/components/shell/MobileWrapper';
 import { formatCurrency, formatNumber, formatDate } from '@/lib/formatNumber';
 import type { CeoTeacherData } from '@/types/ceoTeachers';
+import type { CeoTeacherOverview } from '@/types/ceo';
+import CeoTeachersOverview from './CeoTeachersOverview';
 import {
   NONE,
   presentValues,
@@ -148,6 +152,7 @@ export default function CeoTeachersPage() {
   const tCommon = useTranslations('common');
 
   const [data, setData] = useState<CeoTeacherData | null>(null);
+  const [overview, setOverview] = useState<CeoTeacherOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>('subscriptions');
 
@@ -180,6 +185,18 @@ export default function CeoTeachersPage() {
       setData(null);
     } finally {
       setLoading(false);
+    }
+    // §02 overview strip — best-effort, same contract as the CEO home's
+    // trials-watch widget: hidden rather than fatal when it isn't available.
+    try {
+      const oRes = await fetch('/api/ceo/teacher-overview', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (oRes.ok) {
+        setOverview((await oRes.json()) as CeoTeacherOverview);
+      }
+    } catch {
+      // ignore — section hidden when data unavailable
     }
   }, []);
 
@@ -267,10 +284,18 @@ export default function CeoTeachersPage() {
     </div>
   );
 
+  /**
+   * §01 quiet variant, reused across all five tabs of this screen. Every one of
+   * them is a read-only CEO view of data produced elsewhere — nothing here is
+   * waiting on the reader — so they take the muted tile and no action. This was
+   * a file-local helper repeated five times; it still is one, but the thing it
+   * repeats is now the shared component rather than a fifth private empty-state
+   * shape.
+   */
   const EmptyRow = ({ colSpan, message }: { colSpan: number; message: string }) => (
     <tr>
-      <td colSpan={colSpan} className="px-3 py-6 text-center text-[var(--color-text-secondary)]">
-        {message}
+      <td colSpan={colSpan}>
+        <EmptyState icon={Inbox} title={message} quiet />
       </td>
     </tr>
   );
@@ -680,6 +705,8 @@ export default function CeoTeachersPage() {
           </div>
 
           <div className="px-4 py-6 space-y-6">
+            {overview && <CeoTeachersOverview data={overview} />}
+
             <div className="flex flex-wrap gap-1">
               {TABS.map((tab) => (
                 <button

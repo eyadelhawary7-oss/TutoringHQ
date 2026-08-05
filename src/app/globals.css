@@ -1967,6 +1967,26 @@ html:not(.dark) [data-admin="true"] textarea.admin-textarea {
   border-radius: 0.375rem;
 }
 
+/* Merged-Design-Patterns §02, rules block: "Respect reduced motion. The sweep
+   already switches off under prefers-reduced-motion and must stay that way."
+   It did not. Neither `.chq-skeleton` nor `.skeleton` nor Tailwind's
+   `animate-pulse` carried a reduced-motion branch, so every skeleton in the app
+   swept regardless of the OS setting. The placeholder still has to READ as a
+   placeholder with the animation off, so the sweep is replaced by a flat fill
+   at the gradient's mid stop rather than simply stopped mid-sweep — a frozen
+   gradient looks like a rendering bug, a flat block looks deliberate. */
+@media (prefers-reduced-motion: reduce) {
+  .chq-skeleton,
+  .skeleton {
+    animation: none;
+    background: #e2ddd1;
+  }
+  .animate-pulse {
+    animation: none;
+    opacity: 0.65;
+  }
+}
+
 .chq-focus:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;

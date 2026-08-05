@@ -99,3 +99,20 @@ export function previewBodyForTemplate(templateName: string): string {
     `قالب ${templateName}\n(معاينة تقريبية, راجع Meta Business Manager للنص النهائي)`
   )
 }
+
+/**
+ * Whether this template has a real stored body, as opposed to the generic
+ * "check Meta Business Manager" fallback `previewBodyForTemplate` returns.
+ *
+ * This matters because `wa_meta_templates` has **no body column at all** —
+ * confirmed live against `information_schema.columns` (the table is exactly
+ * `id, template_name, category, status, variables_count, created_at,
+ * updated_at`). The bodies above are a hand-maintained approximation in this
+ * repo, and they cover 16 of the 44 templates the owner screen lists. Callers
+ * that want to draw a message preview must gate on this: rendering the
+ * fallback string inside a WhatsApp bubble would present "قالب chq_x
+ * (معاينة تقريبية…)" to an owner as if it were the text their parents receive.
+ */
+export function hasApproximatePreviewBody(templateName: string): boolean {
+  return Object.prototype.hasOwnProperty.call(WA_TEMPLATE_PREVIEW_BODIES, templateName)
+}

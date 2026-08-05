@@ -3,6 +3,7 @@
 import { Fragment, useEffect, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { Loader2, MessageCircle, RefreshCw } from 'lucide-react'
+import { EmptyState } from '@/components/shared'
 import { AdminHeader } from '@/components/admin/AdminHeader'
 import { AdminSidebar } from '@/components/AdminSidebar'
 import { useLayout } from '@/contexts/LayoutContext'
@@ -799,9 +800,9 @@ export default function AdminWaPackClient(props: AdminWaPackClientProps) {
           ) : (
             <section className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] shadow-sm p-4 sm:p-6">
               {pendingCenters.length === 0 ? (
-                <p className="text-center text-sm text-[var(--color-text-tertiary)] py-12">
-                  {tRoot('admin.noPendingRequests')}
-                </p>
+                /* §01 quiet variant · an empty pending queue is the good state.
+                   Nothing on this screen creates a request, so no action. */
+                <EmptyState icon={MessageCircle} title={tRoot('admin.noPendingRequests')} quiet />
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-start text-sm">

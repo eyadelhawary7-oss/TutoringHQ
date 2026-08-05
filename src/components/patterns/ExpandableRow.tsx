@@ -12,7 +12,18 @@ export interface InlineAction {
 }
 
 interface ExpandableRowProps {
-  avatar?: string;
+  /**
+   * The design's `.av` / `.ticon` tile. Initials for a person, an icon for a
+   * thing.
+   *
+   * WIDENED from `string` to `ReactNode` on 4 Aug 2026 by the first adopter,
+   * Center-WhatsApp §01, whose rows are keyed by a Lucide glyph rather than
+   * initials (`Merged-Center-WhatsApp` §01 draws `.ticon` holding an SVG).
+   * This is a widening of the shared primitive in place, NOT a local fork —
+   * `string` is still a valid `ReactNode`, so every existing call site keeps
+   * working unchanged. Flagged for review because it touches a shared file.
+   */
+  avatar?: React.ReactNode;
   title: string;
   meta?: React.ReactNode;
   badge?: React.ReactNode;

@@ -138,6 +138,39 @@ rendered from live config, it tracks the real amount, and `/legal/terms` has no 
 `/privacy` renders only `legal.privacy.placeholderBody` — three interim paragraphs, no unique
 section. Nothing would be lost that is not already in `/legal/privacy`.
 
+## ✅ Resolved — pair 4 is closed, and a fifth pair nobody had listed
+
+**`/terms` and `/privacy`, in #311 (`81639a14`, 4 August 2026).** Both are now
+`permanentRedirect` stubs into `/legal/terms` and `/legal/privacy`. Redirects rather than deletes,
+because public legal URLs get pasted into contracts and app-store listings. **The fee disclosure
+moved first**, exactly as this section demanded: `legal/terms/page.tsx` resolves the same
+`getProcessingFeeConfig()` → `resolveProcessingFeeAmount()` pair and passes it into the Terms
+reader under the same `amount > 0` gate, so turning the fee off still removes the paragraph. The
+"15 numbered section headings each showing *This section will be completed upon legal review*"
+described above no longer exists in any form; that string returns zero matches in `src/`.
+
+**`/cookies` vs `/legal/cookie` — a fifth pair, found 5 August 2026 and closed the same day.**
+This table never listed it, and it was the worst of the five, because it was *not* two documents
+disagreeing — it was **one document rendered at two URLs, one of which rendered it wrong**.
+`[locale]/cookies/page.tsx` held the definition and `legal/cookie/page.tsx` re-exported it. Single
+definition, no drift — but the definition sat **outside `legal/layout.tsx`**, the only element
+that supplies the design's `flex min-h-screen flex-col bg-[var(--color-paper)]` column and the
+`dir`. `/cookies` is in `AppShell`'s `PUBLIC_PATHS`, so `AppShell` returns `<>{children}</>` with
+no wrapper, and `<body>` is not a flex column either. At that address the reader's `flex-1` scroll
+body and `flex-shrink-0` footer had **no flex parent**: the "Back to all documents" bar stopped
+sitting at the foot of the screen. And `/cookies` is the address the public marketing footer
+linked to by name, so it was the copy most visitors saw.
+
+Fixed by inverting the direction rather than adding a second layout file: the definition moved to
+`legal/cookie/page.tsx` with the other three, `/cookies` became a `permanentRedirect`, and the
+marketing footer's three legal links now point at `/legal/privacy`, `/legal/terms` and
+`/legal/cookie` instead of at the three redirect stubs — same labels, same three links, one hop
+fewer, and no two public URLs serving one document.
+
+**The lesson worth keeping:** a "single definition, so no drift" arrangement still drifts, just not
+in the content. It drifts in everything the *surrounding route* provides — layout, direction,
+metadata, auth posture. Co-location is part of the definition.
+
 ---
 
 # Summary
@@ -147,8 +180,10 @@ section. Nothing would be lost that is not already in `/legal/privacy`.
 | `/billing` · `/settings/billing` | **Both** — unresolved | Low functionally, but the designs do not tell you which survives |
 | `/teacher/billing` · `/teacher/pay` | `/teacher/billing` | ⚠ **High.** Dropping `/teacher/pay` locks a lapsed teacher out of paying |
 | `/referrals` · `/settings/referrals` | `/referrals` | Low. Port the download |
-| `/terms` · `/legal/terms` | `/legal/terms` | ⚠ **Medium.** Move the fee disclosure first |
+| `/terms` · `/legal/terms` | `/legal/terms` | ✅ **Closed, #311.** Fee disclosure moved first, as required |
+| `/cookies` · `/legal/cookie` | `/legal/cookie` | ✅ **Closed, 5 Aug.** Was never in this table — see the note in §4 |
 
-**Two of the four carry something that must move before the duplicate goes** — the lapsed-teacher
-payment path and the processing-fee disclosure. Neither is visible from the designs; both were found
-in the code.
+**Two of the five carried something that must move before the duplicate goes** — the
+lapsed-teacher payment path and the processing-fee disclosure. Neither is visible from the designs;
+both were found in the code. **Two of the five are now closed**; the two billing/referral pairs
+remain open.

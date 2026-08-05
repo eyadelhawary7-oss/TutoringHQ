@@ -35,6 +35,7 @@ import {
 import { canonicalPlanId } from '@/lib/plans';
 import { formatDate, formatNumber } from '@/lib/formatNumber';
 import type { CenterRow } from '@/types/admin';
+import { centerLocationLine } from '@/lib/adminPlatformDisplay';
 import { useAdminVerificationAvailability } from '@/hooks/useAdminVerificationAvailability';
 import { adminVerificationView } from '@/lib/verification/uiState';
 
@@ -623,6 +624,18 @@ function AdminCentersPageInner() {
                             </span>
                           ) : null}
                         </span>
+                        {/*
+                          §01 draws the centre's location under its name.
+                          `centers.district` and `centers.city` both exist live;
+                          district is the finer of the two, so it wins when both
+                          are set. When neither is set nothing renders — a
+                          location is not guessed from any other column.
+                        */}
+                        {centerLocationLine(c) ? (
+                          <span className="mt-0.5 block text-xs font-normal text-[var(--color-text-muted)]">
+                            {centerLocationLine(c)}
+                          </span>
+                        ) : null}
                       </td>
                       <td className="py-3.5 px-4 text-sm text-[var(--color-text-secondary)] hidden md:table-cell">
                         {c.owner?.name ?? c.owner_name ?? tCommon('notAvailable')}
