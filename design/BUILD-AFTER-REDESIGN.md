@@ -1754,7 +1754,7 @@ convention, not a constraint: a new route that forgets the filter is caught by n
 no type error. The durable fix is a test that asserts cross-tenant denial per route family, or moving
 the remaining service-role reads behind RLS. Neither exists today. Logged, not built.
 
-## F36 · `formatTime` shifted every bare `HH:MM` wall-clock time by the device's timezone offset — FIXED, 5 August 2026
+## F40 · `formatTime` shifted every bare `HH:MM` wall-clock time by the device's timezone offset — FIXED, 5 August 2026
 - **What:** `formatTime()` (`src/lib/formatNumber.ts`) has three input branches. The `Date` and ISO-string branches carry a real instant and correctly render it in Cairo. The third branch — a bare `"HH:MM"` / `"HH:MM:SS"` string — built its anchor with `new Date(2000, 0, 1, hour24, mm, ss)`, which interprets those digits in the **device's** timezone, and then rendered the result with `timeZone: CAIRO_TZ`. That applies a device→Cairo offset to a value that never had an offset in the first place.
 - **Why it hid for so long:** on a device set to `Africa/Cairo` the two cancel exactly, so every real Egyptian phone showed the right time. It was only wrong somewhere else — and Vercel's runtime is UTC, so it was also a server/client hydration hazard on these client components.
 - **Measured, not inferred (5 Aug 2026).** Same input, same build, only `TZ` changed: `formatTime('14:00','en')` → **`"4:00 PM"`** under `TZ=UTC`, **`"2:00 PM"`** under `TZ=Africa/Cairo`. A 2:00 PM class was being announced as 4:00 PM. After the fix both read `"2:00 PM"`.
@@ -1764,12 +1764,12 @@ the remaining service-role reads behind RLS. Neither exists today. Logged, not b
 - **Touches:** `src/lib/formatNumber.ts` only, plus the new `tests/unit/splitFormattedTime.test.ts` regression guard which asserts absolute values under `TZ=UTC` on purpose.
 - **Found/fixed:** 5 August 2026, `Merged-Center-Home` §01 parity pass.
 
-## F37 · Every notification without an `href` sent the owner to the card-orders page — FIXED, 5 August 2026
+## F41 · Every notification without an `href` sent the owner to the card-orders page — FIXED, 5 August 2026
 - **What:** `NotificationsPageClient.tsx`'s row handler read `const href = (n.href ?? '/orders').trim() || '/orders'`. `/orders` was a safe-looking default only while the single live centre-facing writer was the card-order one. `in_app_notifications.kind` is unconstrained free text (no enum, no `CHECK` — re-verified live this pass), so the moment **D26** wires any other writer, an href-less "Fee overdue" or "Student absent" row would have opened a shipping list.
 - **Fix:** mark-read still happens on every tap — that is what the tap means — but navigation happens only when there is a real destination; otherwise the list reloads in place so the row and the unread count settle together. No schema, no new key.
 - **Found/fixed:** 5 August 2026, `Merged-Center-Home` §02 parity pass.
 
-## F38 · The dashboard's Attendance tile rendered a fabricated `0%` whenever today had no expected headcount — FIXED, 5 August 2026
+## F42 · The dashboard's Attendance tile rendered a fabricated `0%` whenever today had no expected headcount — FIXED, 5 August 2026
 - **What:** §01's Attendance tile is scanned-today over **expected**-today, where expected is the sum of today's `schedule_slots` member counts. When that denominator was `0` the code fell back to a literal `0`, so the tile printed **`0%`** — a number nobody would question, asserting that nobody turned up.
 - **Why it was near-universal, not an edge case:** `select count(*) from schedule_slots` returns **1** for the entire production database (F17's addendum, re-verified live this pass, 5 Aug 2026). Virtually every centre has no slots for today, so virtually every centre saw `0%`. A centre that scanned fifty students was being told its attendance was zero.
 - **Fix:** an uncomputable rate is now `null`, not `0`. The tile renders an em dash with the real scan count beneath it (`dashboard.attendanceScannedSuffix`, en+ar) and an `aria-label` explaining why (`dashboard.attendanceUnknown`), so no invented percentage ships and no real figure is lost.
@@ -1796,7 +1796,7 @@ Not taken on trust. Fresh grep: `users.preferred_locale` is read in exactly four
 
 One concrete addition for whoever takes the decision: **option (b) — store an i18n key + params in `metadata` and translate client-side — is one line short on the read path too.** `in_app_notifications.metadata jsonb` exists (confirmed in `information_schema.columns` this pass), but `GET /api/notifications` does **not** select it: the projection is `id, kind, title, body, href, read_at, created_at, center_id`. Option (b) therefore costs a projection change plus a client render branch, not just a writer change. Recorded so the two shapes get compared at their real cost. Still blocked on Eyad's call — building half of a composition standard is worse than neither half.
 
-## F39 · `Merged-Center-Home` §02's `.topbtn` is global chrome, not a missing element — resolved, 5 August 2026
+## F43 · `Merged-Center-Home` §02's `.topbtn` is global chrome, not a missing element — resolved, 5 August 2026
 - **What:** the 1 August audit recorded §02's header as "structurally missing the design's icon-button element", never previously assessed. Checked properly this pass rather than built on faith: the design's `.topbtn` is a 42×42 hamburger, and `MobileTopBar` (mounted once by `AppShell`, which also carries a `PAGE_TITLE_MAP` entry for `/notifications`) already renders exactly that hamburger on every authenticated mobile screen. `/notifications` is in `AUTHENTICATED_ROUTE_PREFIXES`, so it always gets that chrome.
 - **Resolution:** nothing to build. Adding an in-page hamburger would put a second one on the same screen, three lines below the real one. This matches the same audit's own conclusion that the global nav is out-of-frame chrome no merged `design/*.html` file draws — the `.topbtn` is that chrome appearing inside a full-phone frame, not a page-level element the page is missing.
 - **Recorded so it is not re-raised as a fresh gap a fourth time.**

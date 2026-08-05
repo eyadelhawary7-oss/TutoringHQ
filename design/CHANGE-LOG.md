@@ -1670,7 +1670,7 @@ That distinction is the finding. Four separate passes (`#245`/`#247`/`#280`/`#29
 the wrong number, and a fraction that counts sections cannot see that — the same shape as the F17
 addendum, where three passes confirmed the right table and none checked how populated it was.
 
-**`formatTime` shifted every bare `HH:MM` by the device's timezone offset (F36).** The wall-clock
+**`formatTime` shifted every bare `HH:MM` by the device's timezone offset (F40).** The wall-clock
 branch anchored the digits in the DEVICE's zone and then rendered them with `timeZone: CAIRO_TZ`,
 applying an offset to a value that never had one. `formatTime('14:00','en')` returns `"4:00 PM"` under
 `TZ=UTC` and `"2:00 PM"` under `TZ=Africa/Cairo` — measured directly, same build, only `TZ` changed.
@@ -1689,7 +1689,7 @@ telling those two apart took a direct `TZ=UTC` vs `TZ=Africa/Cairo` comparison r
 judgement call. **No existing test had pinned the buggy behaviour**, so nothing had to be edited to
 land the fix — 202 files / 1931 tests green, up from 201 / 1921.
 
-**The Attendance tile printed a fabricated `0%` for nearly every centre (F38).** It divides
+**The Attendance tile printed a fabricated `0%` for nearly every centre (F42).** It divides
 scans-today by expected-today and fell back to a literal `0` when there was no denominator.
 `schedule_slots` holds one row in the entire production database, so almost no centre has an expected
 headcount for today — a centre that scanned fifty students was told its attendance was zero. This is
@@ -1697,7 +1697,7 @@ the exact failure the no-fabrication rule names: a plausible figure nobody quest
 `null`, rendered as an em dash with the real scan count and an `aria-label` explaining why. Digital
 share deliberately keeps its `0%` — it prints its own denominator beside it, so that zero is a fact.
 
-**Every href-less notification opened the card-orders page (F37)** — fine while the one live writer
+**Every href-less notification opened the card-orders page (F41)** — fine while the one live writer
 was the card-order one, wrong the moment D26 wires a second.
 
 **Built to the design:** §01's schedule rows now use the drawn three-part `.sess` layout, with the
@@ -1723,6 +1723,6 @@ on 1 August.
 **D26 was not pre-empted.** Its own do-not-improve-away note says a type firing from one of several
 call sites looks broken rather than honestly sparse, so no write-triggers were added. What was done
 is display-only, so the feed renders correctly whenever the decision lands rather than needing a
-second pass. **F39** closes a loop the 1 August audit left open: §02's `.topbtn` is the global
+second pass. **F43** closes a loop the 1 August audit left open: §02's `.topbtn` is the global
 `MobileTopBar` hamburger appearing inside a full-phone frame, not a missing page element — building
 it would have put a second hamburger three lines below the real one.
