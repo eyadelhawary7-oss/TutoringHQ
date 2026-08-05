@@ -1754,11 +1754,11 @@ The same applies to any post-apply verification query written into a migration: 
 
 ---
 
-## F38 · Two of the three per-student notification flags are written by the UI and read by nothing — a paid-WhatsApp opt-out that only works for one channel
+## F39 · Two of the three per-student notification flags are written by the UI and read by nothing — a paid-WhatsApp opt-out that only works for one channel
 
 *(F-number picked by grepping `^## F[0-9]+` across `refs/remotes/origin` — all 206 refs, not just
 `master`, per F31's warning. Claimed across every branch as of 5 August: F1–F37 with no gaps above
-F25. F38 is the lowest free number anywhere.)*
+F25. F39 is the lowest free number: master ends at F35, #348 claimed F36 and F37, and #349 claimed F38 while this branch was in flight.)*
 
 - **What:** `students` carries three per-student notification booleans — `notify_on_scan`,
   `notify_on_absence`, `notify_on_balance` — all confirmed present in
