@@ -115,6 +115,7 @@ If a row ever names one, that row is a mistake.
 | [#345](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/345) | `(on merge)` | 2026-08-04 | `Center-Orders §01` (hero card preview + New order CTA, row three-dot on the shared `ActionSheet`, `.oicon` tile), `§03` step 4 (order total, Paymob trust line), F29 residue in `CheckoutShell` | `/{locale}/orders`, `/orders/checkout/payment`, `/api/orders/history` | v45 → **v46** |
 | [#346](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/346) | `(on merge)` | 2026-08-04 | `Teacher-Groups §01` (row chevron, stacked per-class label), `§02` (stat tiles, Add student / Edit group action pair, inline "Recent classes"), `§03` (group summary line, queue notes, joined-on date, requests on the shared `ExpandableRow`, roster rows on the shared `ListRow`, one shared `ActionSheet` for both). `§04` not built (D20), `§05` untouched (money/legal) | `/{locale}/teacher/groups`, `/{locale}/teacher/groups/[groupId]` | v45 → **v46** |
 | [#347](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/347) | `(on merge)` | 2026-08-04 | `Center-WhatsApp §01` — structure build: row message preview with inline `{{var}}` tokens, expand-in-place row + More sheet (first `ExpandableRow` adopter), preview converted to a real bottom sheet, screen restyled onto the §4 token layer. `§02`/`§03` **not built — blocked by D5** (see the narrative below). Also touches `patterns/ExpandableRow.tsx` (`avatar` widened `string` → `ReactNode`) — **treat as ALL screens for that component**, though it had zero adopters before this PR | `/{locale}/whatsapp` | v45 → **v46** |
+| [#348](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/348) | `(on merge)` | 2026-08-05 | `Center-Insight §01` (aging age bands, revenue bars, centre·month subtitle, donut share-of-mix), `§02` (district median from `p50_*`, median tick, below-median state, compact rows, gradient hero); `§03` surveyed, deliberately unbuilt (D22) | `/{locale}/analytics`, `/{locale}/benchmarks`, `/api/benchmarks` | v45 → **v46** |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, `#214`'s by that
@@ -2107,3 +2108,139 @@ primitive that cannot do what a screen needs is a signal worth surfacing, not si
 `ActionSheet` genuinely cannot serve §01's preview sheet: its contract is `actions: SheetAction[]` and
 the preview is a *content* sheet (a WhatsApp bubble, a token list). Rather than fork it into a
 content-bearing variant, the preview keeps ActionSheet's chrome behaviour and supplies its own body.
+**Center-Insight (5 August 2026) — surveyed AND built.** Row 9's previous two passes both ended
+"surveyed, no build". This one built everything on §01 and §02 whose backing columns exist, and left
+§03 untouched for a reason that was re-verified rather than inherited.
+
+**Survey first, before any code.** Recorded position was ≈3.5/5 (§01 4.2, §02 4.5, §03 1.6).
+Re-measured against the live routes: **§02 4 of 4 blocks present but the metric block missing 3 of
+its 5 elements** (no median value, no median tick, no below-median state), **§03 3 of 6 blocks
+present and all three sitting on a table with zero live writers**.
+
+> **Two figures in this paragraph were wrong and are withdrawn rather than patched (5 August,
+> adversarial re-verify).**
+>
+> **"§01 7 of 8 drawn blocks present"** — no enumeration of the design yields that. §01 draws seven
+> content blocks across its two live frames (KPI grid L266-271, revenue + projection L272-283,
+> collection-rate gauge L284-291, methods donut L292-303, revenue-by-group L310-316, P&L L317-325,
+> aging L326-331) plus one add-on-gate frame (L334-361). Counting the gate gives **6/8**; excluding
+> it gives **6/7**. Neither is 7-of-8, and the "one absent" framing contradicts this entry's own
+> statement three paragraphs later that D13's gate is also unbuilt.
+>
+> **"≈3.3/5, marginally below the recorded 3.5"** — does not follow from the fractions printed
+> beside it. Under the same mean-of-three aggregation the previous row used
+> (`(4.2+4.5+1.6)/3 = 3.43 ≈ 3.5`), the stated numbers give §01 4.375/5, §02 4.25/5, §03 2.5/5 →
+> **3.71/5, ABOVE 3.5, not below it.** The narrative it supported — "the earlier figure was slightly
+> generous" — was therefore backwards.
+>
+> No replacement headline is minted here. The per-section observations above are what was actually
+> measured; the aggregate was not, and inventing a third number to sit in its place would repeat the
+> error in the other direction.
+
+**Built — §01 Analytics:**
+- **The aging report's three age bands — BUILT, THEN REVERSED. It was fabricated data.** The first
+  version of this pass rendered `0–30`, `31–60` (`watch`) and `60+` (`overdue`), each with that
+  band's outstanding total, on the argument that the payload "needed nothing but grouping". The
+  grouping was the error. `amount` is one **running total per student** and `days_overdue` is one
+  **proxy age per student** (days since last payment + 30d, else the 1st of the month) — so a
+  student five months in arrears who paid anything 20 days ago had their **entire** balance rendered
+  under `0–30`. A real aging report splits one student's balance ACROSS bands by charge date, and
+  this data has no per-charge structure to split. It was degenerate live as well: `payments` holds
+  **0 rows**, so every balance took the fallback, landed in `0–30`, and the other two bands printed
+  **EGP 0 unconditionally for every centre**.
+
+  Eyad's call, 5 August, verbatim: *"Aging card: empty state. Not a relabel, not the current chart."*
+  and *"Zero rendering unconditionally in two bands is worse than nothing, because zero reads as a
+  fact."* The card now shows the section title and one line explaining that age bands are not
+  available and why, **with no figure of any kind**. Real aging is logged as its own feature entry
+  with the migration it needs — **F45** (`student_charges`, per-charge due date and remaining
+  amount, plus an allocation path). The per-student table underneath is untouched and is real.
+- **The revenue chart is now the design's monthly bars**, current month in a deeper teal, replacing
+  the filled area chart. Same series, same numbers, different mark. `BarChartComponent` already
+  supported per-bar colours so no chart code was written. **The dashed projection bar is still
+  absent, deliberately — D33.**
+- **The header subtitle is now centre · month** ("Al-Nahda · August") instead of a generic strapline,
+  Cairo month per the standing rule. The original wording of this line — "so the label cannot
+  disagree with the server's window by a timezone" — had it backwards, and the re-verify found the
+  real defect underneath: the API windowed on the SERVER's month (UTC on Vercel) while the label was
+  Cairo, so for the two or three hours between Cairo midnight and UTC midnight on the last day of a
+  month the header read one month and every figure under it the previous one. **Fixed on both sides
+  and pinned by a test** — see **F46**.
+- **The methods donut legend now reads as a share of the mix** (`Cash 3,200 EGP · 18%`), computed
+  from the slices already charted.
+
+**Built — §02 Benchmarks, and the find that made it possible:**
+- **The district MEDIAN is now real on this screen.** §02 compares every row against the local median
+  in the design, and the screen could not: `get_center_benchmarks` returns only `district_avg` per
+  metric. But `benchmark_snapshots` physically carries `p50_attendance_rate`,
+  `p50_revenue_per_student`, `p50_retention_rate_30d` and `p50_group_utilization` — confirmed in
+  `information_schema.columns` before a line was written — and the RPC reads them internally to
+  interpolate the percentile, then throws them away. `/api/benchmarks` now selects them directly off
+  the same snapshot the RPC picked. **That is now enforced, not asserted.** The claim as first
+  written — "both taken from the RPC's own response so the two cannot diverge" — was refutable from
+  the diff: only `district` and `tier` came from the RPC, while `snapshot_date` was **re-derived** by
+  an independent `.order('snapshot_date', desc).limit(1)`. Two round trips against a table a daily
+  cron writes, with no tie-break for duplicate dates. `pg_get_functiondef(get_center_benchmarks)`,
+  read live, shows the RPC **does** return `'snapshot_date', v_snapshot.snapshot_date` — the one
+  field that would have made the claim true was on the wire and ignored. The lookup now filters on it
+  explicitly and withholds the median entirely if it is absent. **No migration**: the columns were
+  already there. Attached only when the RPC did not withhold the comparison, so the median inherits the same
+  10-centre disclosure gate as everything else.
+- **The median tick on every track**, and **the below-median down-state** (gold fill plus a "Below
+  median" pill instead of "Top X%") — percentile < 50 is below the median by definition, the same
+  number already driving the bar.
+- **The metric block is now the design's one card of compact rows**, not four large cards each with
+  its own two-bar you-vs-district chart. Those charts restated exactly what the percentile track
+  already showed and the design does not have them. The overall-standing card is now the design's
+  teal gradient hero with the circular marker on a translucent bar.
+- The design's fifth and sixth rows (average fee, new students/month) stay unbuilt — Appendix **D9**,
+  already decided: build the real four, fix the drawing.
+- **§02's header subtitle now names the district** — "vs centers in 6th of October" — which the
+  design draws in the topbar of BOTH frames (L409 `add-on · locked`, L435 `enabled · fitted`) and the
+  page rendered as a generic strapline. This was flagged by the re-verify as buildable-and-not-built,
+  and it was: `centers.district` is live, already bound to `districtNorm` at `benchmarks/page.tsx:132`
+  from the RPC's own response, with `settings.districts.*` carrying the localized labels in both
+  locales and `formatDistrictDisplay` as the fallback for an untranslated slug. No column, no RPC
+  change, no open decision — the same one-line fix this pass had already shipped for §01's header.
+  Applied to the locked screen too, since the design names the district there as well.
+
+> **Withdrawn: "§02 5/5" and "the district median is now real on this screen".** Both overstate what
+> a live request can reach. Every live centre has `district = NULL`, so `get_center_benchmarks`
+> returns `insufficient_data: true, reason: 'no_district'`, `showLiveBenchmarks` is false, and the
+> page returns the locked district-progress screen. Neither the gradient hero, the compact rows, the
+> median tick, the below-median pill nor a single `district_median` value is reachable today. The
+> code is correct and the columns are real; the scoring described code no live request can execute,
+> which is not the same thing as a working screen.
+>
+> Same correction for the NULL-p50 guard, which was defended with "live data has a NULL
+> `p50_retention_rate_30d` today". The NULL is real but **cannot reach the guard**:
+> `withDistrictMedians` returns on its first line for every live centre, and all 52
+> `benchmark_snapshots` rows carry `center_count = 1`, so the RPC would bail at `< 10` even with a
+> district set. The guard is still right to exist — it just has never executed, and citing live data
+> as proof that it fires was corroboration for an unreachable path.
+
+**§03 Referrals — nothing built, and this is the correct outcome, re-verified twice.** Read
+`/api/referral/route.ts` cold: still `.from('referral_reward_records')`. Live row counts run this
+pass: `referrals` 0, `referral_commissions` 0, `referral_reward_records` 0, `payout_requests` 0 —
+identical to 31 July. Every remaining design element on §03 (the recurring-income hero, the
+per-referral rate/countdown cards, the referral-detail rate schedule) reads that table. **D22.**
+
+**Two new omissions, each with the exact missing column named, both logged as new entries:**
+- **F36** — §01's collection-rate month-over-month delta. `information_schema.columns` has **zero**
+  columns matching `%collection%rate%` anywhere in `public`; the rate is computed per request from a
+  *running* student-balance total with no as-of-date variant, so last month's denominator cannot be
+  reconstructed. Needs a stored monthly series — a migration.
+- **F37** — §01's P&L "Teacher cuts" line. The only stored side of that split is
+  `student_groups.center_cut_egp`, the CENTRE's cut, and no **per-group or per-session** teacher cut
+  is stored anywhere. Deriving the complement is **D16**'s open flat-cut-versus-percentage question.
+
+  **Stated precisely, because the PR body flattened it into a categorical denial the catalog
+  refutes.** "No teacher-cut column exists on any table" is false. A live scan of
+  `information_schema.columns` returns `transactions.teacher_commission_amt`,
+  `commission_payouts.t1_commissions` / `.t2_commissions` / `.override_commissions`, and
+  `teacher_profiles.commission_total_override_pct`. None of them is the right ledger for this line —
+  the first is the payment-processing split and the rest are the affiliate/referral programme, which
+  the F37 entry itself already explains — but the claim as written was refutable in one query, and
+  "wrong ledger" is the argument that actually holds.
+
+`SW_VERSION` v45 → v46.

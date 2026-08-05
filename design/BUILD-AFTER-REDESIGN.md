@@ -520,6 +520,7 @@ resolve — this entry describes a bug that was already fixed before it was logg
 - **Build:** pick one table as canonical and repoint the other side. Repointing `/api/referral` and `/api/referrals/payout` at `referral_commissions` (matching the admin side and the live cron) is the smaller change; retiring `referral_reward_records` and `calculate-rewards` entirely is the alternative. Either way, R6's rate/countdown display should be built on top of whichever table survives this decision, not before.
 - **Touches:** money.
 - **Blocked by:** Eyad's decision on which table is canonical.
+- **Re-verified live, 5 August 2026, `Center-Insight` BUILD pass — unchanged, and §03 was therefore built nothing.** Two independent checks, both run this pass rather than trusted from above: (a) `src/app/api/referral/route.ts` still selects `.from('referral_reward_records')` — the read that feeds every figure on `/{locale}/referrals`; (b) live row counts against project `lczmjpnbuhnsislcvzar`: `referrals` **0**, `referral_commissions` **0**, `referral_reward_records` **0**, `payout_requests` **0** — the same all-zero picture as 31 July, so nothing has started flowing that would force the decision. §01 and §02 were built out substantially in this pass; §03 was left exactly as it stands, because every remaining design element on it (the recurring-income hero, the per-referral rate/countdown cards, the referral-detail rate schedule) hangs off this table. R6's own note — "adding a rate/countdown display on top of a permanently-empty table would dress up a broken pipe as a working feature" — is the reason, and it was re-read before deciding, not after.
 
 ## D23 · Adding a branch silently clones the parent's full plan price — there is no "extra branch" add-on
 - **What:** `Merged-Center-Groups` §04 draws "Extra branch · 199 EGP/mo · billed via Paymob" as a flat add-on charge.
@@ -917,6 +918,7 @@ rather than deleted so nobody re-opens a layout question that already shipped.
 - **Why it's a decision, not a display fix:** a month-end projection needs a chosen method before it can be built at all — naive linear scale-up from day-of-month elapsed (`mrr_trend`'s current-month figure ÷ days elapsed × days in month), a trailing-average pace, or something that accounts for known non-linearity in the business (e.g. tuition due-dates clustering early in the month, so linear scaling overstates months that front-load collection). Each produces a materially different number for the same underlying data, and whichever ships becomes a number owners act on. Building one silently forecloses the others.
 - **Touches:** money (a projected, not actual, figure — the kind of thing this codebase has previously been burned by inferring, e.g. the "Paid" clock-comparison state and the invented-date findings called out in this pass's brief).
 - **Blocked by:** Eyad's call on the extrapolation method. Not attempted this pass — the KPI grid and revenue chart ship without the forecast tile/dashed bar, same as before, rather than picking a method unilaterally.
+- **Re-verified 5 August 2026, `Center-Insight` BUILD pass, before deciding to leave it alone again.** Re-read `/api/analytics/revenue/route.ts` end to end and re-grepped the analytics route tree and `(dashboard)/analytics/page.tsx` for `forecast`/`project*` — still zero matches, no code path computes a projection. The rest of §01's chart was rebuilt this pass (area chart → the design's monthly bars with the current month emphasised) and the projection bar was **deliberately left out of that rebuild**: the bar is trivial to draw and the number behind it is not, so drawing it would have shipped a method by accident. The chart is now one bar short of the design, on purpose, and stays that way until this is decided.
 **Re-verified 4 August 2026, independently, before trusting this entry's own wording.** The phrase
 "there was never a manual alternative" in this entry's own title reads as stronger than what the
 body actually says — re-reading `groups/page.tsx` fresh (PR #313 is already on master), the design's
@@ -1813,3 +1815,91 @@ findings.** Check the helper before believing the grep.
 convention, not a constraint: a new route that forgets the filter is caught by no policy, no test and
 no type error. The durable fix is a test that asserts cross-tenant denial per route family, or moving
 the remaining service-role reads behind RLS. Neither exists today. Logged, not built.
+
+---
+
+## F36 · `Merged-Center-Insight` §01's collection-rate month-over-month delta has no backing column anywhere
+
+- **What:** §01's EN-overview frame badges the Collection-rate KPI tile `+4%` and repeats it under the
+  gauge as "Up 4% on May". Both are a comparison against the PREVIOUS month's collection rate.
+- **Found:** 5 August 2026, `Center-Insight` build pass, while wiring everything else on §01 that was buildable.
+- **Evidence, live, not inferred:** `select table_name, column_name from information_schema.columns
+  where table_schema='public' and column_name ilike '%collection%rate%'` returns **zero rows** —
+  project `lczmjpnbuhnsislcvzar`, run this pass. No table stores a collection rate, historical or
+  current. The figure the screen shows is computed per request in `/api/analytics/revenue`
+  (`collectedThisMonth / expectedThisMonth`), and `expectedThisMonth` is built from
+  `getStudentBalances(...)`, a **running** balance across active students with no as-of-date variant.
+  There is therefore nothing to reconstruct last month's denominator from.
+- **Why it is not "just add a delta":** the MRR tile's delta is honest because `mrr_trend` stores six
+  months of actual collected totals. Collection rate has no equivalent series. Any month-over-month
+  figure would have to invent a second, different denominator methodology for the prior month and
+  present the difference between two incompatible bases as a trend — the same class of error as D33,
+  arrived at from the other direction.
+- **Built this pass:** nothing. The tile and the gauge card ship without the delta.
+- **Blocked by:** needs a stored monthly collection-rate series (a snapshot table or a
+  `month_end_expected` column), i.e. **a migration** — so it stops here under the standing rule rather
+  than being written.
+
+## F37 · §01's P&L "Teacher cuts" line has no backing column — only the centre's half of the split is stored
+
+- **What:** §01's P&L card breaks expenses into two named lines, "Teacher cuts" (−6,900) and
+  "Rent + costs" (−3,200). The live `PnLCard` has the second (`center_expenses.rent/salaries/
+  utilities/other`) and not the first.
+- **Found:** 5 August 2026, same pass, checked before assuming it was unbuildable.
+- **Evidence, live:** a catalog scan for `%teacher_cut%`, `%teacher_share%`, `%commission%` and
+  `%center_cut%` across `information_schema.columns` returns, for the centre-class side, exactly one
+  relevant column: **`student_groups.center_cut_egp`** — the CENTRE's flat cut, not the teacher's.
+  `transactions.teacher_commission_amt` exists but belongs to the payment-provider ledger, not the
+  centre's own P&L. There is no stored teacher-cut amount per group, per session or per payment.
+- **Why the obvious derivation is refused:** teacher cut *could* be inferred as (group fee −
+  `center_cut_egp`) × students. That inference IS the open flat-cut-versus-percentage-split question,
+  **D16**, and D16's own entry records the centre-class commission engine as dormant — every teacher's
+  "Owed" figure reads 0.00 today. Deriving a P&L expense line from a dormant engine would put a
+  confident money figure on screen that no other surface in the product agrees with.
+- **Built this pass:** nothing. P&L keeps its existing income / expenses / net shape.
+- **Blocked by:** **D16**, plus a stored per-group teacher-cut amount, i.e. a migration.
+
+## F45 · A real aging report needs per-invoice allocation, which does not exist — the bands are a FEATURE, not a gap — proposed 5 August 2026
+
+- **What the design asks for.** `Merged-Center-Insight` §01's "Aging · outstanding" card (L326-331) draws three age bands — `0–30`, `31–60` (`watch`), `60+` (`overdue`) — each with that band's outstanding total. That is a genuine aging distribution: **one student's balance splits ACROSS bands** according to when each unpaid charge fell due.
+- **Why it cannot be built on today's data.** Two independent reasons, both read in the code rather than inferred:
+  - `amount` is `balances.get(id).balance` from `getStudentBalances(...)` (`src/app/api/analytics/revenue/route.ts:159-168`) — **one running total per student**. It carries no internal structure, so there is nothing to split.
+  - `days_overdue` is **one proxy age per student**: `Math.max(0, (now − (lastConfirmedPayment + 30d)) / day)`, falling back to the first of the current Cairo month when the student has never paid (`route.ts:272-283`). One age per student cannot describe a balance that accumulated over several months.
+- **It was built once, and that was the defect.** An earlier version of this pass grouped the API rows on `days_overdue` and summed `amount` per band. The result asserted a distribution the data cannot produce: **a student five months in arrears who paid anything 20 days ago had their entire balance rendered under `0–30`.** It was also degenerate in production, not merely imprecise — `select count(*) from payments` returns **0**, so every student takes the first-of-month fallback, every balance lands in `0–30`, and `31–60` and `60+` printed **EGP 0 unconditionally, for every centre**. Caught in adversarial re-verification of PR #348 and reversed.
+- **Eyad's call, 5 August 2026, verbatim:** *"Aging card: empty state. Not a relabel, not the current chart. A relabel keeps a distribution the data can't produce."* And: *"Zero rendering unconditionally in two bands is worse than nothing, because zero reads as a fact."*
+- **Built this pass:** an honest empty state in the card's position — the section title and one line saying age bands are not available and why, **with no figure of any kind**. A zero here would be a claim about the world ("nothing is that old"), not about the data. The per-student table below is untouched: it predates the pass and is real per-student data.
+- **What would unblock it — this is the migration to approve.** Aging needs a per-charge ledger with a due date and a remaining amount, so a payment can be allocated against specific charges oldest-first and the residue aged by charge. The minimum shape:
+
+```sql
+-- PROPOSED, NOT APPLIED. Rule 5: Eyad applies by hand, then the code deploys.
+create table public.student_charges (
+  id           uuid primary key default gen_random_uuid(),
+  center_id    uuid not null references public.centers(id) on delete cascade,
+  student_id   uuid not null references public.students(id) on delete cascade,
+  amount       numeric(12,2) not null check (amount > 0),
+  due_on       date not null,                    -- the date the band is measured from
+  paid_amount  numeric(12,2) not null default 0 check (paid_amount >= 0),
+  source       text not null,                    -- 'group_fee' | 'manual' | ...
+  created_at   timestamptz not null default now(),
+  constraint student_charges_not_overpaid check (paid_amount <= amount)
+);
+create index student_charges_aging_idx
+  on public.student_charges (center_id, due_on)
+  where paid_amount < amount;
+
+alter table public.student_charges enable row level security;
+-- RLS ships in the same migration, per the tenancy rule: scope by center_id
+-- derived from the caller's users row, never from a caller-supplied value.
+```
+
+  Plus an allocation path (a payment consumes open charges oldest-first) and a backfill decision for the balances that already exist. **None of that is written.** This entry exists so the card is understood as an unbuilt feature with a known cost, not as a parity hole someone can close with a client-side `groupBy`.
+- **Blocked by:** the migration above, plus a decision on how existing running balances are apportioned into charges at cutover.
+
+## F46 · The analytics revenue window was the SERVER's calendar month while its header said Cairo — FIXED, 5 August 2026
+
+- **What:** `/api/analytics/revenue` built every window from `new Date()` — `new Date(now.getFullYear(), now.getMonth(), 1)` for the month start, the same for the six trend buckets (`route.ts:210-213`) and for the aging fallback (`route.ts:267`). That is the **server's** calendar month, and the server is **UTC on Vercel**. Meanwhile `analytics/page.tsx` labelled that same window with `formatCalendarMonthYyyyMmInCairo()`.
+- **Why it is a defect and not a naming quibble:** Cairo is UTC+2/+3, so it enters a new month two or three hours before UTC does. **From 22:00/23:00 UTC on the last day of a Cairo month until 00:00 UTC, the header read the NEW month while `mrr`, the trend's emphasised final bar and the aging fallback were all still computing the OLD one.** A payment taken at 00:30 Cairo on the 1st was excluded from the month the header claimed to be showing.
+- **The comment asserted the opposite of the code.** `analytics/page.tsx` carried "Cairo month, per the standing rule — the API windows on the server's calendar month and this label must not disagree with it by a timezone", which describes the bug as though it were the rule. Corrected in place.
+- **Fix:** new Cairo month helpers in `src/lib/cairo/day.ts` — `cairoMonthKey`, `cairoMonthKeyPlusMonths`, `startOfUtcInstantForCairoMonth`, `cairoMonthUtcBounds` — sitting alongside the existing day helpers and reusing their binary search, so a **DST transition inside a boundary stays correct** rather than assuming a fixed offset. `/api/analytics/revenue` now takes its month start, its six trend keys, its per-payment bucketing and its aging fallback from those. Bounds are half-open `[start, endExclusive)`; the old `monthEnd` was the last day at `23:59:59`, which silently dropped anything in that final second.
+- **Pinned by a test that would have failed before:** `tests/unit/cairoMonthWindow.test.ts`, 12 assertions, all **absolute values rather than re-derivations**. The suite runs `TZ=UTC` — the exact environment where this bug is invisible to a naive test — and it asserts that `2026-07-31T22:30:00Z` is Cairo **August**, that a 23:30-Cairo payment on the 31st stays in that month, that adjacent months meet exactly with no gap or overlap, and that Cairo October spans `31 × 24 + 1` hours because the autumn DST shift falls inside it. A fixed-offset reimplementation returns 744 and fails that last one.
+- **Found:** 5 August 2026, adversarial re-verification of PR #348.
