@@ -8,6 +8,8 @@ import { supabase } from '@/lib/supabase';
 import ScanTab from '@/components/attendance/ScanTab';
 import ChecklistTab from '@/components/attendance/ChecklistTab';
 import { RejectedScansBanner } from '@/components/scanner/RejectedScansBanner';
+import VerificationBadge from '@/components/verification/VerificationBadge';
+import { useVerificationState } from '@/hooks/useVerificationState';
 
 type AttendanceTab = 'scan' | 'checklist';
 
@@ -20,6 +22,9 @@ type AttendanceTab = 'scan' | 'checklist';
 function AttendanceSurface() {
   const t = useTranslations('attendance');
   const params = useSearchParams();
+  // Imported, never re-derived — the one state machine, same as the dashboard's
+  // badge. See the comment on the badge slot below.
+  const { state: verification } = useVerificationState();
 
   const groupId = params?.get('group') ?? null;
   const initialTab: AttendanceTab = params?.get('tab') === 'checklist' ? 'checklist' : 'scan';
@@ -53,32 +58,48 @@ function AttendanceSurface() {
 
   return (
     <div className="min-h-screen w-full bg-[var(--color-surface-0)]">
+      {/* `Merged-Center-Attendance` §01 draws a "Verified" pill in the topbar of
+          all five of its frames, with no unverified twin anywhere in the file —
+          a design-side fabrication, and the reason V6 called this screen blocked
+          wholesale. The slot is no longer empty: it renders the REAL state from
+          the one state machine (`useVerificationState` →
+          `/api/verification/status`), exactly as `/dashboard` already does.
+
+          Today it reads "Verification unavailable", because the Valify
+          credentials are placeholders and `verification_records` does not exist
+          — re-confirmed live against project lczmjpnbuhnsislcvzar on 5 August
+          2026, querying information_schema.tables for `verification_records` and
+          `verification_attempts`: neither is present. It can only ever read
+          "Verified" once an HMAC-verified webhook has said so. */}
       <div className="sticky top-0 z-[11] border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]/95 px-4 pt-[max(12px,env(safe-area-inset-top,0px))] pb-2 backdrop-blur">
-        <div
-          className="mx-auto flex w-full max-w-lg gap-1 rounded-xl bg-[var(--color-surface-2)] p-1"
-          role="tablist"
-          aria-label={t('captureTitle')}
-        >
-          {TABS.map(({ key, label, Icon }) => {
-            const active = tab === key;
-            return (
-              <button
-                key={key}
-                type="button"
-                role="tab"
-                aria-selected={active}
-                onClick={() => setTab(key)}
-                className={`min-h-[44px] flex-1 flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm transition-all ${
-                  active
-                    ? 'bg-[var(--color-surface-1)] shadow-sm font-semibold text-[var(--color-text-primary)]'
-                    : 'font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
-                }`}
-              >
-                <Icon className="h-4 w-4" aria-hidden />
-                <span className="truncate">{label}</span>
-              </button>
-            );
-          })}
+        <div className="mx-auto flex w-full max-w-lg items-center gap-2">
+          <div
+            className="flex min-w-0 flex-1 gap-1 rounded-xl bg-[var(--color-surface-2)] p-1"
+            role="tablist"
+            aria-label={t('captureTitle')}
+          >
+            {TABS.map(({ key, label, Icon }) => {
+              const active = tab === key;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setTab(key)}
+                  className={`min-h-[44px] flex-1 flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm transition-all ${
+                    active
+                      ? 'bg-[var(--color-surface-1)] shadow-sm font-semibold text-[var(--color-text-primary)]'
+                      : 'font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+                  }`}
+                >
+                  <Icon className="h-4 w-4" aria-hidden />
+                  <span className="truncate">{label}</span>
+                </button>
+              );
+            })}
+          </div>
+          <VerificationBadge state={verification} />
         </div>
       </div>
 
