@@ -3067,6 +3067,7 @@
     "enrolledOfCapacity": "{count}/{capacity}",
     "groupFull": "Full",
     "headerCount": "{groups} groups · {subjects} subjects",
+    "headerCountDigital": "{groups} groups · all collecting digitally",
     "headerCountEmpty": "None yet",
     "centerCutPct": "center {pct}",
     "membersCount": "Members · {count}",
@@ -3312,6 +3313,7 @@
     "overlapBadge": "overlap",
     "roomOpenAllDay": "Open all day · tap + to use it",
     "gridCaption": "Red outline marks a room clash · swipe for Fri–Sat",
+    "endsAt": "to {time}",
     "takeAttendance": "Take attendance",
     "moreActions": "More"
   },

@@ -504,6 +504,28 @@ resolve — this entry describes a bug that was already fixed before it was logg
 - **Deferred 26 July.** Live keeps `fee_per_class` only. Build the `fee_per_class` equivalent and record the difference. Deferred, not rejected.
 - **Touches:** money.
 
+**Re-verified live 5 August 2026, and it is now clear this is a MIGRATION stop, not only a deferral.**
+`select column_name from information_schema.columns where table_name='student_groups'` on
+`lczmjpnbuhnsislcvzar` returns exactly sixteen columns: `approval_mode, capacity_cap, center_cut_egp,
+center_id, created_at, fee_per_class, id, is_self_enroll_open, kind, max_capacity, name, status,
+subject, teacher_id, teacher_split_pct, whatsapp_group_id`. A targeted check for
+`billing_basis | monthly_fee | bundle_sessions | price_per_session | bundle_size | fee_basis`
+returns **nothing**. So §02's billing sheet — the three-way Per session / Monthly / Bundle radio and
+the bundle's size — has **no column to read or write**, and stops under the standing rule that a new
+column comes to Eyad rather than being written here. That is separate from, and additional to, the
+second reason it stops: the sheet's price breakdown ("Platform markup +18.75 · Your price to parents
+168.75 · You receive 90% of your fee") is a platform-markup money model, which is protected-file
+behaviour wherever it lives.
+
+What §02 *can* carry without either of those was built on 5 Aug: the header's **Verified** badge (from
+the existing `useVerificationState`, using the one shared `verification.badge.verified` string) and
+the "N groups · all collecting digitally" subtitle, both behind the same two-half gate that already
+guarded the §02 note — `platform_config['digital_student_fee_collection.enabled']` **AND**
+`verification.isVerified`. The platform key exists live and is the only `digital`-matching row in
+`platform_config`; it is `false`, so none of this renders for any centre today. The design's per-group
+chip row (`Per session · 150 EGP · Parents pay 168.75`) was **not** built: two of its three chips are
+the blocked halves above, and a one-chip row is not the design.
+
 ## D22 · The centre-facing `/referrals` page reads a table nothing live ever writes — a ticking time bomb, not yet a live wrong number only because zero referrals exist yet
 - **What:** `GET /api/referral` (feeding `/{locale}/referrals`, the screen every centre owner sees for their OWN referral earnings) reads exclusively from `referral_reward_records`. The live, monthly-scheduled commission engine (`/api/cron/referral-automation`, registered in `vercel.json`, confirmed getting `getRate()` = 25%/10%/5% right) writes exclusively to a **different** table, `referral_commissions`. Neither reads or writes the other's table anywhere.
 - **Found:** 29 July 2026, building `Merged-Center-Insight` (R6). Not a survey guess — confirmed by grepping every writer of both tables and cross-checking against `vercel.json`'s registered crons.
@@ -1753,3 +1775,101 @@ findings.** Check the helper before believing the grep.
 convention, not a constraint: a new route that forgets the filter is caught by no policy, no test and
 no type error. The durable fix is a test that asserts cross-tenant denial per route family, or moving
 the remaining service-role reads behind RLS. Neither exists today. Logged, not built.
+
+## F38 · Schedule flags a false "room clash" between two slots that have no room at all
+- **Found:** 5 August 2026, `Merged-Center-Groups` §05 build pass, while changing how a clash renders
+  in the by-room board.
+- **What:** `getConflictingSlotIds` and `conflictPartnerName` in `src/app/[locale]/schedule/page.tsx`
+  both paired slots with `if (s1.room_id !== s2.room_id) continue;` and nothing else.
+  `schedule_slots.room_id` is **NULLABLE** — verified in `information_schema.columns` on
+  `lczmjpnbuhnsislcvzar`, `is_nullable = YES`, not inferred from the TypeScript type, which declares
+  it `string` and is wrong. `null !== null` is `false`, so two room-less slots overlapping in time
+  fell straight through the guard and were both marked a **room** clash, red stripe and all, naming
+  each other as the double-booked partner.
+- **Why it is a real defect and not a hypothetical:** the by-time day list turns the whole meta line
+  into "· clash · overlaps ·", so the centre loses the room and headcount line and gains a warning
+  about a room neither session is in. Nothing about it looks like a bug from the screen.
+- **Why it is not a live wrong number today, stated precisely:**
+  `select count(*) filter (where room_id is null) as null_room, count(*) as total from schedule_slots`
+  returns `null_room = 0, total = 1`. Zero rows can trigger it right now. `handleAddSlot` requires a
+  room, so the UI cannot create one — but the column permits it and the UI is not the only writer the
+  table could ever have.
+- **Fixed, no decision needed:** both loops now skip a slot with no `room_id`. Two room-less sessions
+  are simply not a room clash. The two functions were changed together deliberately — if only the id
+  set were guarded, a row could be striped red with no partner name to show.
+- **Touches:** none (display + a derived set; no write, no money, no entitlement).
+- **ID note:** `F38` is the lowest free number across `master` **and** the eleven open parity branches
+  checked by `git grep -oE '^## F[0-9]+'` against each remote head
+  (`center-insight-parity-20260804`, `center-whatsapp-s01-build`, `teacher-groups-build-w3`,
+  `center-orders-build-gaps`, `teacher-setup-structural-build`, `teacher-students-tag-tone-w5`,
+  `teacher-home-100`, `admin-platform-build-gaps`, `patterns-adoption-2026-08-04`,
+  `admin-accounts-branches-last-active`, `parity-ceo-w2`). `master` ends at `F35`; **`F36` and `F37`
+  are both claimed by PR #348** (`design/center-insight-parity-20260804`). Following F31's standing
+  instruction to grep the open branches, not just `master`.
+
+## Center-Groups · 5 August 2026 build pass — what was built, and the two things that stopped on a column
+
+**Position going in, re-derived rather than trusted:** the recorded `~4.4/5` in
+`FILE-COMPLETION-TABLE.md` was checked by reading all 1,316 lines of `Merged-Center-Groups.html`
+against all four live route files fresh. Counted as **distinct drawn states** (Arabic frames are the
+same state in the other language, not a separate one) the design draws **16**: §01 six (list,
+detail·Members, detail·Waitlist, loading, empty, new-group), §02 two (verified list, billing sheet),
+§03 three (grid, add-room, empty), §04 two (overview-with-one-expanded, add-branch), §05 three
+(day·by-time, day·by-room, week grid). Live rendered **14.5 of 16** going in — everything except §02's
+billing sheet, and only half of §02's verified list. That is **≈4.25/5** by section, close enough to
+the recorded 4.4 to confirm the ledger rather than correct it.
+
+**Built this pass.**
+- **§05 by-room, the end-time tail.** Design lines 1169-1170 put "· to 6:00" on a *clashing* by-room
+  row, not the by-time clash sentence — because the room is already the section header and the header
+  already wears "▲ overlap", so the row spends its line on the fact the header cannot give you: how
+  far each session runs. `schedule_slots.end_time` verified present (`time without time zone`).
+  The red stripe stays, and the clash sentence moves to `aria-label`/`title` so the meaning is never
+  colour-only.
+- **§05 by-room ordering.** Rooms now sort by earliest session, free rooms last, ties by name — the
+  design's own order (Room 2 at 3:00, Room 1 at 5:00, free Room 3). It was sorting by room name, which
+  could open the board on a room with nothing in it all day.
+- **§05 false-clash guard.** See **F38**.
+- **§01 waitlist head of queue.** Design lines 522-524 give row 1 the filled primary Add and everyone
+  behind it the quiet mint one. The list is ordered by `students.waitlist_position` in
+  `GET /api/groups/[groupId]/waitlist` (read, not assumed), so "first" is the real next in line.
+- **§02 verified chrome.** See the D12 note above.
+- **Restyle to the design's tokens (step 4).** The token layer re-pointed the radius scale in
+  `src/app/tokens.css` (`@theme static`: `sm 4→8, md 8→12, lg 12→16, xl 16→24`), so every
+  `rounded-xl` written expecting Tailwind's stock 12px now renders **24px**. These four screens were
+  full of them: the 34px group tile, the 42px add button on all four screens, the session row, both
+  segmented controls, the week grid and its blocks. All moved onto the radius the design actually
+  states (`.gdot` 12, `.gcard` 16, `.sess` 12, `.seg` 12 outer / 8 inner, `.wblk` 8, `.wg` 12,
+  `.kpi` 12, `.rcard` 16, `.ricon` 12). Same pass: `bg-teal-100` on the Rooms icon tile resolves to
+  `--color-mint-deep` (#bfe3dd, the accent *border*) where the design wants `--color-mint` (#dfeeeb,
+  the accent *fill*); and `--color-border-subtle` (rgba(20,24,26,.06), a cool near-invisible hairline)
+  gave way to `--color-line` (#e2ddd1) on the Rooms card, the session rows and the week grid, which is
+  the warm rule the design draws and the rest of these screens already use.
+
+**Stopped on a column — named, not hand-waved.**
+- **§02 billing sheet + the basis chip** — `student_groups` has no `billing_basis`, no `monthly_fee`,
+  no `bundle_sessions`. Full column list in the D12 note above. Migration ask, Eyad's.
+- **§01 waitlist "Requested 09/07"** — `students` carries `waitlist_group_id` and `waitlist_position`
+  and nothing else about the waitlist; there is no `waitlist_requested_at`. The only other waitlist
+  table is `waitlist_notifications (id, student_id, group_id, notified_at, response)`, and
+  `notified_at` is when the **centre messaged the parent**, not when the parent asked — using it would
+  be a different fact wearing the design's label. `students.created_at` is when the student record was
+  made, not when they joined a queue. Migration ask: a `students.waitlist_requested_at timestamptz`
+  written by both waitlist-insert paths.
+- **§03 the Lab flask glyph** — design line 872 gives "Lab 1" a different icon from "Room A/B/C".
+  `rooms` is `(id, center_id, name, capacity, created_at)` — there is no room *type* or *kind* column
+  to switch the glyph on, and switching on the room's **name** would be a guess dressed as data.
+  Migration ask, or drop the glyph variation from the design.
+
+**Unchanged and still blocking, re-verified not re-assumed.**
+- **D23** — `select key from platform_config where key ilike '%branch%'` returns **no rows**;
+  `branch_addon.monthly_price_egp` does not exist, so #313's config-gated add-on notice correctly
+  renders nothing. The design's "199 EGP / mo" is still an unpriced model, still Eyad's.
+- **D32** — the design's per-row promote is live and working; only the automatic WhatsApp-reply path
+  is open.
+- **F11** — `student_groups.capacity_cap` (integer) and `kind` (text NOT NULL) both still present in
+  `information_schema.columns` on 5 Aug. Live distribution, checked directly: 4 groups, `kind` split
+  2 `private` / 2 `center`, `capacity_cap` set on **0** of 4, `max_capacity` set on 1 of 4. Still zero
+  references in `src/`. Not built: the teacher chip is derived from `student_groups.teacher_id` today
+  and re-deriving it from `kind` would change which groups show the chip — a behaviour change needing
+  the same drop-or-document decision, not a display fix.

@@ -132,7 +132,7 @@ export function AttendanceHeatmap({ groupId, groupSize, weeks = 8 }: Props) {
 
   return (
     <div className="space-y-2 p-2" dir={dir}>
-      <p className="text-xs font-medium text-[var(--color-text-secondary)] text-start">
+      <p className="text-xs font-semibold uppercase tracking-[0.02em] text-[var(--color-muted)] text-start">
         {t('attendanceLastWeeks', { weeks: formatNumber(weeks, locale) })}
       </p>
 

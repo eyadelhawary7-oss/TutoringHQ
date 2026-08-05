@@ -293,9 +293,9 @@ export default function BranchesPage() {
       <div className="min-h-screen w-full bg-[var(--color-surface-0)] p-6" dir={locale === 'ar' ? 'rtl' : 'ltr'}>
         <div className="h-8 w-48 rounded-lg bg-[var(--color-surface-2)] animate-pulse mb-4" />
         <div className="h-4 w-72 rounded bg-[var(--color-surface-2)] animate-pulse mb-8" />
-        <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-2 gap-2 mb-6">
           {[1, 2].map((i) => (
-            <div key={i} className="h-24 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
+            <div key={i} className="h-24 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] p-3">
               <div className="h-6 w-20 rounded bg-[var(--color-surface-2)] animate-pulse mb-2" />
               <div className="h-3 w-24 rounded bg-[var(--color-surface-2)] animate-pulse" />
             </div>
@@ -367,7 +367,7 @@ export default function BranchesPage() {
             onClick={() => setShowAddForm((v) => !v)}
             aria-label={t('addBranch')}
             title={t('addBranch')}
-            className="flex h-[42px] w-[42px] items-center justify-center rounded-xl bg-teal-600 text-white transition-colors hover:bg-teal-700 btn-press chq-focus"
+            className="flex h-[42px] w-[42px] items-center justify-center rounded-md bg-teal-600 text-white transition-colors hover:bg-teal-700 btn-press chq-focus"
           >
             <Plus size={22} aria-hidden />
           </button>
@@ -386,26 +386,26 @@ export default function BranchesPage() {
           CONFIRMED PAYMENTS IN THE CURRENT CALENDAR MONTH, which is what the
           design's "This month · EGP" actually says. */}
       {consolidated && (
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
-            <p className="font-mono text-2xl font-bold tabular-nums text-[var(--color-text-primary)]">
+        <div className="grid grid-cols-2 gap-2 mb-6">
+          <div className="rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] p-3">
+            <p className="font-mono text-[22px] font-bold tabular-nums tracking-tight text-[var(--color-text-primary)]">
               {formatNumber(consolidated.total_students, locale)}
             </p>
-            <div className="mt-1 flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)]">
+            <div className="mt-1 flex items-center gap-1.5 text-[11px] text-[var(--color-muted)]">
               <Users size={14} aria-hidden />
               {t('totalStudents')}
             </div>
           </div>
-          <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
-            <p className="font-mono text-2xl font-bold tabular-nums text-[var(--color-text-primary)]">
+          <div className="rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] p-3">
+            <p className="font-mono text-[22px] font-bold tabular-nums tracking-tight text-[var(--color-text-primary)]">
               {formatNumber(consolidated.total_mrr, locale)}
             </p>
-            <p className="mt-1 text-sm text-[var(--color-text-secondary)]">{t('thisMonthEgp')}</p>
+            <p className="mt-1 text-[11px] text-[var(--color-muted)]">{t('thisMonthEgp')}</p>
           </div>
         </div>
       )}
 
-      <h2 className="mb-2 text-sm font-semibold text-[var(--color-text-secondary)]">{t('branchesSection')}</h2>
+      <h2 className="mb-2 px-1 text-[13px] font-semibold text-[var(--color-muted)]">{t('branchesSection')}</h2>
       <div className="flex flex-col gap-2">
         {branches.map((b) => {
           const isCurrent = user?.center_id === b.id;
@@ -502,7 +502,7 @@ export default function BranchesPage() {
                   onChange={(e) => setNewName(e.target.value)}
                   placeholder={t('branchNamePlaceholder')}
                   autoFocus
-                  className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-2.5 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/25"
+                  className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface-0)] px-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/25"
                 />
               </div>
               <div>
@@ -514,7 +514,7 @@ export default function BranchesPage() {
                   value={newDistrict}
                   onChange={(e) => setNewDistrict(e.target.value)}
                   placeholder={t('areaAddressPlaceholder')}
-                  className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-2.5 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/25"
+                  className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface-0)] px-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/25"
                 />
               </div>
               {/* Renders ONLY when platform_config['branch_addon.monthly_price_egp']
@@ -567,7 +567,7 @@ export default function BranchesPage() {
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
                   autoFocus
-                  className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-2.5 text-sm text-[var(--color-text-primary)] focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/25"
+                  className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface-0)] px-4 py-3 text-sm text-[var(--color-text-primary)] focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/25"
                   required
                 />
               </div>
@@ -577,7 +577,7 @@ export default function BranchesPage() {
                   value={editDistrict}
                   onChange={(e) => setEditDistrict(e.target.value)}
                   placeholder={t('areaAddressPlaceholder')}
-                  className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 py-2.5 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/25"
+                  className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface-0)] px-4 py-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/25"
                 />
               </div>
               <button

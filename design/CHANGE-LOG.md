@@ -104,11 +104,25 @@ If a row ever names one, that row is a mistake.
 | [#295](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/295) | `8b1ee5c` | 2026-07-31 | none — doc only (final `EmptyState` correction after #294 landed — 11/72 real adopters, `#292`'s wrong "verified false" claim about `OrdersPageClient.tsx` corrected) | none | v42 |
 | [#296](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/296) | `4c5e29b` | 2026-08-01 | `Center-Home §01` — Schedule section empty-state (balance card confirmed still blocked, not built); merged by Eyad directly, held for review per this file's history | `/{locale}/dashboard` | v42 |
 | [#297](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/297) | `aa8115d4` | 2026-08-01 | none — doc only (logged #296, closed out the Center-Home §01 investigation episode) | none | v42 |
-| [#298](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/298) | `(on merge)` | 2026-08-01 | `Center-Groups` — full re-survey + waitlist-integrity fix (stale entries never cleared, position-assignment race) | `/{locale}/groups` | v42 |
+| [#298](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/298) | `253297bc` | 2026-08-01 | `Center-Groups` — full re-survey + waitlist-integrity fix (stale entries never cleared, position-assignment race) | `/{locale}/groups` | v42 |
+| [#313](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/313) | `5ed71d34` | 2026-08-04 | `Center-Groups §01/§03/§04/§05` — visual-parity rework, D31 closed (Branches moved onto `ExpandableRow` with real Switch/Dashboard/Edit/More) | `/{locale}/groups`, `/{locale}/rooms`, `/{locale}/branches`, `/{locale}/schedule` | v43 (untouched) |
+| [#321](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/321) | `44692233` | 2026-08-04 | `Center-Groups` re-verification — 8 live Arabic-translation bugs fixed in the `groups`/`rooms`/`branches` namespaces (**F31**) | `/{locale}/groups`, `/{locale}/rooms`, `/{locale}/branches` | v45 (untouched) |
+| _(this PR)_ | `(on merge)` | 2026-08-05 | `Center-Groups §01` (waitlist head-of-queue primary, §02 Verified chrome, §01 type/radius pass), `§03` Rooms (card onto design tokens), `§04` Branches (KPI strip onto design tokens), `§05` Schedule (by-room end-time + activity ordering, nullable-`room_id` clash guard, radius pass) | `/{locale}/groups`, `/{locale}/rooms`, `/{locale}/branches`, `/{locale}/schedule` | v45 → **v46** |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, `#214`'s by that
 one, and `#296`'s own row was filled by `#297`.*
+
+*Ledger gap, recorded 5 August 2026 rather than silently papered over.* `#298`'s `(on merge)`
+placeholder was never filled and **the table then stopped entirely** while `master` took roughly two
+dozen more merges and `sw.js` climbed `v42 → v45`. Three corrections were made here, each from
+`git log`, none from memory: `#298`'s SHA is `253297bc`; the two other `Center-Groups` PRs merged
+since (`#313`, `#321`) are now rows. Their SW column says **untouched**, not a bump — checked with
+`git log -L 17,17:public/sw.js`, which shows the `v42 → v45` climb belongs to `#310`, `#312` and
+`#318`, none of them this file's. The ~20 non-`Center-Groups` PRs merged in that window are **still
+missing** from this table and were deliberately not reconstructed here: guessing at another file's
+scope and routes to fill a row is exactly the invented-corroboration failure this ledger exists to
+prevent. Whoever owns those files should backfill their own rows.
 
 ### Notes per PR
 

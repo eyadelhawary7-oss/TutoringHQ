@@ -112,6 +112,7 @@ export default function GroupsPage() {
   const tAtt = useTranslations('attendance');
   const tToast = useTranslations('toasts');
   const tCut = useTranslations('centerCut');
+  const tVerification = useTranslations('verification');
   const { toast } = useToast();
   const locale = useLocale();
   const isRTL = locale === 'ar';
@@ -785,7 +786,7 @@ export default function GroupsPage() {
     <div dir={isRTL ? 'rtl' : 'ltr'} className="min-h-screen w-full bg-[var(--color-surface-0)] space-y-6 animate-fade-in">
       {/* Page header */}
       <div className="flex items-center justify-between mb-6">
-        <div>
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">{t('title')}</h1>
           {isLoading ? (
             <div className="mt-1.5 h-[11px] w-[120px] rounded-xs bg-[var(--color-surface-2)] animate-pulse" aria-hidden />
@@ -793,24 +794,39 @@ export default function GroupsPage() {
             <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">
               {groups.length === 0
                 ? t('headerCountEmpty')
-                : t('headerCount', {
-                    groups: formatNumber(groups.length, locale),
-                    subjects: formatNumber(distinctSubjectCount, locale),
-                  })}
+                : digitalCollectionActive
+                  ? /* §02 subtitle (design line 674): under the flag every group
+                       collects digitally by definition of the flag, so the
+                       subject count gives way to saying so. */
+                    t('headerCountDigital', { groups: formatNumber(groups.length, locale) })
+                  : t('headerCount', {
+                      groups: formatNumber(groups.length, locale),
+                      subjects: formatNumber(distinctSubjectCount, locale),
+                    })}
             </p>
           )}
         </div>
-        {/* Design (§01, line 391): the 42px icon-only teal square — same
-            conversion as Branches. The label lives in aria-label + title. */}
-        <button
-          type="button"
-          onClick={openCreateForm}
-          aria-label={t('addGroup')}
-          title={t('addGroup')}
-          className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-xl bg-teal-600 text-white transition-colors hover:bg-teal-700 btn-press chq-focus"
-        >
-          <Plus size={22} aria-hidden />
-        </button>
+        {/* Design §01 (line 391) puts a 42px icon-only teal square here; design
+            §02 (line 674) puts the Verified badge in that same slot and moves
+            Add group to a bottom bar. Following both rather than showing two
+            Add entry points at once. The badge text is the ONE shared
+            verification string (`verification.badge.verified`), not a second
+            copy that could drift from the badge used everywhere else. */}
+        {digitalCollectionActive ? (
+          <span className="shrink-0 rounded-pill bg-[#DFEEEB] px-3 py-1 text-xs font-semibold text-[#0A514A]">
+            {tVerification('badge.verified')}
+          </span>
+        ) : (
+          <button
+            type="button"
+            onClick={openCreateForm}
+            aria-label={t('addGroup')}
+            title={t('addGroup')}
+            className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-md bg-teal-600 text-white transition-colors hover:bg-teal-700 btn-press chq-focus"
+          >
+            <Plus size={22} aria-hidden />
+          </button>
+        )}
       </div>
 
       {isLoading ? (
@@ -818,9 +834,9 @@ export default function GroupsPage() {
         // structure of this list is known before its content is.
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" aria-busy="true" aria-live="polite">
           {[58, 50, 64, 54].map((w, i) => (
-            <div key={i} className="rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] p-5" aria-hidden>
+            <div key={i} className="rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] p-4" aria-hidden>
               <div className="mb-3.5 flex items-center gap-3">
-                <div className="h-[34px] w-[34px] shrink-0 rounded-xl bg-[var(--color-surface-2)] animate-pulse" />
+                <div className="h-[34px] w-[34px] shrink-0 rounded-md bg-[var(--color-surface-2)] animate-pulse" />
                 <div className="min-w-0 flex-1">
                   <div className="mb-1.5 h-3.5 rounded-xs bg-[var(--color-surface-2)] animate-pulse" style={{ width: `${w}%` }} />
                   <div className="h-[11px] w-4/5 rounded-xs bg-[var(--color-surface-2)] animate-pulse" />
@@ -898,7 +914,7 @@ export default function GroupsPage() {
             return (
             <div
               key={g.id}
-              className="bg-[var(--color-panel)] rounded-md border border-[var(--color-line)] shadow-sm p-5 hover:shadow-md transition-shadow cursor-pointer"
+              className="bg-[var(--color-panel)] rounded-lg border border-[var(--color-line)] shadow-sm p-4 hover:shadow-md transition-shadow cursor-pointer"
               onClick={() => setDetailGroup(g)}
             >
               <div className="flex items-center gap-3 mb-3">
@@ -907,7 +923,7 @@ export default function GroupsPage() {
                     src/lib/subjectPalette.ts. Inline style because the palette
                     is resolved at runtime and Tailwind cannot express it. */}
                 <div
-                  className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-xl"
+                  className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-md"
                   style={{ background: palette.bg, color: palette.fg }}
                   aria-hidden
                 >
@@ -991,6 +1007,21 @@ export default function GroupsPage() {
             );
           })}
           </div>
+          {/* Design §02 footer (line 705): with the topbar slot taken by the
+              Verified badge, Add group becomes a bottom bar — the same shape
+              the §01 empty state already uses, so this is one CTA in a second
+              place, never two at once. */}
+          {digitalCollectionActive && (
+            <div className="sticky bottom-0 mt-4 border-t border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3">
+              <button
+                type="button"
+                onClick={openCreateForm}
+                className="flex h-[50px] w-full items-center justify-center gap-2 rounded-md bg-[var(--color-accent)] text-md font-semibold text-[var(--color-panel)] hover:bg-[var(--color-accent-deep)] btn-press chq-focus"
+              >
+                <Plus size={18} aria-hidden /> {t('addGroup')}
+              </button>
+            </div>
+          )}
         </>
       )}
 
@@ -1016,7 +1047,7 @@ export default function GroupsPage() {
               <input
                 value={addForm.name}
                 onChange={e => setAddForm(prev => ({ ...prev, name: e.target.value }))}
-                className="h-[46px] w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 text-sm text-[var(--color-text-primary)]"
+                className="h-[46px] w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3 text-sm text-[var(--color-text-primary)]"
                 required
               />
             </div>
@@ -1081,7 +1112,7 @@ export default function GroupsPage() {
                   per-lesson figure monthly would misstate money. See
                   needsMigration N1. */}
               <label className="mb-1.5 block text-sm font-medium text-[var(--color-text-primary)]">{t('feePerLesson')}</label>
-              <div className="flex h-[46px] items-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3">
+              <div className="flex h-[46px] items-center rounded-md border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3">
                 <input
                   name="fee_per_class"
                   value={addForm.fee_per_class}
@@ -1096,7 +1127,7 @@ export default function GroupsPage() {
             </div>
             <div>
               <label className="mb-1.5 block text-sm font-medium text-[var(--color-text-primary)]">{t('capacityLabel')}</label>
-              <div className="flex h-[46px] items-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3">
+              <div className="flex h-[46px] items-center rounded-md border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3">
                 <input
                   value={addForm.maxCapacity}
                   onChange={e => setAddForm(prev => ({ ...prev, maxCapacity: e.target.value }))}
@@ -1112,7 +1143,7 @@ export default function GroupsPage() {
               <p className="mb-1.5 text-xs text-[var(--color-text-muted)]">{t('centerCutHelper')}</p>
               {/* Entered and shown as a percent, stored as EGP in
                   `center_cut_egp` — the live money column. */}
-              <div className="flex h-[46px] items-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3">
+              <div className="flex h-[46px] items-center rounded-md border border-[var(--color-border)] bg-[var(--color-surface-0)] px-3">
                 <input
                   value={addForm.centerCutPct}
                   onChange={e => setAddForm(prev => ({ ...prev, centerCutPct: e.target.value }))}
@@ -1187,9 +1218,9 @@ export default function GroupsPage() {
             <div className="flex-1 space-y-4 overflow-y-auto p-4">
               {/* Two bordered stat tiles */}
               <div className="grid grid-cols-2 gap-2">
-                <div className="rounded-md border border-[var(--color-line)] bg-[var(--color-surface-0)] p-3">
+                <div className="rounded-lg border border-[var(--color-line)] bg-[var(--color-surface-0)] px-4 py-3">
                   <p className="text-xs text-[var(--color-text-muted)]">{t('enrolled')}</p>
-                  <p className="font-mono text-xl font-bold tabular-nums text-[var(--color-text-primary)]">
+                  <p className="font-mono text-[22px] font-semibold leading-tight tabular-nums text-[var(--color-text-primary)]">
                     {formatNumber(detailEnrolled, locale)}
                     {detailHasCap && (
                       <span className="text-sm font-semibold text-[var(--color-text-muted)]">
@@ -1198,11 +1229,11 @@ export default function GroupsPage() {
                     )}
                   </p>
                 </div>
-                <div className="rounded-md border border-[var(--color-line)] bg-[var(--color-surface-0)] p-3">
+                <div className="rounded-lg border border-[var(--color-line)] bg-[var(--color-surface-0)] px-4 py-3">
                   <p className="text-xs text-[var(--color-text-muted)]">
                     {activeTab === 'waitlist' ? t('waiting') : tAtt('avgAttendance')}
                   </p>
-                  <p className="font-mono text-xl font-bold tabular-nums text-[var(--color-text-primary)]">
+                  <p className="font-mono text-[22px] font-semibold leading-tight tabular-nums text-[var(--color-text-primary)]">
                     {activeTab === 'waitlist'
                       ? formatNumber(waitlist.length, locale)
                       : detailAvgPct != null
@@ -1247,7 +1278,7 @@ export default function GroupsPage() {
               {/* Recent sessions, capped at three */}
               <div>
                 <div className="mb-2 flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">{t('recentSessions')}</h3>
+                  <h3 className="text-xs font-semibold uppercase tracking-[0.02em] text-[var(--color-muted)]">{t('recentSessions')}</h3>
                   <RouterLink
                     href={`/attendance?group=${detailGroup.id}&date=${cairoDateKey()}&tab=checklist`}
                     className="text-xs font-semibold text-teal-600 hover:underline"
@@ -1284,18 +1315,18 @@ export default function GroupsPage() {
               </div>
 
               {/* Tab bar sits directly above its own rows */}
-              <div className="flex gap-1 rounded-lg bg-[var(--color-surface-2)]/50 p-1">
+              <div className="flex gap-1 rounded-md bg-[var(--color-surface-2)] p-1">
                 <button
                   type="button"
                   onClick={() => setActiveTab('members')}
-                  className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium ${activeTab === 'members' ? 'bg-[var(--color-surface-0)] shadow text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
+                  className={`flex-1 rounded-sm px-3 py-2 text-[13px] font-semibold ${activeTab === 'members' ? 'bg-[var(--color-surface-0)] shadow text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
                 >
                   {t('membersCount', { count: formatNumber(members.length, locale) })}
                 </button>
                 <button
                   type="button"
                   onClick={() => setActiveTab('waitlist')}
-                  className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium ${activeTab === 'waitlist' ? 'bg-[var(--color-surface-0)] shadow text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
+                  className={`flex-1 rounded-sm px-3 py-2 text-[13px] font-semibold ${activeTab === 'waitlist' ? 'bg-[var(--color-surface-0)] shadow text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'}`}
                 >
                   {t('waitlistCount', { count: formatNumber(waitlist.length, locale) })}
                 </button>
@@ -1312,11 +1343,11 @@ export default function GroupsPage() {
                   <div className="space-y-2">
                     {waitlist.map((w, i) => (
                       <div key={w.id} className="flex items-center gap-3 rounded-md border border-[var(--color-line)] bg-[var(--color-surface-0)] px-3 py-2.5">
-                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[var(--color-surface-2)] font-mono text-xs font-semibold text-[var(--color-text-secondary)]" aria-hidden>
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-sm bg-[var(--color-surface-2)] font-mono text-[13px] font-semibold text-[var(--color-text-secondary)]" aria-hidden>
                           {formatNumber(i + 1, locale)}
                         </span>
                         <div className="min-w-0 flex-1">
-                          <div className="truncate text-sm font-medium text-[var(--color-text-primary)]">{w.name}</div>
+                          <div className="truncate text-[15px] font-semibold leading-tight text-[var(--color-text-primary)]">{w.name}</div>
                           {/* The design's "Requested 09/07 ·" half has no source:
                               `students` carries waitlist_group_id and
                               waitlist_position only. See needsMigration N2. */}
@@ -1324,10 +1355,20 @@ export default function GroupsPage() {
                             <div className="mt-0.5 font-mono text-xs text-[var(--color-text-secondary)]" dir="ltr">{w.parent_phone}</div>
                           )}
                         </div>
+                        {/* Design (§01 Detail · Waitlist, lines 522-524): the
+                            row at the front of the queue carries the FILLED
+                            primary Add; everyone behind it keeps the quiet mint
+                            one. The list is already ordered by
+                            `students.waitlist_position`, so "first" is the real
+                            next-in-line, not the first thing that loaded. */}
                         <button
                           type="button"
                           onClick={() => handleAddMember(w.id)}
-                          className="shrink-0 rounded-pill bg-[#DFEEEB] px-3 py-1.5 text-sm font-semibold text-[#0A514A] btn-press chq-focus"
+                          className={`shrink-0 rounded-pill px-3 py-1.5 text-sm font-semibold btn-press chq-focus ${
+                            i === 0
+                              ? 'bg-[var(--color-accent)] text-[var(--color-panel)]'
+                              : 'bg-[#DFEEEB] text-[#0A514A]'
+                          }`}
                         >
                           {tCommon('add')}
                         </button>
@@ -1352,7 +1393,7 @@ export default function GroupsPage() {
                           {initialsOf(m.student_name)}
                         </span>
                         <div className="min-w-0 flex-1">
-                          <div className="truncate text-sm font-medium text-[var(--color-text-primary)]">{m.student_name}</div>
+                          <div className="truncate text-[15px] font-semibold leading-tight text-[var(--color-text-primary)]">{m.student_name}</div>
                           {/* Nothing at all when the group has never met — "0/0"
                               is not a fact about this student. */}
                           {totalSessions > 0 && (

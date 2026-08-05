@@ -1560,6 +1560,7 @@
     "overlapBadge": "تعارض",
     "roomOpenAllDay": "متاحة طوال اليوم · اضغط + لاستخدامها",
     "gridCaption": "الإطار الأحمر يعني تعارض قاعة · اسحب لعرض الجمعة والسبت",
+    "endsAt": "حتى {time}",
     "takeAttendance": "تسجيل الحضور",
     "moreActions": "المزيد"
   },
@@ -5532,6 +5533,7 @@
     "enrolledOfCapacity": "{count}/{capacity}",
     "groupFull": "مكتملة",
     "headerCount": "{groups} مجموعات · {subjects} مواد",
+    "headerCountDigital": "{groups} مجموعات · كلها تُحصّل رقميًا",
     "headerCountEmpty": "لا شيء بعد",
     "centerCutPct": "{pct} للمركز",
     "membersCount": "الأعضاء · {count}",
