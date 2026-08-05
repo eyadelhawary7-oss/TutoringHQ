@@ -9504,6 +9504,8 @@
       "riskEmpty": "No outstanding balances right now.",
       "collectingTitle": "Collecting data",
       "collectingBody": "This will appear once you have enough teaching history.",
+      "unlockTitle": "What you'll unlock",
+      "proBadge": "Pro",
       "dropoutTitle": "Dropout rate per group",
       "trendingTitle": "Enrolment trend per group",
       "missingTitle": "Students who often miss class",
