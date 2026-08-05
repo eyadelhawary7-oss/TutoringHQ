@@ -107,9 +107,24 @@ If a row ever names one, that row is a mistake.
 | [#298](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/298) | `(on merge)` | 2026-08-01 | `Center-Groups` — full re-survey + waitlist-integrity fix (stale entries never cleared, position-assignment race) | `/{locale}/groups` | v42 |
 | [#339](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/339) | `(on merge)` | 2026-08-04 | `Admin-Accounts §01` — the MANAGE **Branches** row, previously mislogged as schema-blocked; `Admin-Accounts §02` — the member sheet's recency line | `/{locale}/admin/centers/[id]`, `/{locale}/admin/internal-team` | v45 → **v46** |
 
+| [#311](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/311) | `81639a14` | 2026-08-04 | `Public-Legal §01` — the four documents, the index, the data-rights form and its confirmation; `/privacy` + `/terms` retired to permanent redirects with the processing-fee disclosure ported into the Terms reader | `/{locale}/legal`, `/legal/{privacy,terms,cookie,dpa}`, `/legal/privacy-request` | v42 |
+| [#358](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/358) | `(on merge)` | 2026-08-05 | `Public-Legal §01` re-survey — `/cookies` moved under `legal/layout.tsx` (the reader rendered with no flex column at that one address), marketing-footer legal links repointed off the three redirect stubs, `.ar .dmeta`/`.ar .rver` weight-500, X4 re-measured 23→10 sections and locked by a design-derived test | `/{locale}/cookies` → `/legal/cookie`, `/{locale}/legal`, `/legal/*`, marketing footer on `/`, `/centers`, `/teachers`, `/pricing` | v45 → **v46** |
+
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, `#214`'s by that
 one, and `#296`'s own row was filled by `#297`.*
+
+**This table is behind master, and saying so is part of keeping it honest (5 August 2026).**
+`git log origin/master` carries **32** merged PRs numbered `#300`–`#338`; only `#311` is logged
+above, because `#311` is the one this pass verified line by line. The other 31 are **not**
+backfilled here: writing rows for merges I did not read would put invented summaries into the one
+document that is supposed to be evidence, which is the precise failure this file exists to prevent.
+Whoever next surveys those files should fill their own rows from the diffs.
+
+*Row numbering note: `#358`'s own row was written before the PR existed and carried a `#PR`
+placeholder for one commit, then was filled in from the opened PR — the same two-step the `(on
+merge)` SHA goes through, for the same reason: neither value exists at the moment the file has to
+be written.*
 
 ### Notes per PR
 
