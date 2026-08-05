@@ -9,13 +9,16 @@ import { supabase } from '@/lib/supabase';
 import { AdminSidebar } from '@/components/AdminSidebar';
 import PrivacyQueueHeader, {
   filterByPrivacyType,
+  daysUntilDue,
+  primaryPrivacyTag,
   type PrivacyTypeFilter,
 } from '@/components/admin/PrivacyQueueHeader';
+import { Download, Info, Trash2 } from 'lucide-react';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { useSidebar } from '@/contexts/SidebarContext';
 import { useLayout } from '@/contexts/LayoutContext';
 import { getCsrfHeaders } from '@/lib/csrf-client';
-import { formatDate } from '@/lib/formatNumber';
+import { formatDate, formatNumber } from '@/lib/formatNumber';
 
 type PrivacyRequest = {
   id: string;
@@ -48,6 +51,17 @@ const STATUS_STYLES: Record<string, string> = {
   completed: 'bg-green-100 text-green-700',
   rejected: 'bg-red-100 text-red-700',
 };
+
+/**
+ * `Merged-Admin-Platform` §06 gives each request type its own coloured tag —
+ * red for deletion, teal for access, brass for export. The icon and tone come
+ * straight from the design's `.tdel` / `.tacc` / `.texp` marks.
+ */
+const TAG_STYLES = {
+  deletion: { icon: Trash2, tone: 'bg-red-100 text-red-700' },
+  access: { icon: Info, tone: 'bg-teal-100 text-teal-700' },
+  portability: { icon: Download, tone: 'bg-amber-100 text-amber-700' },
+} as const;
 
 export default function AdminPrivacyRequestsPage() {
   const t = useTranslations('admin');
@@ -210,12 +224,34 @@ export default function AdminPrivacyRequestsPage() {
                     const overdue = isOverdue(r.due_at, r.status);
                     const isDeletion = r.request_types?.includes('deletion');
                     const open = expanded === r.id;
+                    const tag = primaryPrivacyTag(r.request_types);
+                    const TagIcon = tag ? TAG_STYLES[tag].icon : null;
+                    const daysLeft = daysUntilDue(r.due_at);
                     return (
                       <tr key={r.id} className="border-b border-[var(--color-border-subtle)] align-top">
                         <td className="p-3">
-                          <div className="font-medium text-[var(--color-text-primary)]">{r.full_name}</div>
-                          <div className="text-xs text-[var(--color-text-secondary)]">{r.phone}</div>
-                          {r.email && <div className="text-xs text-[var(--color-text-secondary)]">{r.email}</div>}
+                          <div className="flex items-start gap-2">
+                            {/*
+                              §06's leading type tag. An unrecognised
+                              request_types value carries no tag rather than
+                              being forced into one of the three.
+                            */}
+                            {TagIcon && tag ? (
+                              <span
+                                className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${TAG_STYLES[tag].tone}`}
+                                aria-hidden
+                              >
+                                <TagIcon className="h-4 w-4" />
+                              </span>
+                            ) : null}
+                            <div className="min-w-0">
+                              <div className="font-medium text-[var(--color-text-primary)]">{r.full_name}</div>
+                              <div className="text-xs text-[var(--color-text-secondary)]">{r.phone}</div>
+                              {r.email && (
+                                <div className="text-xs text-[var(--color-text-secondary)]">{r.email}</div>
+                              )}
+                            </div>
+                          </div>
                         </td>
                         <td className="p-3 text-[var(--color-text-primary)]">{(r.request_types ?? []).join(', ')}</td>
                         <td className="p-3 text-[var(--color-text-secondary)]">
@@ -224,6 +260,22 @@ export default function AdminPrivacyRequestsPage() {
                         <td className={`p-3 ${overdue ? 'font-semibold text-red-500' : 'text-[var(--color-text-secondary)]'}`}>
                           {r.due_at ? formatDate(new Date(r.due_at), locale) : '-'}
                           {overdue && <span className="ms-1">⚠</span>}
+                          {/*
+                            §06 leads the row with the time left, not the date.
+                            Both are kept: the date is what an operator quotes,
+                            the countdown is what makes the queue triageable.
+                            Closed requests carry no countdown — the clock has
+                            stopped.
+                          */}
+                          {daysLeft != null && !overdue && r.status !== 'completed' && r.status !== 'rejected' ? (
+                            <span
+                              className={`ms-2 inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${
+                                daysLeft < 5 ? 'bg-red-100 text-red-700' : 'bg-teal-100 text-teal-700'
+                              }`}
+                            >
+                              {t('privacyDaysLeft', { days: formatNumber(daysLeft, locale) })}
+                            </span>
+                          ) : null}
                         </td>
                         <td className="p-3">
                           <span className={`rounded-full px-2 py-0.5 text-xs ${STATUS_STYLES[r.status] ?? ''}`}>
@@ -249,6 +301,49 @@ export default function AdminPrivacyRequestsPage() {
                           )}
                           {open && (
                             <div className="mt-2 space-y-2">
+                              {/*
+                                §06's request-detail block. Requested by is
+                                `privacy_requests.relationship`; Due by is the
+                                server-computed 30-day window; Student records
+                                is the count of rows the phone lookup actually
+                                matched — the same set the anonymize action
+                                operates on, so the number and the button can
+                                never disagree.
+
+                                The design's "Identity · Verified" row is not
+                                here: V1, no identity check exists to report.
+                              */}
+                              <dl className="rounded-md border border-[var(--color-border-subtle)] bg-[var(--color-surface-2)] p-2 text-xs">
+                                <div className="flex items-center justify-between gap-2 py-0.5">
+                                  <dt className="text-[var(--color-text-secondary)]">
+                                    {t('privacyDetailRequestedBy')}
+                                  </dt>
+                                  <dd className="text-[var(--color-text-primary)]">
+                                    {r.relationship?.trim() || tc('notSet')}
+                                  </dd>
+                                </div>
+                                <div className="flex items-center justify-between gap-2 py-0.5">
+                                  <dt className="text-[var(--color-text-secondary)]">
+                                    {t('privacyDetailDueBy')}
+                                  </dt>
+                                  <dd className="text-[var(--color-text-primary)]">
+                                    {r.due_at ? formatDate(new Date(r.due_at), locale) : tc('notSet')}
+                                  </dd>
+                                </div>
+                                <div className="flex items-center justify-between gap-2 py-0.5">
+                                  <dt className="text-[var(--color-text-secondary)]">
+                                    {t('privacyDetailStudentRecords')}
+                                  </dt>
+                                  <dd className="text-[var(--color-text-primary)]">
+                                    {candidates[r.id]
+                                      ? formatNumber(candidates[r.id].length, locale)
+                                      : tc('loading')}
+                                  </dd>
+                                </div>
+                              </dl>
+                              <p className="text-xs leading-relaxed text-[var(--color-text-muted)]">
+                                {t('privacyRetentionNote')}
+                              </p>
                               {(candidates[r.id] ?? []).length === 0 ? (
                                 <div className="text-xs text-[var(--color-text-secondary)]">{t('privacyNoStudentMatch')}</div>
                               ) : (
