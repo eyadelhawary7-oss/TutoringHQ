@@ -9967,6 +9967,43 @@
       "search": "Search"
     }
   },
+  "ceoBoard": {
+    "title": "Board",
+    "bySegment": "BY SEGMENT",
+    "hero": {
+      "totalRevenue": "Total revenue this month",
+      "vsLastMonth": "{pct} vs last month"
+    },
+    "chart": {
+      "title": "Revenue, last {count} months"
+    },
+    "kpi": {
+      "mrr": "MRR (subscriptions)",
+      "activeAccounts": "Active accounts",
+      "newAccounts": "New accounts this month",
+      "netNewCenters": "Net new centers",
+      "centerChurn": "Center churn",
+      "arpu": "ARPU"
+    },
+    "segment": {
+      "centers": "Centers",
+      "teachers": "Teachers",
+      "accounts": "Accounts",
+      "mrr": "MRR",
+      "revenueThisMonth": "Collected this month",
+      "growth": "Growth this month"
+    },
+    "basis": "Revenue counts paid invoices by Cairo calendar month. Churn and net new are center-only: teacher cancellations have no date column to count them by. Test accounts are excluded.",
+    "teachers": {
+      "title": "Teacher overview",
+      "activeTeachers": "Active teachers",
+      "classesThisMonth": "Classes this month",
+      "billableSubs": "Billable subscriptions",
+      "byPlan": "BY PLAN",
+      "planLine": "{tier} · {price}/mo",
+      "teacherCount": "{count} teachers"
+    }
+  },
   "supportFab": {
     "ariaLabel": "Contact support on WhatsApp",
     "dismiss": "Hide support button",

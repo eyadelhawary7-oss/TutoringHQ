@@ -124,6 +124,7 @@ adding their rows. The jump from v42 to v45→v46 in the two adjacent rows is th
 miscount. The missing rows are not reconstructed here because their screens/routes would have to be
 inferred rather than read, and an inferred row in this table is worse than an absent one.*
 | [#353](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/353) | `(on merge)` | 2026-08-05 | `Public-Marketing §03` — the design's `.diffs` "what changes with size" block built with its 3 live-sourced rows (new shared `DiffRows` marketing primitive); D29 amended, D34 corrected and extended to two further surfaces | `/{locale}/pricing` | v46 |
+| [#355](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/355) | `(on merge)` | 2026-08-05 | `CEO §01` board view built (revenue hero + 6-month Cairo chart, MRR/accounts/net-new KPIs, both segment cards, churn + ARPU); `CEO §02` overview strip built (active teachers, classes this month, billable subs, teacher MRR, plan-mix bars). `§03` not built — V5/V1. | `/{locale}/ceo`, `/{locale}/ceo/teachers`, `/api/ceo/board` (**new**), `/api/ceo/teacher-overview` (**new**) | v45 → **v46** |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, `#214`'s by that

@@ -10,6 +10,8 @@ import { AdminSidebar } from '@/components/AdminSidebar';
 import { MobileWrapper } from '@/components/shell/MobileWrapper';
 import { formatCurrency, formatNumber, formatDate } from '@/lib/formatNumber';
 import type { CeoTeacherData } from '@/types/ceoTeachers';
+import type { CeoTeacherOverview } from '@/types/ceo';
+import CeoTeachersOverview from './CeoTeachersOverview';
 import {
   NONE,
   presentValues,
@@ -150,6 +152,7 @@ export default function CeoTeachersPage() {
   const tCommon = useTranslations('common');
 
   const [data, setData] = useState<CeoTeacherData | null>(null);
+  const [overview, setOverview] = useState<CeoTeacherOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabKey>('subscriptions');
 
@@ -182,6 +185,18 @@ export default function CeoTeachersPage() {
       setData(null);
     } finally {
       setLoading(false);
+    }
+    // §02 overview strip — best-effort, same contract as the CEO home's
+    // trials-watch widget: hidden rather than fatal when it isn't available.
+    try {
+      const oRes = await fetch('/api/ceo/teacher-overview', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (oRes.ok) {
+        setOverview((await oRes.json()) as CeoTeacherOverview);
+      }
+    } catch {
+      // ignore — section hidden when data unavailable
     }
   }, []);
 
@@ -690,6 +705,8 @@ export default function CeoTeachersPage() {
           </div>
 
           <div className="px-4 py-6 space-y-6">
+            {overview && <CeoTeachersOverview data={overview} />}
+
             <div className="flex flex-wrap gap-1">
               {TABS.map((tab) => (
                 <button
