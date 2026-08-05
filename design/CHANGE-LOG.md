@@ -1726,3 +1726,40 @@ is display-only, so the feed renders correctly whenever the decision lands rathe
 second pass. **F43** closes a loop the 1 August audit left open: §02's `.topbtn` is the global
 `MobileTopBar` hamburger appearing inside a full-phone frame, not a missing page element — building
 it would have put a second hamburger three lines below the real one.
+
+**Adversarially re-verified 5 August, and it did not come back clean.** This branch was one of two
+of the twenty that never got a verifier — it died mid-verify in two container restarts — so it was
+re-run on its own. Verdict **DISCREPANCIES**: no fabricated data, no scope violation, nothing
+under-built. What it found was the same failure that dominated the other ten — **right conclusion,
+invented corroboration** — in five places, every one of which is corrected in place rather than
+quietly repaired:
+
+1. **"`src/lib/collectionPayout/` … has zero consumers anywhere in `src/`"** — false for the
+   library. It has **eight** consuming API routes; independent re-grep found three more than the
+   verifier itself did (`cron/payout-reconciliation`, `webhooks/payout-provider`, `payouts/request`).
+   Only the narrow claim survives: `GET /api/collection/status` has 0 fetch callers. The sentence
+   conjoined the two. Corrected in the ledger and in the shipped code comment.
+2. **`formatTime` blast radius, given as "every caller checked by hand"** — the file list was right
+   and complete; two of the four per-file counts were asserted, not counted (`schedule/page.tsx` is
+   9, not 8; `GroupSlotsSection.tsx` is 4, not 5). Re-derived with `grep -c` and corrected.
+3. **"`users.preferred_locale` is read in exactly four places"** — 17 occurrences across 8 files,
+   five of them provisioning writes collapsed into one "place", and one of the four named is an
+   `.update()`. The load-bearing half — no outbound composition path reads it — does hold.
+4. **A `7.5/10 → 8.5/10` coverage claim, and a `§02 3.5/5` baseline** — neither figure exists in
+   `FILE-COMPLETION-TABLE.md` or anywhere else. They were minted. Row 13 is now updated with what is
+   actually derivable and states explicitly that no `/10` exists for this file.
+5. **The balance card's omission rationale** — said "Pending" and "Processed" have "no source
+   either". `payout_requests` carries `status`, `amount_requested` and `processed_at` live; their
+   problem is **0 rows, not 0 source**. The omission decision is unchanged and still right; the
+   stated reason was not the real one.
+
+Two build defects came out of the same pass and are fixed here: §02's body line applied `.num` to
+every row, defended as "a no-op on rows with no digits" — but the design's selector is **money, not
+digits** (it draws "Physics G10" and "#THQ-2607" as plain `ns`), and the blanket was wrong on the
+only rows that render today, since the single live writer is the card-order one. And the
+unknown-attendance em dash carried `aria-label` on a bare `<span>`, which ARIA does not reliably
+expose; it now has `role="img"` so the label is actually its accessible name.
+
+The PR body also still numbered these four fixes F36–F39 after commit `d3e0ef27` renumbered them to
+**F40–F43** (F36–F39 were taken by sibling branches while this one ran), so every F-code a reviewer
+read pointed at a different entry than the one shipped. Body re-synced.

@@ -53,6 +53,17 @@ type Tone = 'money' | 'warn' | 'danger' | 'people' | 'order' | 'system';
  * meaning for an unclassified row would assert something the row does not say,
  * so the neutral stays and is documented rather than force-fitted.
  */
+/**
+ * Does this body line carry a money figure, and therefore §02's `.num` tabular
+ * treatment?
+ *
+ * Matches the two suffixes `formatCurrency` actually emits (`formatNumber.ts`
+ * §`EGP_EN_SUFFIX` / `EGP_AR_SUFFIX`) rather than "has a digit in it". The
+ * design is explicit that those are different tests: it draws "Physics G10"
+ * and "#THQ-2607" — both digit-bearing — as plain `ns`.
+ */
+const CURRENCY_IN_BODY = /(?:EGP|ج\.م)/;
+
 const TONE_CLASS: Record<Tone, string> = {
   money: 'bg-[var(--color-mint)] text-[var(--color-accent)]',
   warn: 'bg-[var(--color-sand)] text-[var(--color-brass)]',
@@ -280,14 +291,28 @@ export default function NotificationsPageClient() {
                             {formatRelativeMinutesAgo(n.created_at, locale)}
                           </span>
                         </span>
-                        {/* §02 marks the body line `.num` on every row that
-                            carries a figure ("paid 350 EGP", "1,350 EGP
-                            outstanding"). Which rows those are is not knowable
-                            from `kind` — the amount lives inside free text — so
-                            the tabular figures apply to the whole line, which
-                            is a no-op on rows with no digits in them. */}
+                        {/* §02 marks the body line `.num` selectively, and the
+                            selector is MONEY, not digits. Read off the design:
+                            "paid 350 EGP", "1,350 EGP outstanding" and
+                            "13,509 EGP to CIB" get `ns num`; "Sara Ahmed was
+                            marked absent in Physics G10" and "Card order
+                            #THQ-2607 is on the way" carry digits and are drawn
+                            as plain `ns` (the order code takes `.mono`
+                            instead). An earlier version of this line applied
+                            `num` to every body and defended it as "a no-op on
+                            rows with no digits" — that defence is wrong, and it
+                            was wrong on the only rows that render today: the
+                            single live writer is the card-order one, i.e.
+                            precisely the row the design leaves plain.
+                            `kind` cannot decide this (the amount lives inside
+                            free text and the column is unconstrained), so the
+                            test is the rendered currency suffix. */}
                         {n.body ? (
-                          <span className="num mt-1 block text-sm text-[var(--color-muted)]">
+                          <span
+                            className={`mt-1 block text-sm text-[var(--color-muted)]${
+                              CURRENCY_IN_BODY.test(n.body) ? ' num' : ''
+                            }`}
+                          >
                             {n.body}
                           </span>
                         ) : null}

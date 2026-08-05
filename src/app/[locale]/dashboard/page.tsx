@@ -673,14 +673,21 @@ export default function DashboardPage() {
                 `balance.sourced: false` for every centre, today, always. That
                 route's own contract is explicit that a false `sourced` means the
                 zero is UNKNOWN, not EMPTY, and that "a surface that renders the
-                number without the reason is fabricating a balance". It also has
-                ZERO consumers anywhere in `src/` — it is honest plumbing waiting
-                on the ledger, not a source this screen is ignoring.
+                number without the reason is fabricating a balance". Nothing in
+                `src/` fetches that route — grepped, 0 callers — so it is honest
+                plumbing waiting on the ledger, not a source this screen is
+                ignoring. (The LIBRARY behind it is not unused: eight API routes
+                import `lib/collectionPayout/*`. It is the read-only status
+                endpoint that has no caller, not the engine.)
 
-                So the card's headline ("Available now") has no source, and two
-                of its other three figures ("Pending", "Processed") have none
-                either. Only "Unpaid" is derivable here. Rendering one real
-                figure inside a card whose headline cannot exist is the fake this
+                So the card's headline ("Available now") has no source at all.
+                "Pending" and "Processed" are a different case and worth stating
+                precisely rather than lumping in: `payout_requests` DOES carry
+                their columns live (`status`, `amount_requested`, `processed_at`
+                — confirmed in `information_schema.columns`), so their problem is
+                0 rows, not 0 source. Only "Unpaid" is both sourced and non-empty.
+                Rendering one real figure, plus two structural zeroes, inside a
+                card whose headline cannot exist is the fake this
                 omission exists to prevent, and redefining "Available now" from
                 other data was raised with Eyad on 1 Aug and explicitly declined.
                 Unblocking it needs a migration (rule 3) and is Verification-
@@ -741,8 +748,16 @@ export default function DashboardPage() {
                   ) : (
                     /* No expected headcount today ⇒ no denominator ⇒ no
                        percentage. The scan count below is a real measured
-                       figure and keeps the tile from going blank. */
-                    <span aria-label={t('attendanceUnknown')}>—</span>
+                       figure and keeps the tile from going blank.
+
+                       `role="img"` is load-bearing, not decoration: ARIA does
+                       not expose `aria-label` on a generic-role element, so
+                       several screen readers drop the label off a bare <span>
+                       and announce only the em dash. Giving the element a role
+                       makes the label its accessible name. */
+                    <span role="img" aria-label={t('attendanceUnknown')}>
+                      —
+                    </span>
                   )
                 }
                 subLabel={
