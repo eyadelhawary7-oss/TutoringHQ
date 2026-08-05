@@ -1648,7 +1648,8 @@
       "createGroup": "Create",
       "groupFeePlaceholder": "Fee per class (EGP)"
     },
-    "rosterMeta": "{active} active · {branches} branches",
+    "rosterMetaActive": "{count} active",
+    "rosterMetaBehind": "{count} behind",
     "acrossBranches": "across {count} branches",
     "standing_paid": "Paid",
     "standing_at_risk": "At risk",
@@ -3211,7 +3212,14 @@
     "roleStudent": "Student",
     "roleParent": "Parent",
     "call": "Call",
-    "whatsapp": "WhatsApp"
+    "whatsapp": "WhatsApp",
+    "more": "More",
+    "callStudent": "Call student",
+    "waStudent": "WhatsApp student",
+    "callParent": "Call parent",
+    "waParent": "WhatsApp parent",
+    "declineConfirmTitle": "Decline this request?",
+    "declineConfirmBody": "{name} will not be enrolled and will not appear on your roster. They can ask again through the same link."
   },
   "rooms": {
     "title": "Rooms",
@@ -5870,6 +5878,7 @@
       "attendance": "Attendance",
       "windowThisTerm": "this term",
       "windowAllTime": "all time",
+      "lastAttended": "Last attended {date}",
       "recentAttendance": "Recent attendance",
       "seeAll": "See all",
       "attendancePresent": "Present",

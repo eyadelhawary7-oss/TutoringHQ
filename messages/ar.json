@@ -4488,6 +4488,7 @@
       "attendance": "الحضور",
       "windowThisTerm": "هذا الفصل",
       "windowAllTime": "كل الفترات",
+      "lastAttended": "آخر حضور {date}",
       "recentAttendance": "آخر الحضور",
       "seeAll": "عرض الكل",
       "attendancePresent": "حاضر",
@@ -5676,7 +5677,14 @@
     "roleStudent": "الطالب",
     "roleParent": "ولي الأمر",
     "call": "اتصال",
-    "whatsapp": "واتساب"
+    "whatsapp": "واتساب",
+    "more": "المزيد",
+    "callStudent": "اتصال بالطالب",
+    "waStudent": "واتساب للطالب",
+    "callParent": "اتصال بولي الأمر",
+    "waParent": "واتساب لولي الأمر",
+    "declineConfirmTitle": "رفض هذا الطلب؟",
+    "declineConfirmBody": "لن يتم تسجيل {name} ولن يظهر في قائمة طلابك. يمكنه تقديم الطلب مرة أخرى من نفس الرابط."
   },
   "import": {
     "title": "استيراد بالجملة",
@@ -7080,7 +7088,8 @@
       "createGroup": "إنشاء",
       "groupFeePlaceholder": "الرسوم لكل حصة (جنيه)"
     },
-    "rosterMeta": "{active} نشط · {branches} فروع",
+    "rosterMetaActive": "{count} نشط",
+    "rosterMetaBehind": "{count} متأخر",
     "acrossBranches": "في {count} فروع",
     "standing_paid": "مدفوع",
     "standing_at_risk": "معرض للتأخر",

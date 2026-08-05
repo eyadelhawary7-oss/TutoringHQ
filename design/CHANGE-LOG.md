@@ -105,6 +105,13 @@ If a row ever names one, that row is a mistake.
 | [#296](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/296) | `4c5e29b` | 2026-08-01 | `Center-Home §01` — Schedule section empty-state (balance card confirmed still blocked, not built); merged by Eyad directly, held for review per this file's history | `/{locale}/dashboard` | v42 |
 | [#297](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/297) | `aa8115d4` | 2026-08-01 | none — doc only (logged #296, closed out the Center-Home §01 investigation episode) | none | v42 |
 | [#298](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/298) | `(on merge)` | 2026-08-01 | `Center-Groups` — full re-survey + waitlist-integrity fix (stale entries never cleared, position-assignment race) | `/{locale}/groups` | v42 |
+| (this PR) | `(on merge)` | 2026-08-05 | `Center-Students §03` (roster meta → enrolled·behind; detail gains "Last attended"), `Center-Students §04` (Pending rebuilt on the shared `ExpandableRow` + `ActionSheet`), `Center-Students §02` (loading skeleton reshaped to the drawn blocks) | `/{locale}/students`, `/{locale}/students/[id]`, `/{locale}/students/pending` | v45 → **v46** |
+
+*Row-gap disclosure, 5 August 2026: this table's last filled row is `#298` at v42, but `public/sw.js`
+was at **v45** when this PR branched — PRs between `#298` and here bumped the service worker without
+adding their rows. The jump from v42 to v45→v46 in the two adjacent rows is that gap, not a
+miscount. The missing rows are not reconstructed here because their screens/routes would have to be
+inferred rather than read, and an inferred row in this table is worse than an absent one.*
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, `#214`'s by that
