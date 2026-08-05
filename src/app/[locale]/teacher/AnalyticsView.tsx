@@ -4,16 +4,19 @@ import { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import {
   AlertTriangle,
+  BanknoteArrowDown,
   CalendarClock,
-  CalendarDays,
+  ChevronRight,
+  Clock,
   Lock,
+  Timer,
   TrendingDown,
   TrendingUp,
   Trophy,
   UserX,
-  Wallet,
 } from 'lucide-react';
 import { Link, useRouter } from '@/i18n/routing';
+import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency, formatDate, formatNumber, formatPercent } from '@/lib/formatNumber';
 import { BarChartComponent } from '@/components/charts/BarChartComponent';
@@ -189,23 +192,10 @@ export default function AnalyticsView() {
   }
 
   if (state === 'standard') {
-    // Brass upgrade row — mirrors the notes/guest Pro gate exactly.
     return (
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-card)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] px-5 py-4">
-          <span className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
-            <Lock size={16} className="text-[var(--color-brass)]" aria-hidden />
-            {t('proOnly')}
-          </span>
-          <Link
-            href="/teacher/pricing"
-            className="rounded-[14px] bg-[var(--color-brass)] px-4 py-2 text-sm font-semibold text-white shadow-card transition-opacity hover:opacity-90"
-          >
-            {t('upgradeCta')}
-          </Link>
-        </div>
-        <p className="text-sm text-[var(--color-text-muted)]">{t('proOnlyBody')}</p>
-        <PileBPlaceholders />
+      <div className="flex flex-col gap-6">
+        <ProGate />
+        <PileBPlaceholders variant="locked" />
       </div>
     );
   }
@@ -561,36 +551,82 @@ function RevenueSection({
 }
 
 /**
+ * Pro gate — Merged-Teacher-Insight §01, the one state that design file draws.
+ * Replaces the earlier brass strip + loose paragraph so the gate reads as a
+ * single object: brass "Pro" pill, lock tile, headline, one line of body, then
+ * a light CTA. `.panel-accent`, not `.money-hero` — a gate carries no figure.
+ */
+function ProGate() {
+  const t = useTranslations('teacherPortal.analytics');
+  return (
+    <section className="panel-accent relative overflow-hidden rounded-[var(--radius-card)] p-6">
+      <span className="absolute end-4 top-4 rounded-full bg-[var(--color-brass)] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-white">
+        {t('proBadge')}
+      </span>
+      <span className="mb-3 flex h-[38px] w-[38px] items-center justify-center rounded-xl bg-white/15">
+        <Lock size={19} className="text-white" aria-hidden />
+      </span>
+      <h2 className="mb-1 text-[17px] font-bold text-white">{t('proOnly')}</h2>
+      <p className="mb-4 max-w-[34ch] text-xs leading-relaxed text-[var(--color-teal-soft)]">
+        {t('proOnlyBody')}
+      </p>
+      <Link
+        href="/teacher/pricing"
+        className="inline-flex items-center gap-1 rounded-xl bg-[var(--color-surface-1)] px-4 py-3 text-[13px] font-bold text-[var(--color-teal-deep)] transition-opacity hover:opacity-90"
+      >
+        {t('upgradeCta')}
+        <DirectionalIcon icon={ChevronRight} className="h-[15px] w-[15px]" />
+      </Link>
+    </section>
+  );
+}
+
+/** Pile B roadmap metrics, in the design's order, each with its own glyph. */
+const PILE_B = [
+  { key: 'dropoutTitle', icon: TrendingDown },
+  { key: 'trendingTitle', icon: TrendingUp },
+  { key: 'missingTitle', icon: Clock },
+  { key: 'avgSessionTitle', icon: Timer },
+  { key: 'missedIncomeTitle', icon: BanknoteArrowDown },
+] as const;
+
+/**
  * Pile B trend metrics are NOT computed — they need more history than thin data
  * can honestly support. Each renders a labeled "collecting data" card instead of
- * a misleading number.
+ * a misleading number. `variant="locked"` is the Standard-teacher gate state the
+ * design draws, where the list is the "what you'll unlock" roadmap; `"pro"` is
+ * the same five cards trailing the real dashboard.
  */
-function PileBPlaceholders() {
+function PileBPlaceholders({ variant = 'pro' }: { variant?: 'pro' | 'locked' }) {
   const t = useTranslations('teacherPortal.analytics');
-  const titles = [
-    'dropoutTitle',
-    'trendingTitle',
-    'missingTitle',
-    'avgSessionTitle',
-    'missedIncomeTitle',
-  ] as const;
+  const locked = variant === 'locked';
   return (
     <section>
-      <SectionHeading>{t('collectingTitle')}</SectionHeading>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {titles.map((key) => (
+      {locked ? (
+        <h3 className="mb-1 text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]">
+          {t('unlockTitle')}
+        </h3>
+      ) : (
+        <SectionHeading>{t('collectingTitle')}</SectionHeading>
+      )}
+      <p className="mb-3 text-xs text-[var(--color-text-muted)]">{t('collectingBody')}</p>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        {PILE_B.map(({ key, icon: Icon }) => (
           <div
             key={key}
-            className="flex flex-col gap-2 rounded-[var(--radius-card)] border border-dashed border-[var(--color-border)] bg-[var(--color-surface-0)] p-5"
+            className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4"
           >
-            <div className="flex items-center gap-2 text-sm font-medium text-[var(--color-text-secondary)]">
-              <CalendarDays size={15} className="text-[var(--color-text-muted)]" aria-hidden />
+            <div className="flex items-center gap-2 text-[13px] font-semibold text-[var(--color-text-primary)]">
+              <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-lg bg-[var(--color-surface-2)] text-[var(--color-text-muted)]">
+                <Icon size={16} aria-hidden />
+              </span>
               {t(key)}
             </div>
-            <span className="inline-flex w-fit items-center rounded-full bg-[var(--color-surface-2)] px-2.5 py-0.5 text-xs font-medium text-[var(--color-text-muted)]">
-              {t('collectingTitle')}
-            </span>
-            <p className="text-xs text-[var(--color-text-muted)]">{t('collectingBody')}</p>
+            <div className="mt-3 flex h-10 items-center justify-center rounded-lg bg-[var(--color-surface-2)]">
+              <span className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface-1)] px-3 py-1 text-[11px] font-semibold text-[var(--color-text-muted)]">
+                {t('collectingTitle')}
+              </span>
+            </div>
           </div>
         ))}
       </div>
