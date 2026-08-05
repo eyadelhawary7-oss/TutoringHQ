@@ -105,6 +105,8 @@ If a row ever names one, that row is a mistake.
 | [#296](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/296) | `4c5e29b` | 2026-08-01 | `Center-Home §01` — Schedule section empty-state (balance card confirmed still blocked, not built); merged by Eyad directly, held for review per this file's history | `/{locale}/dashboard` | v42 |
 | [#297](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/297) | `aa8115d4` | 2026-08-01 | none — doc only (logged #296, closed out the Center-Home §01 investigation episode) | none | v42 |
 | [#298](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/298) | `(on merge)` | 2026-08-01 | `Center-Groups` — full re-survey + waitlist-integrity fix (stale entries never cleared, position-assignment race) | `/{locale}/groups` | v42 |
+| ⚠ **gap — 32 PRs merged after #298 were never logged here.** Count derived, not estimated: `git log origin/master --oneline \| grep -oE '\(#[0-9]+\)' \| tr -d '(#)' \| sort -n \| uniq \| awk '$1 > 298'` → 32 (#300…#308, #310…#314, #316…#330, #333, #337, #338). The tip of master is #337 (`26f8b3b3`) but the highest PR *number* merged is #338. Not backfilled: reconstructing rows from commit subjects would be invention, which is the one thing this file exists to prevent. Recorded so the gap is visible rather than silent. | | | | | |
+| [#360](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/360) | `(on merge)` | 2026-08-05 | `Teacher-Home §01` — Centers tile withholds the unmeasured zero (no settlement claim; `/api/teacher/center-cuts` gains `cutBasisRows`), fabricated-zero fix kept from #342, Subscription tile → design's `.card.sub`/`.subbtn` in all three states | `/{locale}/teacher`, `/api/teacher/center-cuts` | v45 → **v46** |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, `#214`'s by that
@@ -1274,6 +1276,73 @@ missing field. Added `admin.platformAnalytics.studentsCount` to both `messages/e
 `wa_meta_templates`/`whatsapp_usage`/`centers`, plus a direct `select key,value from platform_config`
 for the §03 FEATURES/SYSTEM claims. `npx eslint` on the three touched files came back clean; full unit,
 E2E-smoke, i18n, bidi and build gates green on the PR. Squash-merged as `bd5593aa`.
+
+**Teacher-Home, Centers tile (5 August 2026, #360 — rebuild of the rejected #342)** — #342 was
+rejected for breaking the never-fabricate rule and is closed unmerged. It rendered the design's
+zero-state subline *"All centers settled"* (ar: *"كل السناتر مسدّدة"*) whenever
+`summary.centersOutstanding === 0`. That figure is **structurally zero for every teacher**, so the
+screen told every teacher with a linked centre that all their centres had settled, whatever was owed.
+
+**A technically-correct 0 can still be a fabrication.** This is the entry to re-read before shipping
+zero-state copy anywhere. The number was not wrong — `totalOutstanding` really was 0. The *claim built
+on top of it* was, because nothing in the system is able to make that number anything else. A zero
+that cannot mean "settled" must never be presented as settlement.
+
+Re-verified against the live catalog on `lczmjpnbuhnsislcvzar`, not against the migration files, #342's
+body, or the rejection note:
+
+| check | result |
+|---|---|
+| what `transactions` holds | 3 rows, all `kind='lesson'`, `is_test=false` (2 pending, 1 paid) |
+| `count(*) where kind='center_fee'` | **0** |
+| is `center_fee` legal | yes — `transactions_kind_chk` is `CHECK (kind = ANY (ARRAY['lesson','center_fee']))` |
+| **D19** — `finish_class_and_bill` | `pg_proc.prosrc` mentions neither `center_fee`, `teacher_net` nor `snap_teacher_pct`. Still open |
+| the one writer | `finish_center_class_and_bill` — the only proc whose source contains `center_fee` |
+| its callers | **zero** in `src/`; only `finish_class_and_bill` is ever `.rpc()`'d |
+| data that *would* produce rows | 2 centre groups, both `center_cut_egp > 0`, 2 centre sessions — and still 0 rows |
+
+**Two corrections to the recorded verdict, both making the finding stronger.** First,
+`transactions.teacher_net` and `.snap_teacher_pct` are **`NOT NULL DEFAULT 0`**, not nullable — so
+`teacherCut()`'s "both null → 0" tail is *dead* for rows read from the database, and the live path is
+the **first** branch returning a literal `0`. Second, and worse: **the zero survives D19 landing.**
+`finish_center_class_and_bill`'s `center_fee` INSERT column list omits `teacher_net` and
+`snap_teacher_pct`, so both take the `0` default and `teacherCut()` returns `0` *even once rows exist*.
+Structurally zero on two independent counts, not one. Wiring up the missing caller would not have
+fixed the tile; it would only have hidden that it was never measuring anything.
+
+**Built: a measured predicate, not a hard-coded string.** `/api/teacher/center-cuts` returns
+`cutBasisRows` — how many of the `center_fee` rows *that request read* carry a basis a cut could be
+computed from (`teacher_net > 0`, or `snap_teacher_pct > 0` with `amount_billed > 0`), counted over
+exactly the rows the two CORE queries returned. It separates `cutBasisRows > 0, outstanding = 0`
+("measured, nothing owed") from `cutBasisRows = 0, outstanding = 0` ("no ledger"). The tile shows no
+figure and no claim in the second case. **A static "not tracked yet" string was rejected for the same
+reason the affirmative was**: it is an assertion that goes stale and becomes a fabrication in the other
+direction the day a write path lands. Measured, it self-corrects with no code change.
+
+**Rendering the figure with no subline was also rejected** as a half-measure. `0 EGP` under a tile
+headed *"What centers owe me"* is itself a money statement — "they owe you nothing" — so dropping only
+the subline leaves the fabrication in the biggest type on the tile. `centersSettled` is not added in
+any form: that copy is only true of a measured zero, and that branch has never run against a live row.
+
+**Kept from #342, a genuine fix:** `centersOutstanding` was `Number(cuts?.totalOutstanding) || 0`, so a
+failed fetch rendered a confident 0 EGP. Now `number | null` with the skeleton.
+
+**Dropped from #342: the `.sec` "Grow your private practice" label.** The design puts it inside the
+frame whose Subscription tile reads "14 days left in your trial", and `teacher_private_access` is
+`status IN ('trialing','active') OR (cancelled AND current_period_end > now())` — so that frame is
+`hasPrivateAccess === true`. #342 rendered it inside `{!hasPrivateAccess && (…)}`, the opposite branch.
+Placing it correctly would mean moving the income calculator into the subscribed states, the product
+call #342 itself deferred, so the label and both its i18n keys are dropped rather than misplaced.
+
+**Two counts corrected in this file's own record.** #342's gap row said the table was "39 PRs behind";
+39 is the numbering gap `337 − 298`, which counts PR numbers that were never merged. Derived from the
+repository, the real figure is **32** — the command is in the gap row itself. And #322's two migrations
+were described as if unwritten: both files **are** committed in the tree by `e7f5dd20`
+(`20260804140000_verification_records_proposal.sql`,
+`20260804150000_PROPOSAL_payout_system_1_ledger.sql`). They are **unapplied, not unwritten** — verified
+live: 0 tables for `verification_records`/`verification_attempts`, `teacher_profiles` at 24 columns with
+neither `verification_status` nor `verified_at`, and 0 rows in `supabase_migrations.schema_migrations`
+for either version. That is exactly what #322's own commit message says.
 
 **Teacher-Home re-verification (31 July 2026)** — asked to confirm PR #225's fraction against the
 merged file, not memory, before accepting a "done" file at face value. Re-read
