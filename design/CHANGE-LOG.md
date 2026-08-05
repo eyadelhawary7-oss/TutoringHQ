@@ -106,9 +106,23 @@ If a row ever names one, that row is a mistake.
 | [#297](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/297) | `aa8115d4` | 2026-08-01 | none — doc only (logged #296, closed out the Center-Home §01 investigation episode) | none | v42 |
 | [#298](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/298) | `(on merge)` | 2026-08-01 | `Center-Groups` — full re-survey + waitlist-integrity fix (stale entries never cleared, position-assignment race) | `/{locale}/groups` | v42 |
 
+| [#311](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/311) | `81639a14` | 2026-08-04 | `Public-Legal §01` — the four documents, the index, the data-rights form and its confirmation; `/privacy` + `/terms` retired to permanent redirects with the processing-fee disclosure ported into the Terms reader | `/{locale}/legal`, `/legal/{privacy,terms,cookie,dpa}`, `/legal/privacy-request` | v42 |
+| [#PR](https://github.com/eyadelhawary7-oss/TutoringHQ/pulls) | `(on merge)` | 2026-08-05 | `Public-Legal §01` re-survey — `/cookies` moved under `legal/layout.tsx` (the reader rendered with no flex column at that one address), marketing-footer legal links repointed off the three redirect stubs, `.ar .dmeta`/`.ar .rver` weight-500, X4 re-measured 23→10 sections and locked by a design-derived test | `/{locale}/cookies` → `/legal/cookie`, `/{locale}/legal`, `/legal/*`, marketing footer on `/`, `/centers`, `/teachers`, `/pricing` | v45 → **v46** |
+
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, `#214`'s by that
 one, and `#296`'s own row was filled by `#297`.*
+
+**This table is behind master, and saying so is part of keeping it honest (5 August 2026).**
+`git log origin/master` carries **32** merged PRs numbered `#300`–`#338`; only `#311` is logged
+above, because `#311` is the one this pass verified line by line. The other 31 are **not**
+backfilled here: writing rows for merges I did not read would put invented summaries into the one
+document that is supposed to be evidence, which is the precise failure this file exists to prevent.
+Whoever next surveys those files should fill their own rows from the diffs.
+
+*Row numbering note: the row above this paragraph carries `#PR` because a pull request number is
+only assigned when the PR is opened, and this file is written in the commit that the PR is opened
+from. It is filled in the same way the SHA is.*
 
 ### Notes per PR
 
