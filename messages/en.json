@@ -1,7 +1,11 @@
 {
   "legal": {
-    "terms": { "title": "Terms and Conditions" },
-    "privacy": { "title": "Privacy Policy" }
+    "terms": {
+      "title": "Terms and Conditions"
+    },
+    "privacy": {
+      "title": "Privacy Policy"
+    }
   },
   "plan": {
     "solo": "Solo",
@@ -2023,6 +2027,12 @@
     "noGroup": "No group",
     "mrrTrend": "MRR Trend",
     "agingReport": "Aging Report",
+    "agingBandRange": "{from}–{to} days",
+    "agingBandPlus": "{from}+ days",
+    "agingBandWatch": "watch",
+    "agingBandOverdue": "overdue",
+    "agingBandRemindTitle": "Remind {count} students in this band",
+    "remind": "Remind",
     "studentName": "Student Name",
     "group": "Group",
     "daysOverdue": "Days Overdue",
@@ -2262,6 +2272,7 @@
     "retention": "30-day retention",
     "utilization": "Group utilization",
     "attendanceDesc": "You rank better than {percentile} of centers in your area for attendance",
+    "belowMedian": "Below median",
     "revenueDesc": "You rank better than {percentile} of centers for revenue per student",
     "retentionDesc": "You rank better than {percentile} of centers for student retention",
     "utilizationDesc": "You rank better than {percentile} of centers for group utilization",

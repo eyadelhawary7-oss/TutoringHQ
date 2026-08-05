@@ -12,14 +12,26 @@ import CollectionRateGauge from '@/components/analytics/CollectionRateGauge';
 import { chartColors, colors } from '@/lib/tokens';
 import { TrendingUp, Percent, Users, Wallet } from 'lucide-react';
 import { ChartCard, ChartLegend } from '@/components/charts';
-import { formatCurrency, formatNumber, formatPercent, formatPlainInteger } from '@/lib/formatNumber';
+import {
+  formatCalendarMonthYyyyMmInCairo,
+  formatCurrency,
+  formatPercent,
+  formatPlainInteger,
+} from '@/lib/formatNumber';
 
 const RevenueByGroup = dynamic(() => import('@/components/charts/RevenueByGroup'), {
   ssr: false,
   loading: () => <div className="chq-skeleton h-48 w-full rounded-xl" />,
 });
-const RevenueAreaChart = dynamic(
-  () => import('@/components/analytics/RevenueAreaChart').then((m) => ({ default: m.RevenueAreaChart })),
+/**
+ * §01 draws the revenue history as monthly BARS with the current month picked
+ * out in a deeper teal — `.bars`/`.bar` — not as the filled area chart this
+ * screen shipped. Same series, same numbers; only the mark changes.
+ * `BarChartComponent` already supports per-bar colours, so the current-month
+ * emphasis needs no new chart code.
+ */
+const RevenueBarChart = dynamic(
+  () => import('@/components/charts/BarChartComponent').then((m) => ({ default: m.BarChartComponent })),
   { ssr: false, loading: () => <div className="chq-skeleton h-48 w-full rounded-xl" /> },
 );
 const PaymentDonutChart = dynamic(
@@ -204,6 +216,31 @@ export default function AnalyticsPage() {
     }));
   }, [d.payment_method_distribution]);
 
+  /**
+   * §01's methods donut legend reads as a share of the mix ("Cash 18%"), not a
+   * bare amount. The share is the slice over the sum of the slices actually
+   * charted — the same numbers already on screen, no second source.
+   */
+  const donutTotal = useMemo(
+    () => donutData.reduce((s, x) => s + (Number(x.value) || 0), 0),
+    [donutData],
+  );
+
+  /**
+   * §01's header subtitle is the centre and the month the figures cover
+   * ("Al-Nahda · June"), which is the one thing the generic strapline did not
+   * say. Cairo month, per the standing rule — the API windows on the server's
+   * calendar month and this label must not disagree with it by a timezone.
+   */
+  const periodSubtitle = useMemo(() => {
+    const centerName = user?.center?.name?.trim();
+    const key = formatCalendarMonthYyyyMmInCairo();
+    const mIdx = key ? parseInt(key.slice(5, 7), 10) - 1 : -1;
+    const monthLabel = mIdx >= 0 ? months[mIdx] : undefined;
+    const parts = [centerName, monthLabel].filter((p): p is string => !!p);
+    return parts.length > 0 ? parts.join(' · ') : ta('subtitle');
+  }, [user?.center?.name, months, ta]);
+
   const heatmapCells = d.attendance_heatmap ?? [];
 
   if (!canViewRevenue) {
@@ -242,7 +279,7 @@ export default function AnalyticsPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between px-4 pt-4 pb-4 no-print border-b border-[var(--color-border)]">
         <div>
           <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{ta('title')}</h1>
-          <p className="text-sm text-[var(--color-text-muted)] mt-1 max-w-xl">{ta('subtitle')}</p>
+          <p className="text-sm text-[var(--color-text-muted)] mt-1 max-w-xl">{periodSubtitle}</p>
         </div>
         <button
           type="button"
@@ -354,7 +391,19 @@ export default function AnalyticsPage() {
         >
           {revenueData.length >= 2 ? (
             <div className="min-w-0 w-full">
-              <RevenueAreaChart data={revenueData} />
+              <RevenueBarChart
+                data={revenueData}
+                xKey="month"
+                dataKey="revenue"
+                height={220}
+                radius={4}
+                showGrid={false}
+                barColors={revenueData.map((_, i) =>
+                  i === revenueData.length - 1 ? colors.brand[700] : chartColors.primary,
+                )}
+                currencyYAxis={{ locale }}
+                tooltipValueFormatter={(v) => formatCurrency(Number(v), locale)}
+              />
             </div>
           ) : (
             <p className="text-sm text-[var(--color-text-muted)] py-8 text-center">{ta('no_data')}</p>
@@ -385,7 +434,12 @@ export default function AnalyticsPage() {
                     color: slice.color ?? colors.navy[500],
                     label: slice.name,
                     value: formatCurrency(Number(slice.value), locale),
-                    suffix: '',
+                    suffix:
+                      donutTotal > 0
+                        ? ` · ${formatPercent((Number(slice.value) / donutTotal) * 100, locale, {
+                            maximumFractionDigits: 0,
+                          })}`
+                        : '',
                   }))}
                 />
               </>

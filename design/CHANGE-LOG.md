@@ -1658,3 +1658,71 @@ description:**
 description in each entry). `design/FILE-COMPLETION-TABLE.md` row 11 updated: ~3.1/5 → ~3.0/5, §04's
 sub-estimate corrected down, blocked-by list gains D31/D32, D2 marked closed (confirmed already-resolved
 by `#248`, never formally closed in this table before now).
+
+**Center-Insight (5 August 2026) — surveyed AND built.** Row 9's previous two passes both ended
+"surveyed, no build". This one built everything on §01 and §02 whose backing columns exist, and left
+§03 untouched for a reason that was re-verified rather than inherited.
+
+**Survey first, before any code — the fraction, verified not trusted.** Recorded position was
+≈3.5/5 (§01 4.2, §02 4.5, §03 1.6). Re-measured against the live routes: **§01 7 of 8 drawn blocks
+present** (the aging card was the one absent as-drawn — a flat per-student table, not the design's
+three age bands), **§02 4 of 4 blocks present but the metric block missing 3 of its 5 elements**
+(no median value, no median tick, no below-median state), **§03 3 of 6 blocks present and all three
+sitting on a table with zero live writers**. That works out to **≈3.3/5**, marginally below the
+recorded 3.5 — the earlier figure was slightly generous about §01's aging card, which had been
+counted as present because a card exists there, not because it is the card the design draws.
+
+**Built — §01 Analytics:**
+- **The aging report's three age bands.** `0–30`, `31–60` (with a `watch` pill), `60+` (with an
+  `overdue` pill), each carrying that band's outstanding total and its own Remind button that
+  messages every student in the band. This is the block the last two passes skipped: the data was
+  already in the payload the screen fetches (`aging_report[].days_overdue`, `.amount`) and needed
+  nothing but grouping. The per-student table stays underneath — the design shows only the bands, but
+  dropping the table would have removed real capability to gain fidelity, so both are there.
+- **The revenue chart is now the design's monthly bars**, current month in a deeper teal, replacing
+  the filled area chart. Same series, same numbers, different mark. `BarChartComponent` already
+  supported per-bar colours so no chart code was written. **The dashed projection bar is still
+  absent, deliberately — D33.**
+- **The header subtitle is now centre · month** ("Al-Nahda · August") instead of a generic strapline,
+  Cairo month per the standing rule so the label cannot disagree with the server's window by a
+  timezone.
+- **The methods donut legend now reads as a share of the mix** (`Cash 3,200 EGP · 18%`), computed
+  from the slices already charted.
+
+**Built — §02 Benchmarks, and the find that made it possible:**
+- **The district MEDIAN is now real on this screen.** §02 compares every row against the local median
+  in the design, and the screen could not: `get_center_benchmarks` returns only `district_avg` per
+  metric. But `benchmark_snapshots` physically carries `p50_attendance_rate`,
+  `p50_revenue_per_student`, `p50_retention_rate_30d` and `p50_group_utilization` — confirmed in
+  `information_schema.columns` before a line was written — and the RPC reads them internally to
+  interpolate the percentile, then throws them away. `/api/benchmarks` now selects them directly off
+  the same snapshot the RPC picked (same district, same tier, same latest `snapshot_date`, both taken
+  from the RPC's own response so the two cannot diverge). **No migration**: the columns were already
+  there. Attached only when the RPC did not withhold the comparison, so the median inherits the same
+  10-centre disclosure gate as everything else.
+- **The median tick on every track**, and **the below-median down-state** (gold fill plus a "Below
+  median" pill instead of "Top X%") — percentile < 50 is below the median by definition, the same
+  number already driving the bar.
+- **The metric block is now the design's one card of compact rows**, not four large cards each with
+  its own two-bar you-vs-district chart. Those charts restated exactly what the percentile track
+  already showed and the design does not have them. The overall-standing card is now the design's
+  teal gradient hero with the circular marker on a translucent bar.
+- The design's fifth and sixth rows (average fee, new students/month) stay unbuilt — Appendix **D9**,
+  already decided: build the real four, fix the drawing.
+
+**§03 Referrals — nothing built, and this is the correct outcome, re-verified twice.** Read
+`/api/referral/route.ts` cold: still `.from('referral_reward_records')`. Live row counts run this
+pass: `referrals` 0, `referral_commissions` 0, `referral_reward_records` 0, `payout_requests` 0 —
+identical to 31 July. Every remaining design element on §03 (the recurring-income hero, the
+per-referral rate/countdown cards, the referral-detail rate schedule) reads that table. **D22.**
+
+**Two new omissions, each with the exact missing column named, both logged as new entries:**
+- **F36** — §01's collection-rate month-over-month delta. `information_schema.columns` has **zero**
+  columns matching `%collection%rate%` anywhere in `public`; the rate is computed per request from a
+  *running* student-balance total with no as-of-date variant, so last month's denominator cannot be
+  reconstructed. Needs a stored monthly series — a migration.
+- **F37** — §01's P&L "Teacher cuts" line. The only stored side of that split is
+  `student_groups.center_cut_egp`, the CENTRE's cut. No `teacher_cut`/`teacher_share` column exists
+  on any table. Deriving the complement is **D16**'s open flat-cut-versus-percentage question.
+
+`SW_VERSION` v45 → v46.

@@ -1,7 +1,11 @@
 {
   "legal": {
-    "terms": { "title": "الشروط والأحكام" },
-    "privacy": { "title": "سياسة الخصوصية" }
+    "terms": {
+      "title": "الشروط والأحكام"
+    },
+    "privacy": {
+      "title": "سياسة الخصوصية"
+    }
   },
   "plan": {
     "solo": "فردي",
@@ -3742,6 +3746,12 @@
     "noGroup": "بدون مجموعة",
     "mrrTrend": "اتجاه MRR",
     "agingReport": "تقرير التقادم",
+    "agingBandRange": "{from}–{to} يومًا",
+    "agingBandPlus": "أكثر من {from} يومًا",
+    "agingBandWatch": "للمتابعة",
+    "agingBandOverdue": "متأخر",
+    "agingBandRemindTitle": "تذكير {count} طالبًا في هذه الفئة",
+    "remind": "تذكير",
     "studentName": "اسم الطالب",
     "group": "Group:",
     "daysOverdue": "أيام التأخير",
@@ -3883,6 +3893,7 @@
     "retention": "الاحتفاظ لمدة 30 يومًا",
     "utilization": "استخدام المجموعة",
     "attendanceDesc": "أنت أفضل من {percentile} من المراكز في منطقتك من حيث الحضور",
+    "belowMedian": "تحت الوسيط",
     "revenueDesc": "أنت أفضل من {percentile} من المراكز من حيث الإيراد لكل طالب",
     "retentionDesc": "أنت أفضل من {percentile} من المراكز من حيث الاحتفاظ",
     "utilizationDesc": "أنت أفضل من {percentile} من المراكز من حيث استخدام المجموعات",
