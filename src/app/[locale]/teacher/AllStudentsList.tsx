@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { ChevronLeft, ChevronRight, Search, UserRound } from 'lucide-react';
 import { Link, useRouter } from '@/i18n/routing';
+import { EmptyState } from '@/components/shared';
 import { supabase } from '@/lib/supabase';
 import { formatNumber, formatPhoneIntlGrouped } from '@/lib/formatNumber';
 import { initialsOf } from '@/lib/initials';
@@ -167,10 +168,16 @@ export default function AllStudentsList() {
 
   if (students.length === 0) {
     return (
-      <div className="rounded-[var(--radius-card)] border border-dashed border-[var(--color-border)] bg-[var(--color-surface-1)] p-8 text-center">
-        <UserRound size={28} className="mx-auto mb-3 text-[var(--color-text-muted)]" aria-hidden />
-        <h3 className="mb-2 font-bold text-[var(--color-text-primary)]">{t('studentsEmptyTitle')}</h3>
-        <p className="text-sm text-[var(--color-text-secondary)]">{t('studentsEmptyBody')}</p>
+      /* §01 quiet variant · a teacher's roster fills from their groups' own
+         enrolments, not from a button on this screen, so it gets the muted tile
+         and no action rather than a call to work that does not exist here. */
+      <div className="rounded-[var(--radius-card)] border border-dashed border-[var(--color-border)] bg-[var(--color-surface-1)] py-4">
+        <EmptyState
+          icon={UserRound}
+          title={t('studentsEmptyTitle')}
+          description={t('studentsEmptyBody')}
+          quiet
+        />
       </div>
     );
   }
@@ -238,9 +245,11 @@ export default function AllStudentsList() {
       </p>
 
       {filtered.length === 0 ? (
-        <p className="rounded-[var(--radius-card)] border border-dashed border-[var(--color-border)] bg-[var(--color-surface-1)] p-8 text-center text-sm text-[var(--color-text-secondary)]">
-          {tList('noMatches')}
-        </p>
+        /* §01 quiet variant · "your search matched nothing", distinct copy from
+           the empty-roster state above per §01's "do not reuse the same copy". */
+        <div className="rounded-[var(--radius-card)] border border-dashed border-[var(--color-border)] bg-[var(--color-surface-1)] py-4">
+          <EmptyState icon={Search} title={tList('noMatches')} quiet />
+        </div>
       ) : (
         <ul className="flex flex-col gap-2">
           {filtered.map((e) => (

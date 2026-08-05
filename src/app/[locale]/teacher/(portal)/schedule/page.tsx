@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { CalendarDays, Clock, Users } from 'lucide-react';
 import { Link, useRouter } from '@/i18n/routing';
+import { EmptyState } from '@/components/shared';
 import { formatDate, formatNumber } from '@/lib/formatNumber';
 import {
   cairoDateKey,
@@ -210,16 +211,23 @@ export default function TeacherSchedulePage() {
     if (occ) setActiveOccurrence(occ);
   };
 
+  /* §01 · a day with nothing on it IS waiting on the teacher — the schedule
+     fills from their groups — so this keeps the mint tile and the one action,
+     now full-width per §01's `.es-act` rather than a hugging pill. */
   const renderEmpty = () => (
-    <div className="rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-surface-1)] p-8 text-center">
-      <CalendarDays size={28} className="mx-auto mb-3 text-[var(--color-text-muted)]" aria-hidden />
-      <p className="mb-4 text-sm text-[var(--color-text-secondary)]">{t('emptyToday')}</p>
-      <Link
-        href="/teacher/groups"
-        className="inline-block rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-teal-700"
-      >
-        {t('goToGroups')}
-      </Link>
+    <div className="rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-surface-1)] py-4">
+      <EmptyState
+        icon={CalendarDays}
+        title={t('emptyToday')}
+        action={
+          <Link
+            href="/teacher/groups"
+            className="block w-full rounded-lg bg-teal-600 px-4 py-4 text-center text-sm font-medium text-primary-foreground transition-colors hover:bg-teal-700"
+          >
+            {t('goToGroups')}
+          </Link>
+        }
+      />
     </div>
   );
 
