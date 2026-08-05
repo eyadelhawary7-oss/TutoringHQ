@@ -107,7 +107,7 @@ If a row ever names one, that row is a mistake.
 | [#298](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/298) | `(on merge)` | 2026-08-01 | `Center-Groups` — full re-survey + waitlist-integrity fix (stale entries never cleared, position-assignment race) | `/{locale}/groups` | v42 |
 
 | [#311](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/311) | `81639a14` | 2026-08-04 | `Public-Legal §01` — the four documents, the index, the data-rights form and its confirmation; `/privacy` + `/terms` retired to permanent redirects with the processing-fee disclosure ported into the Terms reader | `/{locale}/legal`, `/legal/{privacy,terms,cookie,dpa}`, `/legal/privacy-request` | v42 |
-| [#PR](https://github.com/eyadelhawary7-oss/TutoringHQ/pulls) | `(on merge)` | 2026-08-05 | `Public-Legal §01` re-survey — `/cookies` moved under `legal/layout.tsx` (the reader rendered with no flex column at that one address), marketing-footer legal links repointed off the three redirect stubs, `.ar .dmeta`/`.ar .rver` weight-500, X4 re-measured 23→10 sections and locked by a design-derived test | `/{locale}/cookies` → `/legal/cookie`, `/{locale}/legal`, `/legal/*`, marketing footer on `/`, `/centers`, `/teachers`, `/pricing` | v45 → **v46** |
+| [#358](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/358) | `(on merge)` | 2026-08-05 | `Public-Legal §01` re-survey — `/cookies` moved under `legal/layout.tsx` (the reader rendered with no flex column at that one address), marketing-footer legal links repointed off the three redirect stubs, `.ar .dmeta`/`.ar .rver` weight-500, X4 re-measured 23→10 sections and locked by a design-derived test | `/{locale}/cookies` → `/legal/cookie`, `/{locale}/legal`, `/legal/*`, marketing footer on `/`, `/centers`, `/teachers`, `/pricing` | v45 → **v46** |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, `#214`'s by that
@@ -120,9 +120,10 @@ backfilled here: writing rows for merges I did not read would put invented summa
 document that is supposed to be evidence, which is the precise failure this file exists to prevent.
 Whoever next surveys those files should fill their own rows from the diffs.
 
-*Row numbering note: the row above this paragraph carries `#PR` because a pull request number is
-only assigned when the PR is opened, and this file is written in the commit that the PR is opened
-from. It is filled in the same way the SHA is.*
+*Row numbering note: `#358`'s own row was written before the PR existed and carried a `#PR`
+placeholder for one commit, then was filled in from the opened PR — the same two-step the `(on
+merge)` SHA goes through, for the same reason: neither value exists at the moment the file has to
+be written.*
 
 ### Notes per PR
 
