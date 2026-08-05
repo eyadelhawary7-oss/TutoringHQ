@@ -28,6 +28,7 @@ import BluetoothScanner from '@/components/BluetoothScanner';
 import ScanResultScreen from '@/components/ScanResultScreen';
 import { DirectionalIcon } from '@/components/icons/DirectionalIcon';
 import { Camera, Bluetooth, Hash, BookOpen, ChevronRight, Search, QrCode, X } from 'lucide-react';
+import { EmptyState } from '@/components/shared';
 import { useUser } from '@/contexts/UserContext';
 import { useToast } from '@/hooks/useToast';
 import { formatNumber, formatTime } from '@/lib/formatNumber';
@@ -1465,15 +1466,17 @@ export default function ScanTab({ contextGroupName }: { contextGroupName?: strin
                 {ts('history_title')}
               </h2>
               {scanHistory.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
-                  <QrCode
-                    className="w-14 h-14 text-[var(--color-text-tertiary)] mb-3"
-                    strokeWidth={1.25}
-                    aria-hidden
-                  />
-                  <p className="text-sm text-[var(--color-text-secondary)]">{ts('history_empty')}</p>
-                  <p className="text-xs text-[var(--color-text-muted)] mt-1 max-w-xs">{ts('history_empty_hint')}</p>
-                </div>
+                /* §01 · the closest hand-rolled shape in the repo to the real
+                   primitive — it already had the second line — but a bare 56px
+                   glyph rather than the 64×64 tile, and its body text was not
+                   capped at 31ch. Quiet tile: today's scans accumulate as the
+                   door is worked; there is no button that fills this. */
+                <EmptyState
+                  icon={QrCode}
+                  title={ts('history_empty')}
+                  description={ts('history_empty_hint')}
+                  quiet
+                />
               ) : (
                 <>
                   <div className="card overflow-hidden">

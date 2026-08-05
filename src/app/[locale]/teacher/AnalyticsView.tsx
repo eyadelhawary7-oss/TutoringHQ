@@ -14,6 +14,7 @@ import {
   Wallet,
 } from 'lucide-react';
 import { Link, useRouter } from '@/i18n/routing';
+import { RecordSkeleton } from '@/components/patterns';
 import { supabase } from '@/lib/supabase';
 import { formatCurrency, formatDate, formatNumber, formatPercent } from '@/lib/formatNumber';
 import { BarChartComponent } from '@/components/charts/BarChartComponent';
@@ -97,13 +98,6 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
   return <h3 className="mb-3 text-sm font-semibold text-[var(--color-text-muted)]">{children}</h3>;
 }
 
-function Skeleton({ className }: { className: string }) {
-  return (
-    <div
-      className={`animate-pulse rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface-1)] ${className}`}
-    />
-  );
-}
 
 /**
  * Pro teacher analytics (Pile A). Fetches /api/teacher/private/analytics, which
@@ -162,14 +156,17 @@ export default function AnalyticsView() {
   }, [load]);
 
   if (state === 'loading') {
+    // `Merged-Design-Patterns` §02 · "a record opening — one thing, not a list".
+    // This screen is one teacher's analytics record: a headline block and two
+    // figures, then the chart. It used to draw that through a file-local
+    // `function Skeleton({className})` that `IncomeView.tsx` independently
+    // defined identically — the exact duplication §02 exists to end. The chart
+    // block stays a shaped placeholder because §02 wants the shape of what is
+    // coming, and a chart is not a row.
     return (
       <div className="flex flex-col gap-6">
-        <Skeleton className="h-28" />
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Skeleton className="h-24" />
-          <Skeleton className="h-24" />
-        </div>
-        <Skeleton className="h-60" />
+        <RecordSkeleton />
+        <div className="chq-skeleton h-60 rounded-[var(--radius-card)]" aria-hidden />
       </div>
     );
   }

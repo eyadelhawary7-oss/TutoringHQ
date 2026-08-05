@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Archive, ChevronDown, ChevronLeft, ChevronRight, Loader2, Plus, Users } from 'lucide-react';
 import { Link, useRouter } from '@/i18n/routing';
+import { EmptyState } from '@/components/shared';
 import { supabase } from '@/lib/supabase';
 import { getCsrfHeaders } from '@/lib/csrf-client';
 import { formatCurrency, formatNumber } from '@/lib/formatNumber';
@@ -216,9 +217,12 @@ export default function PrivateGroupsSection({
       ) : (
         <>
           {active.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 text-sm text-[var(--color-text-secondary)]">
-              {t('empty')}
-            </p>
+            /* §01 · this section's "new private group" control sits in its own
+               header, so the empty state does not repeat it — one action, never
+               two of equal weight. */
+            <div className="rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-surface-1)] py-4">
+              <EmptyState icon={Users} title={t('empty')} quiet />
+            </div>
           ) : (
             <ul className="flex flex-col gap-2">
               {active.map((g) => (

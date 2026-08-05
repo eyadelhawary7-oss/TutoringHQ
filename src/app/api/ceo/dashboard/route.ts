@@ -8,7 +8,7 @@ import type {
   CeoDashboardData,
 } from '@/types/ceo';
 import { NextRequest, NextResponse } from 'next/server';
-import { getImpliedMonthlyMrr, isPlanKey, normalizeBillingPeriod, PLANS, type PlanKey } from '@/lib/pricing';
+import { getImpliedMonthlyMrr, isBranchAddonRow, isPlanKey, normalizeBillingPeriod, PLANS, type PlanKey } from '@/lib/pricing';
 import { getTeacherDashboardCombined } from '@/lib/ceoTeachers';
 
 export async function GET(request: NextRequest) {
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
   const currentBillingMonth = getCurrentBillingMonth();
 
   const results = await Promise.all([
-    supabase.from('centers').select('id, created_at, subscription_status, subscription_monthly_fee, early_adopter_price, billing_amount, billing_period, all_in_price, plan', { count: 'exact', head: false }).in('subscription_status', ['active', 'overdue']).eq('status', 'active').eq('is_test', false),
+    supabase.from('centers').select('id, created_at, subscription_status, subscription_monthly_fee, early_adopter_price, billing_amount, billing_period, all_in_price, plan, organization_id', { count: 'exact', head: false }).in('subscription_status', ['active', 'overdue']).eq('status', 'active').eq('is_test', false),
     supabase.from('mrr_snapshots').select('total_mrr, active_centers').order('snapshot_date', { ascending: false }).limit(1).maybeSingle(),
     supabase
       .from('centers')
@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const centers = (activeCentersRes.data ?? []) as { id: string; subscription_monthly_fee: number | null; early_adopter_price: number | null; billing_amount: number | null; billing_period?: string | null; all_in_price?: number | null; plan: string | null }[];
+  const centers = (activeCentersRes.data ?? []) as { id: string; subscription_monthly_fee: number | null; early_adopter_price: number | null; billing_amount: number | null; billing_period?: string | null; all_in_price?: number | null; plan: string | null; organization_id?: string | null }[];
   const mrrSnapshot = mrrSnapshotRes.data as { total_mrr?: number; active_centers?: number } | null;
 
   const mrr = Number(mrrSnapshot?.total_mrr ?? centers.reduce((s, c) => {
@@ -117,6 +117,11 @@ export async function GET(request: NextRequest) {
       baseQ = Math.round(Number(c.billing_amount) / 3);
     } else if (typeof c.subscription_monthly_fee === 'number' && c.subscription_monthly_fee > 0) {
       baseQ = c.subscription_monthly_fee;
+    } else if (isBranchAddonRow(c)) {
+      // D23: an extra branch carries no price of its own — it is billed as a
+      // flat add-on on the org primary's invoice. Falling through to the plan
+      // list price below would report a whole second subscription for it.
+      baseQ = 0;
     } else {
       baseQ = PLANS[pk].quarterlyAllIn;
     }
