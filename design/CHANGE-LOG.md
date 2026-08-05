@@ -114,6 +114,7 @@ If a row ever names one, that row is a mistake.
 | [#344](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/344) | `(on merge)` | 2026-08-04 | `Teacher-Setup §01` (Verified chip on the Settings header), `§02` (owed hero rebuilt as the design's money hero with a This month / All time footer; page reordered into the design's order; proposal money as the three-cell Student rate / You earn / Center keeps row; counter gains "Their offer" + the offer-history strip) | `/{locale}/teacher/settings`, `/{locale}/teacher/centers` | v45 → **v46** |
 | [#345](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/345) | `(on merge)` | 2026-08-04 | `Center-Orders §01` (hero card preview + New order CTA, row three-dot on the shared `ActionSheet`, `.oicon` tile), `§03` step 4 (order total, Paymob trust line), F29 residue in `CheckoutShell` | `/{locale}/orders`, `/orders/checkout/payment`, `/api/orders/history` | v45 → **v46** |
 | [#346](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/346) | `(on merge)` | 2026-08-04 | `Teacher-Groups §01` (row chevron, stacked per-class label), `§02` (stat tiles, Add student / Edit group action pair, inline "Recent classes"), `§03` (group summary line, queue notes, joined-on date, requests on the shared `ExpandableRow`, roster rows on the shared `ListRow`, one shared `ActionSheet` for both). `§04` not built (D20), `§05` untouched (money/legal) | `/{locale}/teacher/groups`, `/{locale}/teacher/groups/[groupId]` | v45 → **v46** |
+| [#347](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/347) | `(on merge)` | 2026-08-04 | `Center-WhatsApp §01` — structure build: row message preview with inline `{{var}}` tokens, expand-in-place row + More sheet (first `ExpandableRow` adopter), preview converted to a real bottom sheet, screen restyled onto the §4 token layer. `§02`/`§03` **not built — blocked by D5** (see the narrative below). Also touches `patterns/ExpandableRow.tsx` (`avatar` widened `string` → `ReactNode`) — **treat as ALL screens for that component**, though it had zero adopters before this PR | `/{locale}/whatsapp` | v45 → **v46** |
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, `#214`'s by that
@@ -2039,3 +2040,70 @@ Not built, each with the exact reason:
   (`F10`'s live timer sits inside that same section and is likewise untouched — though note
   `sessions.started_at` *does* exist live, contrary to F10's original wording.)
 - **§05 Class Session Verified** — money/legal-adjacent, untouched by standing policy.
+## #347 · Center-WhatsApp §01 built out; §02/§03 stay blocked on D5
+
+**Structure coverage: §01 3/5 → 4/5 · §02 0/5 (unchanged) · §03 0/4 (unchanged).**
+
+Every live-schema claim below was checked this pass against `information_schema.columns` on project
+`lczmjpnbuhnsislcvzar`, not against a migration file or an earlier note in this log.
+
+### §01 · what got built
+
+- **The row message preview — the biggest missing piece, and the one sitting on data already in the
+  repo.** §01's defining row content is the `.prev` line: the template body with its `{{var}}`
+  placeholders shown *as tokens*, not substituted. The screen had no preview line at all; the body
+  text was reachable only by opening the modal. `previewBodyForTemplate` was already imported by this
+  very file. Built as `TemplatePreviewLine`, rendering the design's `.var` chip (mono, mint fill,
+  `dir="ltr"` — §01: "Variable tokens stay Latin"). The sheet keeps the *substituted* rendering, which
+  is the split the design draws: list shows the shape, sheet shows the filled-in message.
+- **Expand-in-place row + More sheet.** Converted to the shared `ExpandableRow` and `ActionSheet`
+  primitives. This screen is `ExpandableRow`'s **first adopter** — it had zero before today.
+- **Preview is now a real bottom sheet**, not a centered modal: grab handle, scrim, Escape, scrim tap,
+  focus move, body scroll lock — the same chrome contract `ActionSheet` uses.
+- **Restyled onto the §4 token layer.** The screen was still on the older `--color-surface-*` /
+  `--color-text-*` alias set; it now uses `--color-paper`/`panel`/`line`/`mint`/`ink`/`muted`/`faint`
+  and the on-scale radii and type steps, which is what the primitives already speak.
+- **Header** now carries title + subtitle + trailing action in one `PageHeader`, matching §01's
+  topbar shape.
+
+### §01 · what was omitted, and the exact column that forced it
+
+- **The "+" add-template button, the "Edit" chip, and the "Send automatically" toggle — all three are
+  D4.** `wa_meta_templates`, the table this screen actually reads, is exactly `id, template_name,
+  category, status, variables_count, created_at, updated_at` (live, this pass). **There is no
+  `auto_send` column and no `message_body` column on it.** The table that has both,
+  `center_message_templates`, returns `count(*) = 0` live and still has no reader anywhere in `src`.
+  An auto-send toggle spends WhatsApp credit unattended — D4 is a product decision, not a display fix.
+- **`variables_count` is still not rendered, deliberately — it is wrong for most rows.** It is a real
+  column and it *is* already selected by `page.tsx`, so it looks like free data. It is not:
+  `chq_parent_welcome` reports `variables_count = 0` while its body carries `{{student_name}}` and
+  `{{centre}}`; `chq_parent_absence` is the same. Rendering it would have put a wrong number on 
+  screen. The sheet's "Variables used" list keeps deriving tokens from the body instead.
+- **28 of the 44 listed templates have no message preview**, and now say so instead of faking one.
+  The bodies are a hand-maintained map in `waTemplatePreviewSamples.ts` covering 16 of the 44 rows;
+  `previewBodyForTemplate` falls back to the string `قالب {name} (معاينة تقريبية…)`. That fallback was
+  previously rendered *inside the WhatsApp bubble*, presenting an owner with text no parent will ever
+  receive. New `hasApproximatePreviewBody()` gates both the row line and the bubble; where there is no
+  body the sheet states that the wording lives in Meta Business Manager.
+
+### §02 and §03 · not built, and why that is not a skipped section
+
+Both sections **are** the D5 pricing model, not a restyle of it. Re-verified live this pass rather
+than inherited from the 31 July / 4 August notes: `centers` has `announcement_balance`,
+`announcement_cap`, `announcement_price_per_blast`, `pack_price_per_parent`, `parent_pack_enabled`,
+`credit_balance` — and **no per-message credit column of any kind**, in either of the two
+non-fungible flavours §02's segmented control requires. Drawing §02's hero ("3,240 messages left"),
+its Notifications/Promotions split, or its 200/1,000/5,000 tier list would mean inventing both a
+balance and a price. §03 is the same model's custom-amount extension. Held for Eyad under D5.
+
+### One shared-primitive change, flagged rather than buried
+
+`patterns/ExpandableRow.tsx`'s `avatar` prop was widened `string` → `React.ReactNode`, because §01
+keys its rows by a Lucide glyph and the prop only accepted initials. This is a widening **in the
+shared file**, not a local fork — `string` remains a valid `ReactNode`, so the change is backwards
+compatible, and the component had zero adopters before this PR. Called out here because rule 7 says a
+primitive that cannot do what a screen needs is a signal worth surfacing, not silently routing around.
+
+`ActionSheet` genuinely cannot serve §01's preview sheet: its contract is `actions: SheetAction[]` and
+the preview is a *content* sheet (a WhatsApp bubble, a token list). Rather than fork it into a
+content-bearing variant, the preview keeps ActionSheet's chrome behaviour and supplies its own body.
