@@ -24,6 +24,10 @@ import {
   type ProcessingFeeConfig,
 } from '@/lib/processingFee';
 import { getSummerConfig, type SummerConfig } from '@/lib/summer/config';
+import {
+  BRANCH_ADDON_MONTHLY_PRICE_KEY,
+  normalizeBranchAddonPrice,
+} from '@/lib/pricing/branchAddon';
 
 /** Read-only service-role client. */
 function svc() {
@@ -506,6 +510,21 @@ export async function getProcessingFeeConfig(): Promise<ProcessingFeeConfig> {
     enabled,
     amount: Number.isFinite(amount) && amount >= 0 ? amount : PROCESSING_FEE_DEFAULT_AMOUNT,
   };
+}
+
+/**
+ * Extra-branch add-on price, EGP per month, VAT-inclusive — or `null` when the
+ * key is not set.
+ *
+ * Deliberately UNLIKE `getProcessingFeeConfig`, this has **no default**. An
+ * absent `branch_addon.monthly_price_egp` means "not priced yet", so callers
+ * render nothing and charge nothing rather than inventing a figure. See the
+ * header of `src/lib/pricing/branchAddon.ts` for why the price is config-driven
+ * rather than a hardcoded constant.
+ */
+export async function getBranchAddonMonthlyPrice(): Promise<number | null> {
+  const rows = await readKeys([BRANCH_ADDON_MONTHLY_PRICE_KEY]);
+  return normalizeBranchAddonPrice(rows[BRANCH_ADDON_MONTHLY_PRICE_KEY]);
 }
 
 /** All pricing config in one shot - used by admin GET. */

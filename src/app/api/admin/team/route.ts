@@ -13,6 +13,46 @@ import {
   setAdminPermissionKeys,
 } from '@/lib/adminPermissionsStore';
 
+/**
+ * `Merged-Admin-Accounts` §02 — the member sheet's recency line.
+ *
+ * The design draws "Last active 2 hours ago". **The product cannot say "last
+ * active", so this does not claim to.** `public.admin_users` has no activity
+ * column (`id, name, email, role, created_at, phone, custom_permissions`, live,
+ * 4 Aug 2026); the only recency datum that exists is `auth.users.last_sign_in_at`,
+ * which is a SIGN-IN, not activity. A member signed in three days ago and
+ * working in the portal all morning is "3d ago" by this column and "now" by the
+ * design's label — so the UI labels it *last signed in* and the two agree again.
+ * Renaming the datum to fit the drawn caption is exactly how a plausible wrong
+ * number gets shipped and never questioned.
+ *
+ * `auth` is not exposed over PostgREST, so this goes through the service-role
+ * Auth admin API by id. One call per member is fine and bounded: this is EH
+ * Group's internal staff list (2 rows live), not a tenant-scaled table. A member
+ * with no auth record, or a failed lookup, resolves to null and the line simply
+ * does not render.
+ */
+async function fetchLastSignInAt(
+  supabaseAdmin: { auth: { admin: { getUserById: (id: string) => Promise<{ data: { user: { last_sign_in_at?: string | null } | null } | null; error: unknown }> } } },
+  ids: string[],
+): Promise<Map<string, string | null>> {
+  const out = new Map<string, string | null>();
+  if (ids.length === 0) return out;
+  const results = await Promise.all(
+    ids.map(async (id) => {
+      try {
+        const { data, error } = await supabaseAdmin.auth.admin.getUserById(id);
+        if (error) return [id, null] as const;
+        return [id, data?.user?.last_sign_in_at ?? null] as const;
+      } catch {
+        return [id, null] as const;
+      }
+    }),
+  );
+  for (const [id, at] of results) out.set(id, at);
+  return out;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const ctx = await getAdminContext(request);
@@ -28,12 +68,19 @@ export async function GET(request: NextRequest) {
     // Grants come from `public.permissions`, the canonical store. The response
     // field keeps the `custom_permissions` wire name so the client is unchanged.
     const rows = (team ?? []) as { id: string }[];
-    const grants = await fetchPermissionKeysForAdmins(
-      ctx.supabaseAdmin,
-      rows.map((m) => m.id),
-    );
+    const [grants, lastSignIn] = await Promise.all([
+      fetchPermissionKeysForAdmins(
+        ctx.supabaseAdmin,
+        rows.map((m) => m.id),
+      ),
+      fetchLastSignInAt(ctx.supabaseAdmin, rows.map((m) => m.id)),
+    ]);
     return NextResponse.json({
-      team: rows.map((m) => ({ ...m, custom_permissions: grants.get(m.id) ?? [] })),
+      team: rows.map((m) => ({
+        ...m,
+        custom_permissions: grants.get(m.id) ?? [],
+        last_sign_in_at: lastSignIn.get(m.id) ?? null,
+      })),
     });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });

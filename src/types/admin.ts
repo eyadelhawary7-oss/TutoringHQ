@@ -22,4 +22,14 @@ export interface CenterRow {
   usage_scans?: number;
   is_blacklisted?: boolean;
   blacklist_reason?: string | null;
+  /**
+   * `Merged-Admin-Platform` §01 draws each centre row as "Nasr City · 180
+   * students". Both columns are real on `centers` (verified in
+   * `information_schema.columns`, 4 August 2026) and `/api/admin/centers`
+   * already selects `*`, so both arrive without an API change. Both are
+   * nullable and currently unset on every live row — the sub-line simply does
+   * not render rather than showing a placeholder location.
+   */
+  district?: string | null;
+  city?: string | null;
 }

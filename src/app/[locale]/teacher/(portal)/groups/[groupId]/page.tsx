@@ -3,17 +3,37 @@
 import { use, useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
-import { ArrowRight, ArrowLeft, Loader2, MessageCircle, Phone, Plus, Settings2, UserRound } from 'lucide-react';
+import {
+  ArrowRight,
+  ArrowLeft,
+  Check,
+  Loader2,
+  MessageCircle,
+  Phone,
+  Plus,
+  Settings2,
+  UserMinus,
+  UserRound,
+  X,
+} from 'lucide-react';
 import { Link, useRouter } from '@/i18n/routing';
 import { supabase } from '@/lib/supabase';
 import { getCsrfHeaders } from '@/lib/csrf-client';
-import { formatCurrency, formatNumber } from '@/lib/formatNumber';
+import { formatCurrency, formatDate, formatNumber } from '@/lib/formatNumber';
 import { useToast } from '@/hooks/useToast';
+import {
+  ActionSheet,
+  ExpandableRow,
+  ListRow,
+  type InlineAction,
+  type SheetAction,
+} from '@/components/patterns';
 import AddStudentModal from './AddStudentModal';
 import EditGroupModal from './EditGroupModal';
 import StudentNoteRow from './StudentNoteRow';
 import GroupJoinLinkCard from '../../../GroupJoinLinkCard';
 import GroupClassesTab from './GroupClassesTab';
+import GroupRecentClasses from './GroupRecentClasses';
 import GroupScheduleTab from './GroupScheduleTab';
 import { fetchTeacherSubscription } from '@/components/teacher/teacherSubscriptionClient';
 import { isProOrAbove } from '@/lib/teacherPlans';
@@ -96,6 +116,11 @@ export default function TeacherGroupDetailPage({
   const [decidingId, setDecidingId] = useState<string | null>(null);
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
   const [actionError, setActionError] = useState(false);
+  // §03: the oldest request opens expanded, the rest collapse behind a
+  // three-dot. `null` means "not chosen yet" so the default can be derived
+  // from data once it lands; `''` means the teacher collapsed all of them.
+  const [expandedPendingId, setExpandedPendingId] = useState<string | null>(null);
+  const [sheetEnrollmentId, setSheetEnrollmentId] = useState<string | null>(null);
   // Plan gates the per-student private-note feature. Fetched once; defaults to
   // Standard until it loads.
   const [isPro, setIsPro] = useState(false);
@@ -248,6 +273,131 @@ export default function TeacherGroupDetailPage({
   const payerLabel = (payer: string | null) =>
     payer === 'parent' ? t('payerParent') : payer === 'student' ? t('payerStudent') : null;
 
+  const sourceLabel = (source: string | null) => {
+    const key =
+      source === 'self_link'
+        ? 'sourceSelfLink'
+        : source === 'walk_in'
+          ? 'sourceWalkIn'
+          : source === 'inherited'
+            ? 'sourceInherited'
+            : source === 'import'
+              ? 'sourceImport'
+              : null;
+    return key ? t(key) : null;
+  };
+
+  // §03 draws the oldest request already open and the rest collapsed behind a
+  // three-dot. `pending` is newest-first, so the oldest is the last row.
+  const oldestPendingId = pending.length > 0 ? pending[pending.length - 1].enrollmentId : null;
+  const openPendingId = expandedPendingId === null ? oldestPendingId : expandedPendingId;
+  const sheetEntry =
+    sheetEnrollmentId === null
+      ? null
+      : (data.roster.find((r) => r.enrollmentId === sheetEnrollmentId) ?? null);
+
+  const call = (digits: string) => {
+    window.location.href = `tel:+${digits}`;
+  };
+  const whatsapp = (digits: string) => {
+    window.open(`https://wa.me/${digits}`, '_blank', 'noopener,noreferrer');
+  };
+
+  /**
+   * The contact half of the row sheet. §03's request-detail screen offers the
+   * student and the parent separately, each with Call and WhatsApp - only the
+   * numbers that actually exist get an entry, never a dead button.
+   */
+  const contactActions = (r: RosterEntry): SheetAction[] => {
+    const out: SheetAction[] = [];
+    const studentDigits = intlDigits(r.student.phone);
+    const parentDigits = intlDigits(r.student.parentPhone);
+    if (studentDigits) {
+      out.push({
+        id: 'call-student',
+        label: `${t('contactStudent')} · ${t('callAction')}`,
+        icon: Phone,
+        onSelect: () => call(studentDigits),
+      });
+      out.push({
+        id: 'wa-student',
+        label: `${t('contactStudent')} · ${t('messageAction')}`,
+        icon: MessageCircle,
+        onSelect: () => whatsapp(studentDigits),
+      });
+    }
+    if (parentDigits) {
+      out.push({
+        id: 'call-parent',
+        label: `${t('contactParent')} · ${t('callAction')}`,
+        icon: Phone,
+        onSelect: () => call(parentDigits),
+      });
+      out.push({
+        id: 'wa-parent',
+        label: `${t('contactParent')} · ${t('messageAction')}`,
+        icon: MessageCircle,
+        onSelect: () => whatsapp(parentDigits),
+      });
+    }
+    return out;
+  };
+
+  const rowSheetActions = (r: RosterEntry): SheetAction[] => {
+    const actions: SheetAction[] = [
+      {
+        id: 'open',
+        label: t('openStudent'),
+        icon: UserRound,
+        onSelect: () => router.push(`/teacher/students/${r.student.id}`),
+      },
+      ...contactActions(r),
+    ];
+    if (r.status === 'pending') {
+      actions.push({
+        id: 'reject',
+        label: t('reject'),
+        icon: X,
+        destructive: true,
+        onSelect: () => decide(r.enrollmentId, 'reject'),
+      });
+    } else {
+      // The remove itself stays behind the existing inline confirm - the sheet
+      // only arms it. A one-tap destructive action inside a sheet is exactly
+      // the mis-tap this list should not have.
+      actions.push({
+        id: 'remove',
+        label: tTabs('removeStudent'),
+        icon: UserMinus,
+        destructive: true,
+        onSelect: () => setConfirmRemoveId(r.enrollmentId),
+      });
+    }
+    return actions;
+  };
+
+  /**
+   * §03's expanded request card: Approve, Decline, then the More chip that
+   * ExpandableRow renders itself. Two inline actions, not three - the third
+   * slot in the design IS the More chip.
+   */
+  const pendingInlineActions = (r: RosterEntry): InlineAction[] => [
+    {
+      id: 'approve',
+      label: t('approve'),
+      icon: Check,
+      onSelect: () => decide(r.enrollmentId, 'approve'),
+      disabled: decidingId !== null,
+    },
+    {
+      id: 'reject',
+      label: t('reject'),
+      icon: X,
+      onSelect: () => decide(r.enrollmentId, 'reject'),
+      disabled: decidingId !== null,
+    },
+  ];
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -258,29 +408,67 @@ export default function TeacherGroupDetailPage({
           <BackIcon size={16} aria-hidden />
           {t('back')}
         </Link>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <span
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--color-mint)] text-sm font-semibold text-[var(--color-accent-deep)]"
-              aria-hidden
-            >
-              {initialsOf(data.group.name)}
-            </span>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{data.group.name}</h1>
-                <button
-                  type="button"
-                  onClick={() => setShowEdit(true)}
-                  aria-label={tPortal('editGroup.title')}
-                  className="rounded-lg border border-[var(--color-border)] p-2 text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-2)]"
-                >
-                  <Settings2 size={16} aria-hidden />
-                </button>
-              </div>
-              <p className="text-sm text-[var(--color-text-secondary)]">{tGroups('privateGroupSubtitle')}</p>
-            </div>
+        <div className="flex items-center gap-3">
+          <span
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--color-mint)] text-sm font-semibold text-[var(--color-accent-deep)]"
+            aria-hidden
+          >
+            {initialsOf(data.group.name)}
+          </span>
+          <div className="min-w-0">
+            <h1 className="truncate text-xl font-bold text-[var(--color-text-primary)]">
+              {data.group.name}
+            </h1>
+            <p className="text-sm text-[var(--color-text-secondary)]">
+              {tGroups('privateGroupSubtitle')}
+            </p>
+            {/* §03 topbar `.ts`: "18 students · 150 EGP per session", 11px. */}
+            <p className="mt-1 text-xs text-[var(--color-muted)]">
+              {tGroups('headerSummary', {
+                count: formatNumber(active.length, locale, { integerOnly: true }),
+                fee: formatCurrency(data.group.fee_per_class, locale),
+              })}
+            </p>
           </div>
+        </div>
+
+        {/* §02 `.gstats` / `.gtile`: flex-1, #F2EEE5, radius 12, padding 12.
+            `.gtl` 11px muted over `.gtv` 15px/700. */}
+        <dl className="mt-3 flex gap-2">
+          <div className="flex-1 rounded-md bg-[var(--color-tile)] p-3">
+            <dt className="text-xs text-[var(--color-muted)]">{tGroups('statStudents')}</dt>
+            <dd className="mt-1 text-md font-bold tabular-nums text-[var(--color-ink)]">
+              {formatNumber(active.length, locale, { integerOnly: true })}
+            </dd>
+          </div>
+          <div className="flex-1 rounded-md bg-[var(--color-tile)] p-3">
+            <dt className="text-xs text-[var(--color-muted)]">{tGroups('statPerClass')}</dt>
+            <dd className="mt-1 text-md font-bold tabular-nums text-[var(--color-ink)]">
+              {formatCurrency(data.group.fee_per_class, locale)}
+            </dd>
+          </div>
+        </dl>
+
+        {/* §02 `.gacts` / `.btn`: two flex-1 buttons, height 46, radius 12,
+            13px/600 - `.primary` solid teal, `.ghost` panel on a hairline. */}
+        <div className="mt-2 flex gap-2">
+          <button
+            type="button"
+            onClick={() => setShowAdd(true)}
+            title={tCaps('studentTooltip')}
+            className="flex min-h-[46px] flex-1 items-center justify-center gap-1 rounded-md bg-teal-600 px-4 text-base font-semibold text-primary-foreground transition-colors hover:bg-teal-700 btn-press chq-focus"
+          >
+            <Plus size={17} aria-hidden />
+            {t('addStudent')}
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowEdit(true)}
+            className="flex min-h-[46px] flex-1 items-center justify-center gap-1 rounded-md border border-[var(--color-line)] bg-[var(--color-panel)] px-4 text-base font-semibold text-[var(--color-accent-deep)] transition-colors hover:bg-[var(--color-tile)] btn-press chq-focus"
+          >
+            <Settings2 size={16} aria-hidden />
+            {tPortal('editGroup.title')}
+          </button>
         </div>
       </div>
 
@@ -349,12 +537,6 @@ export default function TeacherGroupDetailPage({
           <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-1)] p-4">
             <dl className="flex flex-col gap-3 text-sm">
               <div className="flex items-center justify-between gap-2">
-                <dt className="text-[var(--color-text-secondary)]">{tGroups('feePerClass')}</dt>
-                <dd className="font-semibold text-[var(--color-text-primary)]">
-                  {formatCurrency(data.group.fee_per_class, locale)}
-                </dd>
-              </div>
-              <div className="flex items-center justify-between gap-2">
                 <dt className="text-[var(--color-text-secondary)]">{tTabs('statusLabel')}</dt>
                 <dd className="flex items-center gap-2">
                   <span
@@ -377,16 +559,11 @@ export default function TeacherGroupDetailPage({
                   )}
                 </dd>
               </div>
-              <div className="flex items-center justify-between gap-2">
-                <dt className="text-[var(--color-text-secondary)]">{tTabs('enrolledLabel')}</dt>
-                <dd className="font-semibold text-[var(--color-text-primary)]">
-                  {tGroups('enrolledCount', {
-                    count: formatNumber(active.length, locale, { integerOnly: true }),
-                  })}
-                </dd>
-              </div>
             </dl>
           </div>
+
+          {/* §02 "Recent classes" - the three latest, then out to the tab. */}
+          <GroupRecentClasses groupId={groupId} onSeeAll={() => changeTab('classes')} />
 
           <GroupJoinLinkCard groupId={groupId} groupName={data.group.name} />
         </div>
@@ -395,131 +572,100 @@ export default function TeacherGroupDetailPage({
       {/* STUDENTS */}
       {tab === 'students' && (
         <div className="flex flex-col gap-6">
+          {/* §03 "this group's queue": the explanatory note, then the requests
+              themselves on the shared expand-in-place row.
+
+              NOT BUILT, and why (verified live against project
+              lczmjpnbuhnsislcvzar on 4 Aug 2026, not inferred):
+                · §03's request-detail "School" - `students` has 39 columns and
+                  none of school / school_name / school_id. Needs a new column
+                  (D18); a migration is Eyad's call, so the field is absent
+                  rather than faked.
+                · §03's "Note from them" - `enrollments` has exactly 9 columns
+                  (id, group_id, student_id, status, payer, source,
+                  approved_by, joined_at, created_at). No note column. Same
+                  blocker, same reason.
+                · The review gate itself - D18: both create paths call
+                  apply_enrollment_transition(..., 'active', ...) right after
+                  create_enrollment, so a request rarely stays pending at all.
+                  This queue is drawn honestly for the rows that do.
+              Everything else §03 draws off columns that exist is built. */}
           {pending.length > 0 && (
             <section>
-              <h2 className="mb-3 text-sm font-semibold text-[var(--color-warning)]">
+              {/* §03 `.sec` 15px/700, then `.note`: mint fill, radius 12,
+                  11px on accent - the queue's own explanation, not a warning. */}
+              <h2 className="mb-2 text-md font-bold text-[var(--color-ink)]">
                 {t('pendingTitle')}
               </h2>
+              <p className="mb-2 rounded-md bg-[var(--color-mint)] p-3 text-xs leading-relaxed text-[var(--color-accent)]">
+                {t('queueNote', { group: data.group.name ?? '' })}
+              </p>
               <ul className="flex flex-col gap-2">
-                {pending.map((r) => {
-                  const studentDigits = intlDigits(r.student.phone);
-                  const parentDigits = intlDigits(r.student.parentPhone);
-                  const sourceKey =
-                    r.source === 'self_link'
-                      ? 'sourceSelfLink'
-                      : r.source === 'walk_in'
-                        ? 'sourceWalkIn'
-                        : r.source === 'inherited'
-                          ? 'sourceInherited'
-                          : r.source === 'import'
-                            ? 'sourceImport'
-                            : null;
-                  return (
-                  <li
-                    key={r.enrollmentId}
-                    className="flex flex-col gap-3 rounded-lg border border-[var(--color-warning)]/30 bg-[var(--color-surface-1)] px-4 py-3"
-                  >
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div className="flex min-w-0 items-start gap-3">
-                        <span
-                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-mint)] text-xs font-semibold text-[var(--color-accent-deep)]"
-                          aria-hidden
-                        >
-                          {initialsOf(r.student.name)}
-                        </span>
-                        <div className="min-w-0">
-                          <Link
-                            href={`/teacher/students/${r.student.id}`}
-                            className="block truncate font-medium text-[var(--color-text-primary)] underline-offset-2 hover:underline"
-                          >
-                            {r.student.name}
-                          </Link>
-                          <p className="text-sm text-[var(--color-text-muted)]" dir="ltr">
-                            {r.student.phone}
-                          </p>
-                          <p className="mt-1 text-xs text-[var(--color-text-muted)]">
-                            {t('asked', { ago: formatRelativeMinutesAgo(r.createdAt, locale) })}
-                            {r.student.gradeLevel && (
-                              <span className="ms-2">
-                                {t('gradeLabel', { grade: r.student.gradeLevel })}
-                              </span>
-                            )}
-                            {sourceKey && <span className="ms-2">{t(sourceKey)}</span>}
-                          </p>
-                        </div>
-                      </div>
-                      {(studentDigits || parentDigits) && (
-                        <div className="flex shrink-0 items-center gap-1.5">
-                          {[
-                            { digits: studentDigits, label: t('contactStudent') },
-                            { digits: parentDigits, label: t('contactParent') },
-                          ]
-                            .filter((c) => c.digits)
-                            .map((c) => (
-                              <span key={c.label} className="flex items-center gap-1">
-                                <a
-                                  href={`tel:+${c.digits}`}
-                                  aria-label={`${c.label} - ${t('callAction')}`}
-                                  className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-teal-soft)] text-[var(--color-teal-deep)] transition-opacity hover:opacity-90"
-                                >
-                                  <Phone size={14} aria-hidden />
-                                </a>
-                                <a
-                                  href={`https://wa.me/${c.digits}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  aria-label={`${c.label} - ${t('messageAction')}`}
-                                  className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-teal-soft)] text-[var(--color-teal-deep)] transition-opacity hover:opacity-90"
-                                >
-                                  <MessageCircle size={14} aria-hidden />
-                                </a>
-                              </span>
-                            ))}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {decidingId === r.enrollmentId ? (
-                        <Loader2 className="h-4 w-4 animate-spin text-[var(--color-text-muted)]" aria-hidden />
-                      ) : (
+                {pending.map((r) => (
+                  <li key={r.enrollmentId}>
+                    <ExpandableRow
+                      avatar={initialsOf(r.student.name)}
+                      title={r.student.name ?? ''}
+                      meta={
                         <>
-                          <button
-                            onClick={() => decide(r.enrollmentId, 'approve')}
-                            className="rounded-lg bg-teal-600 px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-teal-700"
-                          >
-                            {t('approve')}
-                          </button>
-                          <button
-                            onClick={() => decide(r.enrollmentId, 'reject')}
-                            className="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-2)]"
-                          >
-                            {t('reject')}
-                          </button>
+                          <span className="block truncate" dir="ltr">
+                            {r.student.phone}
+                          </span>
+                          <span className="mt-1 block truncate">
+                            {[
+                              r.student.gradeLevel
+                                ? t('gradeLabel', { grade: r.student.gradeLevel })
+                                : null,
+                              t('asked', { ago: formatRelativeMinutesAgo(r.createdAt, locale) }),
+                              sourceLabel(r.source),
+                            ]
+                              .filter(Boolean)
+                              .join(' · ')}
+                          </span>
                         </>
-                      )}
-                    </div>
+                      }
+                      badge={
+                        decidingId === r.enrollmentId ? (
+                          <Loader2
+                            className="h-4 w-4 shrink-0 animate-spin text-[var(--color-text-muted)]"
+                            aria-hidden
+                          />
+                        ) : undefined
+                      }
+                      expanded={openPendingId === r.enrollmentId}
+                      onToggle={() =>
+                        setExpandedPendingId((v) =>
+                          (v === null ? oldestPendingId : v) === r.enrollmentId
+                            ? ''
+                            : r.enrollmentId,
+                        )
+                      }
+                      inlineActions={pendingInlineActions(r)}
+                      onMore={() => setSheetEnrollmentId(r.enrollmentId)}
+                      moreLabel={t('more')}
+                    />
                   </li>
-                  );
-                })}
+                ))}
               </ul>
+              {/* §03's closing note: a per-group link only ever fills its own
+                  group, so the other groups' queues are elsewhere. */}
+              <p className="mt-2 rounded-md bg-[var(--color-mint)] p-3 text-xs leading-relaxed text-[var(--color-accent)]">
+                {t('queueOtherGroupsNote')}
+              </p>
             </section>
           )}
 
           <section>
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="flex items-center gap-2 text-sm font-semibold text-[var(--color-text-muted)]">
-                <UserRound size={14} aria-hidden />
-                {t('studentsTitle')}
-              </h2>
-              <button
-                onClick={() => setShowAdd(true)}
-                title={tCaps('studentTooltip')}
-                className="flex items-center gap-1.5 rounded-lg bg-teal-600 px-3 py-1.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-teal-700"
-              >
-                <Plus size={16} aria-hidden />
-                {t('addStudent')}
-              </button>
-            </div>
+            {/* §03 `.sec` 15px/700 with its count, over `.sub` 12px muted. */}
+            <h2 className="flex items-center gap-2 text-md font-bold text-[var(--color-ink)]">
+              <UserRound size={15} aria-hidden />
+              {t('enrolledHeading', {
+                count: formatNumber(active.length, locale, { integerOnly: true }),
+              })}
+            </h2>
+            <p className="mb-2 mt-1 text-sm leading-relaxed text-[var(--color-muted)]">
+              {t('enrolledSub')}
+            </p>
 
             {active.length === 0 ? (
               <p className="rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-surface-1)] p-6 text-sm text-[var(--color-text-secondary)]">
@@ -528,47 +674,53 @@ export default function TeacherGroupDetailPage({
             ) : (
               <ul className="flex flex-col gap-2">
                 {active.map((r) => (
-                  <li
-                    key={r.enrollmentId}
-                    className="flex flex-col gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-1)] px-4 py-3"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-3">
-                        <span
-                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-mint)] text-xs font-semibold text-[var(--color-accent-deep)]"
-                          aria-hidden
-                        >
-                          {initialsOf(r.student.name)}
-                        </span>
-                        <div>
-                          <Link
-                            href={`/teacher/students/${r.student.id}`}
-                            className="block truncate font-medium text-[var(--color-text-primary)] underline-offset-2 hover:underline"
-                          >
-                            {r.student.name}
-                          </Link>
-                          <p className="text-sm text-[var(--color-text-muted)]" dir="ltr">
+                  <li key={r.enrollmentId} className="flex flex-col gap-2">
+                    <ListRow
+                      avatar={initialsOf(r.student.name)}
+                      title={r.student.name ?? ''}
+                      meta={
+                        <>
+                          <span className="block truncate" dir="ltr">
                             {r.student.phone}
-                          </p>
-                          {payerLabel(r.payer) && (
-                            <span className="mt-1 inline-block rounded-full bg-[var(--color-surface-2)] px-2.5 py-0.5 text-xs text-[var(--color-text-secondary)]">
-                              {payerLabel(r.payer)}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-end gap-1.5">
-                        {r.outstanding > 0 && (
-                          <span className="text-xs font-medium text-[var(--color-brass)]">
+                          </span>
+                          <span className="mt-1 block truncate">
+                            {[
+                              // §03's enrolled row carries a joined date.
+                              // `enrollments.joined_at` is nullable, so a row
+                              // without one says nothing rather than guessing.
+                              r.joinedAt
+                                ? t('joinedOn', { date: formatDate(r.joinedAt, locale, 'short') })
+                                : null,
+                              payerLabel(r.payer),
+                            ]
+                              .filter(Boolean)
+                              .join(' · ')}
+                          </span>
+                        </>
+                      }
+                      badge={
+                        r.outstanding > 0 ? (
+                          <span className="shrink-0 text-xs font-medium text-[var(--color-brass)]">
                             {tTabs('outstandingShort', {
                               amount: formatCurrency(r.outstanding, locale),
                             })}
                           </span>
-                        )}
+                        ) : undefined
+                      }
+                      onOpen={() => router.push(`/teacher/students/${r.student.id}`)}
+                      onActions={() => setSheetEnrollmentId(r.enrollmentId)}
+                      actionsLabel={t('rowActions', { name: r.student.name ?? '' })}
+                    />
+
+                    {confirmRemoveId === r.enrollmentId && (
+                      <div className="flex items-center justify-end gap-2">
                         {decidingId === r.enrollmentId ? (
-                          <Loader2 className="h-4 w-4 animate-spin text-[var(--color-text-muted)]" aria-hidden />
-                        ) : confirmRemoveId === r.enrollmentId ? (
-                          <div className="flex items-center gap-2">
+                          <Loader2
+                            className="h-4 w-4 animate-spin text-[var(--color-text-muted)]"
+                            aria-hidden
+                          />
+                        ) : (
+                          <>
                             <button
                               onClick={() => decide(r.enrollmentId, 'remove')}
                               className="rounded-lg bg-[var(--color-danger)] px-3 py-1 text-xs font-medium text-white transition-opacity hover:opacity-90"
@@ -581,17 +733,11 @@ export default function TeacherGroupDetailPage({
                             >
                               {tTabs('cancel')}
                             </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => setConfirmRemoveId(r.enrollmentId)}
-                            className="text-xs text-[var(--color-text-muted)] transition-colors hover:text-[var(--color-danger)]"
-                          >
-                            {tTabs('removeStudent')}
-                          </button>
+                          </>
                         )}
                       </div>
-                    </div>
+                    )}
+
                     <StudentNoteRow groupId={groupId} studentId={r.student.id} isPro={isPro} />
                   </li>
                 ))}
@@ -606,6 +752,16 @@ export default function TeacherGroupDetailPage({
 
       {/* SCHEDULE */}
       {tab === 'schedule' && <GroupScheduleTab groupId={groupId} />}
+
+      {/* §03/§04's one row sheet, shared: the row decides the actions, the
+          sheet only presents them. Same instance for pending and enrolled. */}
+      <ActionSheet
+        open={sheetEntry !== null}
+        onClose={() => setSheetEnrollmentId(null)}
+        title={sheetEntry?.student.name ?? ''}
+        subtitle={sheetEntry?.student.phone ?? undefined}
+        actions={sheetEntry ? rowSheetActions(sheetEntry) : []}
+      />
 
       <AddStudentModal
         groupId={groupId}
