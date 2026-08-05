@@ -2978,7 +2978,6 @@
       "col_period": "الفترة",
       "col_status": "الحالة",
       "col_held_until": "قابلة للسحب بعد",
-      "status_pending": "في الانتظار",
       "status_held": "محجوزة",
       "status_available": "متاحة",
       "status_paid": "مدفوعة",
@@ -2991,10 +2990,9 @@
       "no_records": "لا توجد سجلات مكافآت بعد",
       "no_records_description": "يعمل الكرون في الثاني من كل شهر وسيقوم بتعبئة هذه القائمة.",
       "filter_all": "الكل",
-      "filter_pending": "معلق",
-      "filter_held": "محجوز",
+      "filter_pending": "مستحق",
       "filter_paid": "مدفوع",
-      "select_payable": "اختر الصفوف القابلة للدفع (معلق أو متاح) لتأكيد الدفع.",
+      "select_payable": "اختر الصفوف القابلة للدفع (المحجوزة التي انتهت مدة حجزها أو القابلة للسحب) لتأكيد الدفع. الصفوف الملغاة لا يمكن دفعها أبدًا.",
       "errors": {
         "unauthorized": "غير مصرح",
         "config": "خطأ في إعداد الخادم",
@@ -3002,7 +3000,11 @@
         "superAdminOnly": "للمشرف الأعلى فقط",
         "invalidBody": "محتوى الطلب غير صالح",
         "recordIdsRequired": "معرفات السجلات مطلوبة"
-      }
+      },
+      "filter_hold": "محجوز",
+      "filter_forfeited": "ملغاة",
+      "status_forfeited": "ملغاة",
+      "col_total_forfeited": "إجمالي الملغى"
     },
     "centerNotes": {
       "title": "ملاحظات داخلية",
@@ -6238,7 +6240,8 @@
     "noWithdrawalBalance": "لا يوجد رصيد متاح",
     "withdrawalModalTitle": "طلب سحب العمولات",
     "submitWithdrawal": "إرسال الطلب",
-    "instapayInvalid": "رقم إنستاباي يجب أن يكون ١١ رقماً ويبدأ بـ ٠١"
+    "instapayInvalid": "رقم إنستاباي يجب أن يكون ١١ رقماً ويبدأ بـ ٠١",
+    "rewardStatusExpired": "منتهية"
   },
   "resetPassword": {
     "title": "تغيير الرمز السري",
