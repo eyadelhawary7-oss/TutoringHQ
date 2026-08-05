@@ -116,6 +116,13 @@ If a row ever names one, that row is a mistake.
 | [#346](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/346) | `(on merge)` | 2026-08-04 | `Teacher-Groups §01` (row chevron, stacked per-class label), `§02` (stat tiles, Add student / Edit group action pair, inline "Recent classes"), `§03` (group summary line, queue notes, joined-on date, requests on the shared `ExpandableRow`, roster rows on the shared `ListRow`, one shared `ActionSheet` for both). `§04` not built (D20), `§05` untouched (money/legal) | `/{locale}/teacher/groups`, `/{locale}/teacher/groups/[groupId]` | v45 → **v46** |
 | [#347](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/347) | `(on merge)` | 2026-08-04 | `Center-WhatsApp §01` — structure build: row message preview with inline `{{var}}` tokens, expand-in-place row + More sheet (first `ExpandableRow` adopter), preview converted to a real bottom sheet, screen restyled onto the §4 token layer. `§02`/`§03` **not built — blocked by D5** (see the narrative below). Also touches `patterns/ExpandableRow.tsx` (`avatar` widened `string` → `ReactNode`) — **treat as ALL screens for that component**, though it had zero adopters before this PR | `/{locale}/whatsapp` | v45 → **v46** |
 | [#348](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/348) | `(on merge)` | 2026-08-05 | `Center-Insight §01` (aging age bands, revenue bars, centre·month subtitle, donut share-of-mix), `§02` (district median from `p50_*`, median tick, below-median state, compact rows, gradient hero); `§03` surveyed, deliberately unbuilt (D22) | `/{locale}/analytics`, `/{locale}/benchmarks`, `/api/benchmarks` | v45 → **v46** |
+| [#350](https://github.com/eyadelhawary7-oss/TutoringHQ/pull/350) | `(on merge)` | 2026-08-05 | `Center-Students §03` (roster meta → enrolled·behind; detail gains "Last attended"), `Center-Students §04` (Pending rebuilt on the shared `ExpandableRow` + `ActionSheet`), `Center-Students §02` (loading skeleton reshaped to the drawn blocks) | `/{locale}/students`, `/{locale}/students/[id]`, `/{locale}/students/pending` | v45 → **v46** |
+
+*Row-gap disclosure, 5 August 2026: this table's last filled row is `#298` at v42, but `public/sw.js`
+was at **v45** when this PR branched — PRs between `#298` and here bumped the service worker without
+adding their rows. The jump from v42 to v45→v46 in the two adjacent rows is that gap, not a
+miscount. The missing rows are not reconstructed here because their screens/routes would have to be
+inferred rather than read, and an inferred row in this table is worse than an absent one.*
 
 *The SHA of a squash merge is only knowable after the merge, so the newest row carries `(on merge)`
 until the next PR fills it in. That is how `#209`'s own row was filled by `#210`, `#214`'s by that

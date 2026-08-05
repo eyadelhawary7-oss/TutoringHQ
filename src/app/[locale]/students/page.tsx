@@ -1179,18 +1179,43 @@ export default function StudentsPage() {
                   manual AtRiskPanel PATCH via /api/students/lifecycle), so
                   filtering it for 'active' rendered "0 active" over a populated
                   roster. Same source as the KPI tile below, so the two cannot
-                  contradict; `branches` is the real branch count, floored at 1
-                  — never the design's sample 3. */}
+                  contradict.
+
+                  CHANGED THIS PASS — the second clause is now §03's, not §01's.
+                  §03 (design line 846, the later frame of this same screen) pairs
+                  the headcount with who is behind — "142 enrolled · 8 behind" —
+                  where §01 paired it with a branch count. Taking §03 also retires
+                  the one clause F22 item 1 flags as scope-mismatched:
+                  `branchCount` is org-wide (every sibling center sharing an
+                  organization_id, per /api/branches' GET handler) while the
+                  headcount beside it is fetched for this center_id only, so the
+                  two halves of "N active · M branches" never shared a scope. The
+                  branch figure keeps its home on the KPI tile below, where the
+                  RLS-scope decision F22 names is still Eyad's to make.
+
+                  The behind clause is DROPPED, not zeroed, until the balance
+                  fold lands: `behindSummary` is null both before it resolves and
+                  when it fails, and "· 0 behind" over a roster whose balances are
+                  unknown is exactly the fake reassurance this money surface must
+                  never print. */}
               <p className="mt-0.5 text-xs text-[#80827A] tabular-nums">
                 {students === null
                   ? '\u00a0'
-                  : ts('rosterMeta', {
-                      active: formatNumber(
-                        studentsList.filter((s) => s.is_active === true).length,
-                        locale,
-                      ),
-                      branches: formatNumber(branchCount, locale),
-                    })}
+                  : [
+                      ts('rosterMetaActive', {
+                        count: formatNumber(
+                          studentsList.filter((s) => s.is_active === true).length,
+                          locale,
+                        ),
+                      }),
+                      behindSummary
+                        ? ts('rosterMetaBehind', {
+                            count: formatNumber(behindSummary.count, locale),
+                          })
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
               </p>
             </div>
           </div>

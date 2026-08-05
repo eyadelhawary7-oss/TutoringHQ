@@ -1395,6 +1395,7 @@ grammatically backwards translations, fixed (no decision needed)
 - **Build:** add an origin/source column to `pending_enrollments`, stamp it at both insert sites, surface it as the badge/detail-row the design already draws.
 - **Blocked by:** nothing technical; out of scope for a display-only pass (needs a migration).
 - **Re-confirmed live, 4 August 2026, Center-Students parity pass.** Fresh `information_schema.columns` read against project `lczmjpnbuhnsislcvzar`: `pending_enrollments` still has exactly `id, center_id, group_id, student_name, student_phone, parent_phone, notes, status, created_at, student_id` — no origin-like column, unchanged from the original finding. Also checked the request-detail sub-screen's other two fields the design draws with no live source ("Grade", "School" in §04's expanded request-detail frame) — `students/pending/page.tsx` correctly renders neither; it only surfaces `student_name`, `student_phone`, `parent_phone`, `notes` and a relative "asked" timestamp, the fields that actually exist. No fabricated Grade/School/origin data found anywhere on this screen — the honest-state rule is being followed here, not violated.
+- **Re-confirmed live again, 5 August 2026, and widened by one column.** `pending_enrollments` is still exactly `id, center_id, group_id, student_name, student_phone, parent_phone, notes, status, created_at, student_id` — ten columns, no origin. This pass also checked the design's other two request-detail fields against the **whole schema**, not just this table: a `column_name ilike '%school%'` sweep across every table in `public` returns **zero rows**, so "School" has no source anywhere in the database, not merely no source on this table; and `grade_level` exists on `students`, `group_proposals` and `teacher_profiles` but **not** on `pending_enrollments`, so a request's grade is unavailable until the row becomes a student. `/students/pending` was rebuilt onto `ExpandableRow`/`ActionSheet` this pass and the origin badge slot the design draws on every row was deliberately left empty — the omission is now carried as a comment on the list itself, next to the code that would render it, rather than only in this ledger.
 
 ## F13 · `students.grade_level` has zero writers — the display added this pass will stay blank until something writes it
 - **What:** the roster and student-detail screens now show a "Grade {n}" line when `grade_level` is set (this pass). Live, no code path (add-student, edit-student, `/students/import`) ever writes it — confirmed 0 of 4 live students have a non-null value, and grepping every students-table insert/update site for `grade_level` returns none.
@@ -1569,6 +1570,41 @@ grammatically backwards translations, fixed (no decision needed)
   with no per-invoice "next due" fact; still needs a product decision on what "next due" means under
   that model — unaffected by the item-1 correction. Items 3–4 (ID card tile, import inline Fix)
   re-verified still present and working, see the code citations under F22 above.
+- **Item 1 — half of it removed rather than decided, 5 August 2026 (Center-Students build pass).**
+  The mismatch was never that either number was wrong; it was that "N active · M branches" put a
+  center-scoped count next to an org-scoped one in the same sentence. §03 (design line 846) pairs
+  the headcount with **who is behind** instead of with a branch count, and §03 is the later frame of
+  this same screen — so the roster's title meta now reads `{active} active · {behind} behind`, both
+  clauses derived from the same center-scoped `studentsList`/`standingRows` fold, and the mixed-scope
+  sentence is gone. The behind clause is dropped, never zeroed, while `behindSummary` is null (before
+  the fold resolves and when it fails). **This does not close item 1.** The KPI tile below still
+  renders "across {branchCount} branches" beside a center-scoped "Active students" value — same
+  mismatch, one element lower — and that one is left alone deliberately, because removing the branch
+  figure from the screen entirely is the RLS-scope question (should one roster view ever sum students
+  across sibling `center_id`s) that item 1 says is Eyad's. What changed is that the mismatch no longer
+  sits in the page's title.
+- **Item 2 — the ledger was stale; both sub-lines are BUILT at `master`, 5 August 2026.** The
+  4 August note above says item 2 is "still open" and needs a product decision. Read the component
+  instead of the ledger and it is already there, in `students/[id]/page.tsx`: the owing state renders
+  `tDetail('overdueSince', { days, date })` from `standing.oldestUnpaidDays` / `standing.oldestUnpaidAt`
+  (the FIFO fold in `getStudentStandings`, not the running aggregate the old note assumed was the only
+  source), and the settled state renders `nextDue` / `nextDueWithAmount` from the earliest future
+  `sessions` row for a group this student belongs to, priced at that group's
+  `student_groups.fee_per_class`. Both clauses drop out entirely when their source is absent — no
+  placeholder date, no invented amount. The old note's reasoning ("`getStudentBalances()` is a running
+  aggregate, so there is no oldest-unpaid fact") was correct about `getStudentBalances` and wrong about
+  the screen, which uses a different helper for exactly this.
+  **One real caveat, verified live rather than assumed:** the Next-due half depends on `sessions`, and
+  `select kind, status, count(*) from sessions group by 1,2` returns 4 rows total, **all**
+  `kind='private'` (3 finished, 1 scheduled) — F17's finding, still true. So the mechanism is built and
+  correct, and for a center student it will render nothing until something writes center session rows.
+  Built-and-empty, not built-and-wrong; recorded here so the next pass does not "re-open" item 2 after
+  looking at a screen where the line is legitimately absent.
+- **Item 5 (new, this pass) — closed.** §03's Attendance card draws two facts, "This term 22 of 24"
+  **and** "Last attended 20/07". Only the ratio existed. The last-attended date now renders on the
+  same tile, taken from the first non-absent row of `scans` (already fetched, already ordered
+  `scanned_at DESC`, so the first such row *is* the last attendance — no second query and no
+  client-side re-sort to get wrong). Absent, with no placeholder, for a student never scanned present.
 
 ## F23 · Two dashboard CTAs link to `/students` query params the page never reads — CLOSED, 4 August 2026
 - **What:** `Merged-Center-Home` §01's unpaid-alert banner "Review" button links to `/students?filter=unpaid`, and the dashboard's "Add student" quick action links to `/students?action=add`. `src/app/[locale]/students/page.tsx` has zero `useSearchParams`/`searchParams` handling anywhere — both links silently land on the plain, unfiltered/unprompted roster instead of doing what they promise.
@@ -1779,6 +1815,68 @@ The same applies to any post-apply verification query written into a migration: 
 - **Blocked by:** nothing technical for items 2 and 3. Item 1 needs Eyad to add the repo secret.
 
 ---
+
+## F39 · Two of the three per-student notification flags are written by the UI and read by nothing — a paid-WhatsApp opt-out that only works for one channel
+
+*(F-number picked by grepping `^## F[0-9]+` across `refs/remotes/origin` — all 206 refs, not just
+`master`, per F31's warning. Claimed across every branch as of 5 August: F1–F37 with no gaps above
+F25. F39 is the lowest free number: master ends at F35, #348 claimed F36 and F37, and #349 claimed F38 while this branch was in flight.)*
+
+- **What:** `students` carries three per-student notification booleans — `notify_on_scan`,
+  `notify_on_absence`, `notify_on_balance` — all confirmed present in
+  `information_schema.columns` for project `lczmjpnbuhnsislcvzar` this pass, all `boolean`,
+  all nullable. Two of the three gate nothing.
+  - **The only send-path reader in the codebase** is `src/lib/whatsapp/flows/parentNotifications.ts`
+    line 82: `if (!s.parent_phone || !s.parent_consent_given || s.notify_on_scan === false)`.
+    That is `notify_on_scan`, and only `notify_on_scan`.
+  - `src/app/api/cron/parent-absence-alerts/route.ts` selects
+    `students(id, name, parent_phone, parent_pack_opted_in, is_active)` and gates with
+    `if (!s.parent_pack_opted_in) continue;` — it never selects `notify_on_absence` and never
+    tests it.
+  - `src/app/api/cron/parent-balance-alerts/route.ts` selects `id, name, parent_phone, center_id`
+    filtered `.eq('parent_pack_opted_in', true)` — it never selects `notify_on_balance` and never
+    tests it.
+  - The only other read anywhere is `src/app/api/ceo/financials/route.ts` line 174, an
+    `.or('notify_on_scan.eq.true,notify_on_absence.eq.true,notify_on_balance.eq.true')` used for a
+    CEO-side count. A reporting filter, not a send gate.
+  - Writers, by contrast, are plural and live: `PATCH /api/students/[id]` allow-lists all three,
+    `PATCH /api/whatsapp-pack/student/[studentId]` writes all three, and both
+    `api/teacher/private/schedule/sessions/route.ts` and its
+    `[sessionId]/attendance/route.ts` sibling insert all three as `false` on student creation.
+- **Why this is not cosmetic:** these flags sit on a **paid** WhatsApp surface. Turning
+  `notify_on_absence` or `notify_on_balance` off is a request to stop paying for those messages,
+  and the request is stored and then ignored — the parent still gets the message and the center is
+  still charged. Nothing errors; the write succeeds and the column is faithfully wrong.
+- **Instance eight of the F16 shape**, on the write side rather than the read side: a column that
+  looks authoritative to every caller, is maintained by three separate writers, and is consulted by
+  none of the jobs it names. F16 catalogues readers preferring a frozen column over the live helper;
+  this is the mirror — writers maintaining a column no reader consults.
+- **Why it is NOT fixed here:** wiring the two flags into their crons changes **who receives a paid
+  WhatsApp message**. That is the identical axis **D25** is already open on for
+  `parent-balance-alerts` targeting, and it is money behaviour under the standing stop rule. Logged,
+  not touched. Note also that flipping them on today would *reduce* sends, never increase them, so
+  the fix direction is safe — but "safe direction" is not the same as "mine to decide".
+- **What it cost this pass, concretely.** `Merged-Center-Students` §03 draws a **"Who receives
+  what"** section — two rows plus a bottom sheet — and it is the one whole block of that section
+  left unbuilt. Both halves are blocked, each for its own named reason:
+  1. **The WHO has no column.** `students` is 39 columns live (read in full this pass); none of them
+     is a per-channel recipient. `phone` and `parent_phone` are contact fields, not a selector —
+     nothing records *which* of them a payment link goes to. The design's "Payment links · One
+     person only → Parent" needs a new column (e.g. `students.payment_link_recipient`), and its
+     sheet's third option, "Another number · Add a different contact", needs somewhere to store
+     that number as well. **New column ⇒ stops here under the migration rule.**
+  2. **The WHAT could not be substituted honestly.** The obvious near-miss was to back the
+     "Reminders and updates · Session, absence, receipts" row with the three `notify_on_*` flags,
+     whose names line up almost exactly with that sub-label. This entry is why that was rejected:
+     a three-way control where two switches do nothing is a fabricated control, and a fabricated
+     control on a screen about who gets charged for messages is worse than an absent section.
+- **Found:** 5 August 2026, `Merged-Center-Students` build pass, while checking whether §03's
+  "Who receives what" had any live backing. Found by reading the two crons, not by trusting the
+  column names.
+- **Build:** decide (D25) what the balance/absence targeting model is, then either honour the two
+  flags in their crons or drop the columns and their writers. Until one of those happens, do not
+  put a UI on them.
+- **Blocked by:** D25, and the standing money-behaviour stop.
 
 # Appendix · Tenant-isolation route audit, 29 July 2026
 
