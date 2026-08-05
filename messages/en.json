@@ -7224,7 +7224,11 @@
     "clearSearch": "Clear search",
     "noSearchResults": "No templates match your search.",
     "howParentsSeeIt": "How parents will see it",
-    "variablesUsed": "Variables used"
+    "variablesUsed": "Variables used",
+    "copyTemplateName": "Copy template name",
+    "copied": "Copied",
+    "more": "More",
+    "noStoredBody": "No stored preview for this template yet. The exact wording lives in Meta Business Manager."
   },
   "mobileShell": {
     "tab_bar_label": "Primary navigation",

@@ -3652,7 +3652,11 @@
     "clearSearch": "مسح البحث",
     "noSearchResults": "لا توجد قوالب تطابق بحثك.",
     "howParentsSeeIt": "كيف سيراها أولياء الأمور",
-    "variablesUsed": "المتغيرات المستخدمة"
+    "variablesUsed": "المتغيرات المستخدمة",
+    "copyTemplateName": "نسخ اسم القالب",
+    "copied": "تم النسخ",
+    "more": "المزيد",
+    "noStoredBody": "لا توجد معاينة محفوظة لهذا القالب بعد. النص النهائي موجود في Meta Business Manager."
   },
   "mobileShell": {
     "tab_bar_label": "التنقل الرئيسي",
