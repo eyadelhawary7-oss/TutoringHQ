@@ -5,6 +5,10 @@ its screens live.
 
 `NEW-MODEL.md` says what the product is. This says what to build.
 
+**This document post-dates `SPEC-instapay-fee-collection.md` and overrides it where they differ.**
+The spec was written on 5 August against a two-button method picker and a fixed monthly fee bill.
+Three of its clauses are superseded and are listed at the end.
+
 ---
 
 ## 1. Attendance payment default
@@ -272,3 +276,18 @@ can alter.
 7. **Referral credit**, then the balance, then sending, then the ledger.
 
 Steps 1 to 4 are the minimum for a working flow. Everything after is additive.
+
+---
+
+## Where this overrides the spec
+
+`SPEC-instapay-fee-collection.md` was written a day earlier. It is still authoritative on the reader,
+the matching logic, the flags and the copy rules. Three clauses are not.
+
+| Spec | Superseded by |
+|---|---|
+| §3, staff see two buttons, Cash and InstaPay | §1 here. InstaPay is the default for everyone and there is no picker. A tap switches one student to cash. |
+| §10, billed monthly on the center's subscription invoice | §5 here. Riding on the subscription or a separate invoice is a choice, and the screen shows both totals. |
+| §2, InstaPay default off until details are entered | Both are true. The method is unavailable until the account is configured, and once configured it is the default for every student. Not a hard default-off. |
+
+Everything else in the spec stands.

@@ -95,7 +95,7 @@ radii and must not become tokens.
 
 ## 4. Colour
 
-**170 distinct hexes collapse to 18 named tokens.** This is the largest cleanup in the document and
+**170 distinct hexes collapse to 20 named tokens.** This is the largest cleanup in the document and
 the one most likely to be resisted mid-build, because a near-match always looks close enough.
 
 | Token | Hex | Role |
@@ -113,6 +113,7 @@ the one most likely to be resisted mid-build, because a near-match always looks 
 | `faint` | `#A09A8E` | placeholders, disabled |
 | `accent` | `#0E6B61` | primary action |
 | `accent-deep` | `#0A514A` | pressed, text on mint |
+| `good` | `#1A6D4D` | Paid, success text. The PAID state on any session, payment or student row. |
 | `mint` | `#DFEEEB` | accent fill |
 | `mint-deep` | `#BFE3DD` | accent border |
 | `ground` | `#083F39` | darkest teal, gradients |
@@ -139,7 +140,7 @@ Anything not in this table is a drift and gets mapped to its nearest token, not 
 
 ## 6. Order of work
 
-1. **Regenerate the 26 design files against this spec.** Done in the design chat, where the render harness and verification scripts already exist. The drawings then speak in tokens and no conversion table is needed.
+1. **Regenerate the 25 design files against this spec.** Done in the design chat, where the render harness and verification scripts already exist. The drawings then speak in tokens and no conversion table is needed.
 2. **Claude Code wires the token layer into the app**, replacing Tailwind's defaults. One PR, alone, because every screen shifts the moment it lands.
 3. **Screens get restyled against it**, one merged file at a time.
 

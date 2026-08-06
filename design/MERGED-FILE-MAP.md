@@ -1,6 +1,6 @@
 # Merged file map
 
-**25 files. 110 screens. 352 frames.** Regenerated 6 August 2026, after the InstaPay model
+**25 files. 110 screens. 503 frames.** Regenerated 6 August 2026, after the InstaPay model
 replaced online collection.
 
 Every screen exists in both English and Arabic as separate frames, so a file with 6 screens and 30
@@ -12,24 +12,24 @@ frames holds roughly 15 states per language.
 
 | File | Screens | Frames | Contents |
 |---|---|---|---|
-| `Merged-Admin-Accounts.html` | 4 | 12 | Admin Account Detail, Admin Staff, Admin Center Assignments, Admin Referrals |
-| `Merged-Admin-Money.html` | 6 | 21 | Admin Fee Collection, Admin Settlement, Admin Finance Health, Admin Receipts, Admin Unpaid Recovery, Admin Billing Pricing |
-| `Merged-Admin-Platform.html` | 6 | 20 | Admin Overview, Admin Analytics, Admin Platform, Admin WhatsApp Pack, Admin Promo Codes, Admin Privacy Requests |
+| `Merged-Admin-Accounts.html` | 4 | 16 | Admin Account Detail, Admin Staff, Admin Center Assignments, Admin Referrals |
+| `Merged-Admin-Money.html` | 6 | 25 | Admin Fee Collection, Admin Settlement, Admin Finance Health, Admin Receipts, Admin Unpaid Recovery, Admin Billing Pricing |
+| `Merged-Admin-Platform.html` | 6 | 26 | Admin Overview, Admin Analytics, Admin Platform, Admin WhatsApp Pack, Admin Promo Codes, Admin Privacy Requests |
 | `Merged-CEO.html` | 3 | 12 | CEO Dashboard, CEO Teachers, CEO Centers Benchmark |
 | `Merged-Center-Attendance.html` | 2 | 13 | Center Attendance, Attendance Payment Default |
-| `Merged-Center-Groups.html` | 4 | 0 | Groups, Rooms, Branches, Schedule |
-| `Merged-Center-Home.html` | 3 | 6 | Center Dashboard, Notifications, Active Balance |
-| `Merged-Center-Insight.html` | 3 | 6 | Analytics, Benchmarks, Referral Program |
-| `Merged-Center-Money.html` | 13 | 42 | Payments, Center Payments, Billing, Center Receipts, InstaPay Invoice, InstaPay Uploaded Receipts, InstaPay Confirm, InstaPay Batch List, InstaPay Duplicate Reference, InstaPay Fee Total, Active Balance, Send Credit, Balance History |
-| `Merged-Center-Orders.html` | 4 | 4 | Orders, Order Detail, Order Checkout, Card Orders Coming Soon |
-| `Merged-Center-Setup.html` | 10 | 10 | Onboarding, Settings, Settings Billing, Settings Center, Settings Notifications Support, Settings Scanner, Settings Team, Center Team, My Teachers, InstaPay Settings |
-| `Merged-Center-Students.html` | 3 | 0 | Students (Roster), Student Detail, Students Import Pending |
-| `Merged-Center-WhatsApp.html` | 3 | 3 | WhatsApp, WhatsApp Pack, WhatsApp Custom Flow |
-| `Merged-Design-Patterns.html` | 6 | 30 | Empty States, Loading States, Row action patterns, Quick menu rows, Group actions, Expand sheet merge |
-| `Merged-Lifecycle.html` | 6 | 4 | Lifecycle Access, Lifecycle States, Lifecycle Status, Center Resubscribe, Teacher Resubscribe, Coming Soon |
+| `Merged-Center-Groups.html` | 4 | 18 | Groups, Rooms, Branches, Schedule |
+| `Merged-Center-Home.html` | 3 | 8 | Center Dashboard, Notifications, Active Balance |
+| `Merged-Center-Insight.html` | 3 | 13 | Analytics, Benchmarks, Referral Program |
+| `Merged-Center-Money.html` | 13 | 51 | Payments, Center Payments, Billing, Center Receipts, InstaPay Invoice, InstaPay Uploaded Receipts, InstaPay Confirm, InstaPay Batch List, InstaPay Duplicate Reference, InstaPay Fee Total, Active Balance, Send Credit, Balance History |
+| `Merged-Center-Orders.html` | 4 | 15 | Orders, Order Detail, Order Checkout, Card Orders Coming Soon |
+| `Merged-Center-Setup.html` | 10 | 41 | Onboarding, Settings, Settings Billing, Settings Center, Settings Notifications Support, Settings Scanner, Settings Team, Center Team, My Teachers, InstaPay Settings |
+| `Merged-Center-Students.html` | 3 | 14 | Students (Roster), Student Detail, Students Import Pending |
+| `Merged-Center-WhatsApp.html` | 3 | 12 | WhatsApp, WhatsApp Pack, WhatsApp Custom Flow |
+| `Merged-Design-Patterns.html` | 6 | 44 | Empty States, Loading States, Row action patterns, Quick menu rows, Group actions, Expand sheet merge |
+| `Merged-Lifecycle.html` | 6 | 18 | Lifecycle Access, Lifecycle States, Lifecycle Status, Center Resubscribe, Teacher Resubscribe, Coming Soon |
 | `Merged-Public-App.html` | 6 | 62 | Public Auth, Public Join, Public Self Enrollment, InstaPay Upload, Referral Landing, Offline |
 | `Merged-Public-Legal.html` | 1 | 14 | Public Legal |
-| `Merged-Public-Marketing.html` | 4 | 4 | Public Landing, Public Audience, Public Pricing, Lead Capture |
+| `Merged-Public-Marketing.html` | 4 | 12 | Public Landing, Public Audience, Public Pricing, Lead Capture |
 | `Merged-Teacher-Groups.html` | 4 | 17 | Teacher Groups, Teacher Group Detail, Teacher Group Invite Pending, Teacher Class Session |
 | `Merged-Teacher-Home.html` | 3 | 10 | Teacher Home, Teacher Schedule, Active Balance |
 | `Merged-Teacher-Insight.html` | 2 | 8 | Teacher Analytics, Referral Program |

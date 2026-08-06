@@ -33,7 +33,7 @@ muted        #80827A   labels, secondary
 faint        #A09A8E   placeholders, disabled
 accent       #0E6B61   primary buttons, ticks
 accent-deep  #0A514A   text on mint, gradient end
-mint         #DFEEEB   accent backgrounds, verified chips
+mint         #DFEEEB   accent backgrounds, confirmed chips
 hero-ground  #083F39   dark gradient end
 brass        #9A6B1F   kickers, warnings, the cash motif
 sand         #F4EBD7   warning backgrounds
@@ -151,7 +151,7 @@ Paid rows take `border-color:rgba(14,107,97,.3)` and `background:#F6FAF9`; the a
 
 Used on Join and reusable on Auth and Pricing wherever a center or teacher is named.
 
-`.who` panel → `.wtop` (46px `.wav` avatar, `.wnm` name with a `.vchip` verified pill, `.wrole` beneath) → `.wdiv` hairline → `.glab` uppercase brass label → `.gnm` 19px title → `.gmeta` two-column meta.
+`.who` panel → `.wtop` (46px `.wav` avatar, `.wnm` name , `.wrole` beneath) → `.wdiv` hairline → `.glab` uppercase brass label → `.gnm` 19px title → `.gmeta` two-column meta.
 
 ### Form field
 
@@ -212,7 +212,7 @@ Mint on accent, 11.5px, 1.55 line height. **This exact sentence is required on t
 
 ## 8. How the design is filed
 
-**26 merged files, 103 screens.** Index in `MERGED-FILE-MAP.md`. Every single screen also survives
+**25 merged files, 110 screens.** Index in `MERGED-FILE-MAP.md`. Every single screen also survives
 on its own in `_originals/`.
 
 Each merged file is one standalone page: a title block, a table of contents, then one numbered

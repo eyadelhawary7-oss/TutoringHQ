@@ -73,8 +73,8 @@ Also: the `SUPER_ADMIN_PHONES` path mints a CEO with **no database row and no fo
 
 `sessions` and `session_students`, additive, applied. No generator, no billing writes.
 
-**Three warnings apply when a generator is eventually built**, recorded in
-`design/SESSIONS-MIGRATION-WARNINGS.md`:
+**Three warnings apply when a generator is eventually built.** They are recorded here and nowhere
+else, so do not lose them:
 
 - Keying on `(schedule_id, scheduled_at)` **double-charges students**. That keys an instant, but the billable unit is a Cairo class-day. A slot edit or a DST transition mints a second row, a second `session_id`, a different idempotency key, and `fee_per_class` fires twice. Reproduced live.
 - `schedule_exceptions.schedule_id` FKs to `group_schedule`, not `schedule_slots`, so exception lookups from a slots generator match zero rows forever.
@@ -114,7 +114,15 @@ Templates need Meta approval, 24 to 48 hours each. In-app banners work without t
 Verified against the live Meta list: three templates are Marketing and should be Utility. Seven need
 creating and submitting. One dropped off Meta entirely and the code still calls it.
 
-Full checklist in `WHATSAPP_TEMPLATES_MASTER.md`.
+The detail, since it exists nowhere else:
+
+- **Category fix, delete and resubmit as Utility:** `chq_welcome`, `chq_onboarding_step1`, `chq_onboarding_step2`. `chq_renewal_reminder` is already Utility, do not refix it.
+- **Create and submit, all Utility, Arabic EGY:** `chq_nudge_prebill`, `chq_nudge_due_today`, `chq_nudge_locked`, `chq_nudge_card_expiry`, `chq_fee_reminder`, `chq_pin_setup_link`, `chq_enrollment_otp`.
+- **Phase 4, can wait for the schedule feature:** `chq_class_cancelled`, `chq_class_rescheduled`, `chq_schedule_changed`, `chq_class_reminder`.
+- **Cleanup:** `chq_pin_delivery` dropped off Meta and reset-pin code still calls it.
+- **Minor:** `chq_referral_commission` is tagged English with an Arabic body. `chq_upgrade_nudge` is Marketing and in review, acceptable for an upsell.
+
+A new template is needed for the InstaPay invoice link, and it does not exist yet.
 
 **A parent pack is billed per message and priced differently from a reminder pack**, so a reminder
 pack can never be spent on marketing.
@@ -150,6 +158,11 @@ needed for that, has not been confirmed.
 
 The old `LEGAL-CHANGE-LEDGER` tracked changes required by the national ID decision. That decision is
 void, so the ledger is void with it.
+
+**Two items the model change adds:**
+
+- **Gemini Flash-Lite is a new sub-processor.** The receipt reader sends parents' names and banking details to it. Paid tier only, never free, because the free tier's data terms would put personal financial data into training. It needs adding to the DPA.
+- **The upload-link expiry is undefined.** It was left following the child safety decision. Stage 1.3 cannot finish until someone sets the number.
 
 **What is genuinely still open:**
 

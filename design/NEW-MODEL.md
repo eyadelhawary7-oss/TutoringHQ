@@ -24,7 +24,11 @@ Each existed in the previous version and is now **gone**. Not deferred.
 | **Platform payouts** | The platform holds no tuition, so there is nothing to pay out. No Thursday settlement, no bank destination, no payout ledger. |
 | **The 90/10 split** | The platform does not take a percentage of tuition. |
 | **7.5% markup and 1.5% parent processing** | Both replaced by a flat 10 EGP. |
-| **Fawry, Vodafone Cash, card as tuition methods** | InstaPay covers wallets. Two methods only. |
+| **Fawry, Vodafone Cash, card as tuition methods** | InstaPay covers wallets. Two tuition methods only. |
+
+**One exception, and it is not tuition.** A center paying its own subscription can still use whatever
+Paymob offers, including a Fawry reference code. That is the platform charging its customer, not a
+parent paying a center. The `/suspended` lock screen showing a Fawry ref code is correct and stays.
 
 If any of these appear in code, a design, or a document, it is stale.
 
