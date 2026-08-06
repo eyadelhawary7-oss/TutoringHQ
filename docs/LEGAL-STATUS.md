@@ -137,10 +137,45 @@ erasure by default.
 **Nobody has exercised the right.** `privacy_requests` holds **0** rows. Pre-launch fix, not a
 disclosure. Detail in `design/FINDINGS.md` entry 3.
 
-**One thing to check at rewrite.** No live copy promises a thirty-day erasure window; the only
-shipped data-rights sentence points the subject at their center first. That promise may still sit in
-the Adsero drafts, which are not in this repository. **Promising thirty days against a queue with no
-timer, no SLA and no escalation is how a gap becomes a false statement in a published policy.**
+## Five promised deadlines, none implemented
+
+**Confirmed 6 August 2026 by reading the drafts.** Five commitments are in writing. Not one has any
+implementation behind it. The request queue is a `privacy_requests` row at `status='pending'` with
+**no timer, no SLA field, no escalation and no due-date column of any kind**.
+
+| Source | Line | Promise |
+|---|---|---|
+| `TutoringHQ_Privacy_Request_Form_DRAFT.md` | 13 | Respond to all verified requests within 30 calendar days |
+| `TutoringHQ_Privacy_Request_Form_DRAFT.md` | 14 | Extendable by a further 30 where necessary |
+| `TutoringHQ_Privacy_Request_Form_DRAFT.md` | 99 | Acknowledge receipt within 5 business days |
+| `TutoringHQ_Privacy_Request_Form_DRAFT.md` | 101 | Complete within 30 calendar days of identity verification |
+| `TutoringHQ_Data_Processing_Agreement_DRAFT.md` | 250 | Process such requests within thirty (30) days |
+
+**The DPA line is the serious one.** It is a contractual commitment to centers, not a policy
+statement to parents. A center can sue on it. The other four are undertakings to data subjects, which
+is a regulator problem rather than a contract one.
+
+**The acknowledgement, precisely.** The step is not missing from the code, it is switched off.
+`src/lib/privacyRequestConfirmation.ts` exists and `api/privacy-request/route.ts:166` calls it on
+every submission, immediately, which would satisfy five business days comfortably. It is gated on
+`platform_config.privacy_request_confirmation_wa_template`, and **that key has no row in the live
+table** (verified 6 August 2026), so it returns `template_not_configured` and never sends. The
+comment says to leave it unset until Meta approves the template and Adsero reviews it. So the work is
+a template approval plus one config row, not a build. The route is honest about the outcome:
+`confirmationSent` drives the confirmation screen and the comment says it "must never be optimistic."
+
+It is also WhatsApp-only. A requester who gives an email and no phone gets nothing at all.
+
+**The same conflict on a different clause.** The drafts promise deletion of *all copies*. Erasure
+strips the `students` row and two notes tables, and **at least nine other tables still hold that
+parent's phone afterwards**. Whatever the deadline clauses resolve to, the completeness clause has
+the identical problem: a promise wider than the implementation.
+
+**Resolve it in one direction or the other.** Either the code implements these deadlines, with a due
+date on the row, an acknowledgement that actually sends, and an escalation when it lapses, or the
+drafts stop promising them. Both are defensible. **Shipping the current pair is not**, because a
+signed DPA promising thirty days against a queue with no timer is a breach the first time anyone
+counts.
 
 ---
 
