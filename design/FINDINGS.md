@@ -168,6 +168,54 @@ The column exists in the catalog and has **zero** references anywhere in `src/`.
 
 ---
 
+## 12. Two of the three parent notification opt-outs are ignored by the code that sends
+
+`students` carries three per-student parent toggles, all `boolean` defaulting to `true`:
+`notify_on_scan`, `notify_on_absence`, `notify_on_balance`.
+
+**All three are writable.** `src/app/api/whatsapp-pack/student/[studentId]/route.ts:39-43` writes
+`notify_on_absence` and `notify_on_balance`, `src/app/api/students/[id]/route.ts:40` accepts the
+former, and `src/app/api/whatsapp-pack/settings/route.ts:50` reads all three back for display.
+
+**Only one is honoured.** `src/lib/whatsapp/flows/parentNotifications.ts:82` gates on
+`s.notify_on_scan === false`. The other two send paths do not consult their flag at all:
+
+| Send path | Selects | Gates on its flag |
+|---|---|---|
+| `api/cron/parent-absence-alerts/route.ts:83` | `students(id, name, parent_phone, parent_pack_opted_in, is_active)` | **No** |
+| `api/cron/parent-balance-alerts/route.ts` | no reference to `notify_on_balance` anywhere in the file | **No** |
+
+A parent who switches off absence or balance alerts keeps receiving them, the toggle keeps showing
+as off, and **every message is billed against the centre's paid WhatsApp pack.** An opt-out that
+appears to work and does nothing is worse than one that is absent, because nobody re-checks it.
+
+*Source: `BUILD-AFTER-REDESIGN.md` F39. Verified 6 August 2026.*
+
+---
+
+## 13. `students.payment_status` and `students.fee` are still live and still misleading
+
+Both columns remain: `payment_status` is `text NOT NULL DEFAULT 'unpaid'`, `fee` is `numeric
+DEFAULT 0`. Neither is maintained after insert. The authoritative values are computed by
+`src/lib/studentBalance.ts` (`getStudentBalances`) and held on `student_groups.fee_per_class`.
+
+The six known readers were repointed onto the helper, which `STATE-OF-PLAY` records. **What it does
+not record is that the columns survive**, so nothing stops a seventh reader being written by someone
+reaching for a flat field instead of a join-and-sum.
+
+**Checked for a seventh instance and found none.** The scanner was the likeliest candidate and is
+clean: `src/components/attendance/ScanTab.tsx:349` selects only
+`id, student_number, name, is_active, center_id`, and `:578` seeds its local `fee` from the group's
+`fee_per_class`, which is the authoritative source. The scanner is correct today.
+
+This entry exists so the next instance is logged as instance seven of a known pattern rather than
+written up as a new discovery. Dropping or backfilling the two columns is the only version of the
+fix that makes an eighth impossible rather than merely findable.
+
+*Source: `BUILD-AFTER-REDESIGN.md` F16. Verified 6 August 2026.*
+
+---
+
 # Four the ledger called open and verification closed
 
 **Recorded so nobody re-opens them from an old copy of a deleted document.** Each was carried as an
@@ -189,9 +237,16 @@ which is the point: a ledger marker is a claim, not evidence, whichever directio
 
 Not yet checked, and therefore not yet claimed either way.
 
-**15 F-codes:** F5b, F6, F8, F12, F14, F16, F20, F27, F28, F29, F32, F36, F37, F38, F39.
-**F16 is next and is the largest expected yield** — "one session, six places where one number had two
-sources", the same shape as finding 6.
+**10 F-codes:** F5b, F6, F8, F14, F20, F27, F28, F29, F32, F38.
+
+**Five have been worked since this file opened.** F16 yielded finding 13 and F39 yielded finding 12.
+F12, F36 and F37 were **dropped**, and the reason matters: each asserts that a design drew something
+with no backing column. Those designs have been replaced, so re-establishing them is Stage 4 re-diff
+work against the new drawings, not a fact about the codebase. `pending_enrollments` having no origin
+column is true and is not a fault.
+
+**F16 was expected to be the largest remaining yield and was not.** Its six instances were genuinely
+fixed and no seventh exists, so it produced one structural entry instead of several.
 
 **7 standing D-codes** from `ASSUMPTIONS-LOG.md`, decisions taken in Eyad's place that are still
 live and still relevant: D8, D17, D21, D26, D27, D29, D34. Each goes in as an open decision once its
