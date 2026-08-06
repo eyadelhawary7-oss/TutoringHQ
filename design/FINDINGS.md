@@ -75,12 +75,12 @@ than one centre. Real in code, no violation produced, which is a very different 
 Adsero than the alternative.
 
 **Not remotely forgeable, checked because it would have changed the priority.** This route *is* on
-`PUBLIC_WEBHOOK_PREFIXES` (`proxy.ts:32`), so it is exempt from the Origin check that entry 12
+`PUBLIC_WEBHOOK_PREFIXES` (`proxy.ts:32`), so it is exempt from the Origin check that entry 13
 describes. That exemption is paid for: the route verifies a Meta-signed HMAC and **fails closed at
 all three gates** — missing `WHATSAPP_APP_SECRET` returns 401 at `:411`, missing
 `x-hub-signature-256` returns 401 at `:416`, and a mismatch returns 401 at `:428` after a
 timing-safe compare. So this is reachable only by a real parent tapping the button in a genuine Meta
-delivery. **Entry 1 and entry 12 do not compound**, and either can be fixed alone.
+delivery. **Entry 1 and entry 13 do not compound**, and either can be fixed alone.
 
 This is obligation 3 of the four the platform owns, and it touches obligation 4. Both are now
 recorded in `docs/LEGAL-STATUS.md`.
@@ -311,7 +311,29 @@ directly.
 
 ---
 
-## 7. The centre all-in rate is computed five ways and three of them are wrong
+## 7. Every card-order checkout returns 500, and it is the write path
+
+Entry 10 recorded that `card_orders.card_style` does not exist and the vendor PDF 404s on read. **The
+write path is broken too, and it is upstream of everything else.**
+
+`src/app/api/card-order-cart/checkout/route.ts:189` builds the insert with
+`card_style: cart.card_style` and inserts straight into `card_orders`. The column does not exist
+(catalog: 0), so PostgREST errors and the route returns `500 insert_failed`. **Every checkout
+attempt, for every centre, unconditionally.** There is no path around it: `:99-100` *requires* a
+valid `card_style` and 400s without one, so the request cannot reach the insert with the field
+omitted.
+
+**No customer has hit it.** Live catalog, 6 August 2026: `card_orders` holds 0 rows and **0 of 2
+centres have `card_orders_enabled`**. The bug is 100% reproducing and fires on the first centre
+anyone flips the flag for. Card orders are parked, which is the only reason this is not an outage.
+
+*Source: `BUILD-AFTER-REDESIGN.md` F28. Verified 6 August 2026.*
+
+---
+
+---
+
+## 8. The centre all-in rate is computed five ways and three of them are wrong
 
 `getQuarterlyAllInMonthlyRateFromCenter` (`src/lib/pricing.ts:235`) is the canonical helper and it
 resolves `top_centers` then `early_adopter_price` then `all_in_price`. **It has exactly one external
@@ -336,7 +358,7 @@ an `early_adopter_price`. This becomes real on the first early adopter.
 
 ---
 
-## 8. The early-adopter badge contradicts the number beside it
+## 9. The early-adopter badge contradicts the number beside it
 
 **`src/app/[locale]/(dashboard)/billing/BillingPageClient.tsx:344`** renders the "Early adopter" chip
 from `center.is_early_adopter`, directly beside `displayAmount` computed at `:298-301`, which never
@@ -347,7 +369,7 @@ timing or by data.
 
 ---
 
-## 9. `/api/settings/limits` returns 404 for every centre, always
+## 10. `/api/settings/limits` returns 404 for every centre, always
 
 **`src/app/api/settings/limits/route.ts:18`** selects `max_teachers, max_students, plan`. Neither
 `centers.max_teachers` nor `centers.max_students` exists (catalog: 0 and 0). The select errors,
@@ -358,7 +380,7 @@ endpoint cannot succeed under any conditions.
 
 ---
 
-## 10. Every vendor print PDF for every card order is dead
+## 11. Every vendor print PDF for every card order is dead
 
 **`src/app/api/admin/card-orders/[orderId]/pdf/route.ts:33`** selects `card_style`.
 **`card_orders.card_style` does not exist** (catalog: 0). The select errors and the route returns
@@ -373,7 +395,7 @@ exist. Card orders are parked, which lowers the urgency but not the fact.
 
 ---
 
-## 11. `bosta_shipments` is queried and does not exist
+## 12. `bosta_shipments` is queried and does not exist
 
 **`src/lib/loadCardOrderDetail.ts:72`** runs
 `admin.from('bosta_shipments').select('*').eq('card_order_id', id).maybeSingle()`.
@@ -383,7 +405,7 @@ exist. Card orders are parked, which lowers the urgency but not the fact.
 
 ---
 
-## 12. Four CEO and admin mutation routes have no CSRF check, including a platform kill switch
+## 13. Four CEO and admin mutation routes have no CSRF check, including a platform kill switch
 
 `POST /api/ceo/leads`, `PATCH /api/ceo/actions/[id]`, `PATCH /api/ceo/platform-config` and
 `PATCH /api/admin/centers/[id]` contain **zero** `validateCSRFRequest` calls. Sibling routes have
@@ -424,7 +446,25 @@ orphans.
 
 ---
 
-## 13. `center_invites.status` does not exist
+## 14. `src/lib/tokens.ts` is a stale dark-theme mirror with 20 consumers
+
+The app is light-only. This file still holds the pre-cream dark palette: `surface[0]` and
+`neutral[950]` are `#080f1a`, `text.primary` and `neutral[50]` are `#f8fafc`. Its own header says
+*"Source of truth is always globals.css @theme - keep in sync manually"*, and it was not kept in
+sync.
+
+**20 files import it**, so this is not a dead file to delete quietly. It matters now rather than
+later because `TOKEN-SPEC.md` step 2 wires the token layer into the app in one PR, and a second,
+stale, hand-maintained palette with 20 consumers is exactly the "one number with two sources" shape
+that step is meant to end. Resolve it in that PR, not after. Check `chartColors` consumers first.
+
+*Source: `BUILD-AFTER-REDESIGN.md` F8. Verified 6 August 2026.*
+
+---
+
+---
+
+## 15. `center_invites.status` does not exist
 
 Catalog: 0. Any invite flow that filters or transitions on invite status has nothing to read or
 write.
@@ -433,7 +473,7 @@ write.
 
 ---
 
-## 14. `subjects.is_active` does not exist, and neither does any grades table
+## 16. `subjects.is_active` does not exist, and neither does any grades table
 
 Catalog: `public.subjects` carries no `is_active` column, and no grades table exists in `public`. Any
 subject on/off control and the entire grades concept have no backing schema.
@@ -442,7 +482,7 @@ subject on/off control and the entire grades concept have no backing schema.
 
 ---
 
-## 15. `student_groups.teacher_split_pct` and `assign_teacher_to_group` are dead
+## 17. `student_groups.teacher_split_pct` and `assign_teacher_to_group` are dead
 
 The column exists in the catalog and has **zero** references anywhere in `src/`. The RPC
 `assign_teacher_to_group` likewise has **zero** references. Dead schema carrying an implied teacher
@@ -452,7 +492,7 @@ revenue split that nothing computes.
 
 ---
 
-## 16. `student_groups.capacity_cap` is dead
+## 18. `student_groups.capacity_cap` is dead
 
 The column exists in the catalog and has **zero** references anywhere in `src/`.
 
@@ -460,7 +500,33 @@ The column exists in the catalog and has **zero** references anywhere in `src/`.
 
 ---
 
-## 17. `students.payment_status` and `students.fee` are still live and still misleading
+## 19. The audit seed is unreachable, and the migration history says it ran
+
+`scripts/audit/seed-prod.sh:7` runs `supabase db push`, but the seed lives at
+`supabase/migrations_archive/20260507120000_seed_audit_accounts.sql`, outside the folder `db push`
+reads. **The script is a no-op.**
+
+Worse, and verified live: the version **is** recorded in `supabase_migrations.schema_migrations`
+while `auth.users` holds **zero** `aaaaaaaa-…` ids. Bookkeeping says applied, the catalog says the
+rows are gone. Moving the file back would not re-run it either, because the version is already in the
+history. **This is the same trap as entry 20 from the other direction**: there, a name that did not
+match a filename; here, a version present in history for rows that do not exist.
+
+**Consequence.** Without a reachable test tenant there is no real dashboard to screenshot, which is
+why at least one restyle PR shipped without one. That matters directly for the re-diff: Stage 4
+compares rendered output.
+
+**Needs a decision, not a fix.** The seed also inserts a `super_admin` on `+201111111111` with PIN
+`111111`, documented in a checked-in README, which is a plausible reason the rows were torn down
+deliberately. If it is re-seeded, seed the owner half only.
+
+*Source: `BUILD-AFTER-REDESIGN.md` F6. Verified 6 August 2026.*
+
+---
+
+---
+
+## 20. `students.payment_status` and `students.fee` are still live and still misleading
 
 Both columns remain: `payment_status` is `text NOT NULL DEFAULT 'unpaid'`, `fee` is `numeric
 DEFAULT 0`. Neither is maintained after insert. The authoritative values are computed by
@@ -483,7 +549,7 @@ fix that makes an eighth impossible rather than merely findable.
 
 ---
 
-## 18. A migration filename is not its recorded version, so absence proves nothing
+## 21. A migration filename is not its recorded version, so absence proves nothing
 
 `supabase_migrations.schema_migrations` stamps a version at apply time that **does not match the
 filename**. Verified live:
@@ -511,7 +577,29 @@ document, so the rule needs no entry here beyond this pointer.
 
 ---
 
-# Four the ledger called open and verification closed
+---
+
+## 22. A literal comma is the missing-value placeholder in 127 places
+
+`?? ','` and `|| ','` appear **127 times across 29 files**, rendering a bare comma to the user
+wherever a value is absent: `{swVer ?? ','}` in `SyncStatusPanel.tsx:165`,
+`String(it.student_name ?? ',')` in `AdminCardOrderDetailClient.tsx:375`, `raw ?? ','` in
+`BillingPageClient.tsx:242`, and so on. Cosmetic individually, and at 127 sites it is a house style
+nobody chose.
+
+**The interaction worth knowing.** `src/lib/placeholderValue.ts` was written to fix exactly this, and
+it is inside the #322 dead set: its only consumer is `valifyConfig.ts`, so **stage C of the removal
+plan deletes the intended fix along with the dead model.** Either lift it out before stage C or
+accept that the replacement has to be rewritten afterwards. Recorded so that is a decision rather
+than a discovery.
+
+*Source: `BUILD-AFTER-REDESIGN.md` F29. Verified 6 August 2026.*
+
+---
+
+---
+
+# Six the ledger called open and verification closed
 
 **Recorded so nobody re-opens them from an old copy of a deleted document.** Each was carried as an
 open finding and each is resolved.
@@ -522,6 +610,8 @@ open finding and each is resolved.
 | **F13** — `students.grade_level` has zero writers, the display will stay blank | **It has a writer.** `src/components/teachers/GroupProposalsTab.tsx:201`. Dead finding. |
 | **F5** — `admin_users.custom_permissions` is dead and pending a drop | **Seven files use it**, including a live write at `admin/internal-team/page.tsx:153`. Do not drop it. |
 | **F26 item 4** — `card_order_status_transitions.created_at` is read and does not exist | **Genuinely fixed.** `loadCardOrderDetail.ts:67` and `cardOrderState.ts:218` both order by `transitioned_at`, and that column exists. |
+| **F38** — schedule flags a false room clash between two slots that have no room | **Fixed.** `schedule/page.tsx:487` and `:490` both guard `if (!s.room_id) continue;` before the comparison, in each of the two functions. |
+| **F5b** — Tailwind scans `docs/` and `design/` | **Fixed.** `tailwind.config.ts:5` content is `["./src/**/*.{ts,tsx,js,jsx}"]` and nothing else. |
 
 This is the same rule that found three of the seven payout defects already fixed. It cuts both ways,
 which is the point: a ledger marker is a claim, not evidence, whichever direction it points.
@@ -532,10 +622,16 @@ which is the point: a ledger marker is a claim, not evidence, whichever directio
 
 Not yet checked, and therefore not yet claimed either way.
 
-**8 F-codes:** F5b, F6, F8, F14, F28, F29, F32, F38.
+**All F-codes are done.** The eight remaining produced four entries (F6, F8, F28, F29), two more
+closed-by-verification rows (F5b, F38), and two drops. F14 and F32 were dropped for the same reason
+as F12, F36 and F37: each asserts that a design drew something with no backing column, and those
+designs are replaced, so re-establishing them is Stage 4 re-diff work rather than a codebase fact.
 
-F20 produced finding 6, F27 produced finding 18, and S9 was pulled forward out of order to become
-finding 12 because a CSRF gap on a platform kill switch does not queue behind eight F-codes.
+**Still to do:** the 7 standing D-codes from `ASSUMPTIONS-LOG.md` (D8, D17, D21, D26, D27, D29, D34),
+each to go in as an open decision once its underlying fact is verified, then `DATA-GAPS.md`.
+
+F20 produced finding 7, F27 produced finding 20, and S9 was pulled forward out of order to become
+finding 13 because a CSRF gap on a platform kill switch does not queue behind eight F-codes.
 Finding 1 came out of checking consent obligation 3 while writing up entry 2.
 
 **Entries are ordered by severity, not by when they were found.** The two consent failures lead
