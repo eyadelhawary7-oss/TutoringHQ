@@ -194,6 +194,25 @@ void, so the ledger is void with it.
 
 ---
 
+## A switch that breaks a feature the moment it is flipped
+
+**Do not turn on `centers.card_orders_enabled` for anyone.** Card-order checkout is broken for every
+center, unconditionally, and the only thing hiding it is that **0 of 2 centers have the flag on**.
+
+`api/card-order-cart/checkout/route.ts:189` builds its insert with `card_style: cart.card_style` and
+writes into `card_orders`. That column does not exist (live catalog: 0). The insert errors and the
+route returns `500 insert_failed`. There is no way round it either: `:99-100` requires a valid
+`card_style` and 400s without one, so the request cannot reach the insert with the field omitted.
+
+`card_orders` holds 0 rows and no customer has ever hit this. It is 100% reproducing and fires on the
+first order the first center places. **This is a switch someone flips without knowing it breaks the
+thing it enables**, which is why it is recorded here rather than only in the findings file. Card
+orders are parked, so the fix is not urgent; flipping the flag before the fix is.
+
+Detail in `design/FINDINGS.md` entry 7.
+
+---
+
 ## Not started
 
 - **Valify** meeting, and it may no longer be needed at all now that verification is gone.

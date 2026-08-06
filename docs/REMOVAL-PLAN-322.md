@@ -90,9 +90,16 @@ by the vendor. Removing the route retires that assumption instead of resolving i
 ## Stage C. Modules and tests
 
 **Modules**, 22 files: `src/lib/collectionPayout/` (10), `src/components/verification/` (5),
-`src/lib/verification/` (1), `src/lib/valify*.ts` (3), `src/lib/verification*.ts` (3). Plus
-`src/lib/placeholderValue.ts`, which nothing outside the dead set uses, and the two hooks
-`useVerificationState.ts` and `useAdminVerificationAvailability.ts`.
+`src/lib/verification/` (1), `src/lib/valify*.ts` (3), `src/lib/verification*.ts` (3). Plus the two
+hooks `useVerificationState.ts` and `useAdminVerificationAvailability.ts`.
+
+**EXCEPTION — do not delete `src/lib/placeholderValue.ts`. Lift it out first.** It reads as dead
+because its only importer is `valifyConfig.ts`, but it is the intended fix for a live defect:
+`?? ','` and `|| ','` render a bare comma as the missing-value placeholder in **127 places across 29
+files** (`design/FINDINGS.md` entry 22). Deleting it with the dead model throws away the replacement
+and guarantees someone rewrites it later. **Move it out of the dead set and drop the `valifyConfig`
+dependency before stage C runs**, so the file survives the removal and the 127 sites can be migrated
+onto it as separate work.
 
 **Tests**, the 11 files #322 introduced:
 
