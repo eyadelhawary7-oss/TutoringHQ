@@ -184,6 +184,27 @@ default outcome here, not an edge case.
 **Nobody has exercised the right.** Live catalog, 6 August 2026: `privacy_requests` holds **0** rows.
 So this is a pre-launch fix, not a disclosure.
 
+**The acknowledgement is switched off, not missing, and that distinction changes the work.**
+`src/lib/privacyRequestConfirmation.ts` exists and `api/privacy-request/route.ts:166` calls it on
+every submission, immediately, which would satisfy the drafts' 5-business-day promise comfortably. It
+is gated on `platform_config.privacy_request_confirmation_wa_template`, and **that key has no row in
+the live table** (verified 6 August 2026), so it returns `template_not_configured` and never sends.
+The fix is a Meta template approval plus one config row, not a build. It is the cheapest of the four
+obligations to close and the only one with a written deadline already attached.
+
+Two caveats keep it a real gap:
+
+- **It is WhatsApp-only.** The file notes an email path as not built.
+- **A requester who leaves an email and no phone gets nothing at all.** No acknowledgement by any
+  channel, and the form accepts that combination.
+
+**The route's honesty here is deliberate and should not be "tidied".** `confirmationSent` comes back
+from the send attempt and drives which sentence the confirmation screen shows, with the comment at
+`:162` stating it "must never be optimistic". So a parent whose acknowledgement did not send is told
+the truth rather than shown a reassuring screen. **Most systems would render the confirmation
+regardless.** Anyone editing that route later should know the honesty is a decision, not an
+oversight, and that making the screen unconditional would turn a visible gap into a silent one.
+
 **No false statement found in live copy**, which was the specific risk. The only data-rights
 sentence in shipped content (`src/app/[locale]/legal/legalContent.ts:163`) tells the subject to go to
 their centre first and use the platform form if the centre cannot help, which matches the

@@ -134,7 +134,12 @@ creating and submitting. One dropped off Meta entirely and the code still calls 
 The detail, since it exists nowhere else:
 
 - **Category fix, delete and resubmit as Utility:** `chq_welcome`, `chq_onboarding_step1`, `chq_onboarding_step2`. `chq_renewal_reminder` is already Utility, do not refix it.
-- **Create and submit, all Utility, Arabic EGY:** `chq_nudge_prebill`, `chq_nudge_due_today`, `chq_nudge_locked`, `chq_nudge_card_expiry`, `chq_fee_reminder`, `chq_pin_setup_link`, `chq_enrollment_otp`.
+- **Create and submit, all Utility, Arabic EGY:** `chq_nudge_prebill`, `chq_nudge_due_today`, `chq_nudge_locked`, `chq_nudge_card_expiry`, `chq_fee_reminder`, `chq_pin_setup_link`, `chq_enrollment_otp`, **and one for the PDPL data-rights acknowledgement**. That eighth one is
+  the only template with a written deadline behind it: the drafts promise acknowledgement within
+  **5 business days**, the code already sends it on every submission, and it is switched off only
+  because `platform_config.privacy_request_confirmation_wa_template` has no row to point at. Meta
+  approval is 24 to 48 hours and is the whole critical path. Do not let it be discovered at the
+  moment someone tries to set the config row. See `docs/LEGAL-STATUS.md`.
 - **Phase 4, can wait for the schedule feature:** `chq_class_cancelled`, `chq_class_rescheduled`, `chq_schedule_changed`, `chq_class_reminder`.
 - **Cleanup:** `chq_pin_delivery` dropped off Meta and reset-pin code still calls it.
 - **Minor:** `chq_referral_commission` is tagged English with an Arabic body. `chq_upgrade_nudge` is Marketing and in review, acceptable for an upsell.
