@@ -1,5 +1,14 @@
 -- PROPOSAL — NOT APPLIED. Eyad applies this by hand.
 --
+-- APPROVED 6 August 2026, WITH AN ORDERING CONDITION.
+-- Do NOT apply this until the application-code PR has merged. Five places still
+-- offer all six methods (listed at the foot of this file). Applying the
+-- constraint first turns a silent no-op into a visible 400. Pre-launch that is
+-- harmless, but there is no reason to choose it.
+--   1. Narrow the five code sites to cash and instapay. One PR. Merge it.
+--   2. Then apply this file by hand.
+--   3. Then verify against the catalog and regenerate the snapshot.
+--
 -- Narrow the tuition payment methods to the two the InstaPay model allows:
 -- cash and instapay. See design/NEW-MODEL.md, "What died":
 --   "Fawry, Vodafone Cash, card as tuition methods — InstaPay covers wallets.
@@ -74,8 +83,10 @@ NOTIFY pgrst, 'reload schema';
 --     that is built, not before the shape is settled.
 --   - teacher_profiles.accepted_methods (text[]) has NO constraint. Empty in all
 --     three live rows. Constraining array membership is a different exercise.
---   - Application code still offers the dead methods and must change with this:
---     src/lib/validations.ts:90, src/app/[locale]/payments/page.tsx METHOD_CONFIG,
---     src/components/ScanResultScreen.tsx, src/components/shared/MethodBadge.tsx,
---     src/lib/excel-export.ts. Narrowing the constraint before the UI stops
---     offering them turns a silent no-op into a visible 400.
+-- THE CODE PR THAT MUST MERGE FIRST, five sites, all still offering six methods:
+--   src/lib/validations.ts:90                        the Zod enum
+--   src/app/[locale]/payments/page.tsx               METHOD_CONFIG + MethodPillFilter
+--   src/components/ScanResultScreen.tsx              PAYMENT_METHODS buttons
+--   src/components/shared/MethodBadge.tsx            label + colour maps
+--   src/lib/excel-export.ts                          Arabic method labels
+-- Narrow each to cash and instapay, merge, then apply this file.

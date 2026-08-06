@@ -1,6 +1,6 @@
 # design/
 
-**25 merged HTML files. 110 screens. 352 frames.** Regenerated 6 August 2026.
+**25 merged HTML files. 110 screens. 503 frames.** Regenerated 6 August 2026.
 
 This folder is the source of truth for what every screen looks like and what logic sits behind it.
 
