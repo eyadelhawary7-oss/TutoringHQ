@@ -234,6 +234,81 @@ fix that makes an eighth impossible rather than merely findable.
 
 ---
 
+## 14. The scanner billing pipeline, five live faults from one vocabulary mismatch
+
+The scanner is the core attendance-to-billing path, not an edge screen. One item of the original
+finding was fixed; **five remain live and all five were re-verified**.
+
+**The payment method vocabulary does not agree with itself.** Live `payments_method_check` allows
+exactly `cash, instapay, vodacash, orange, fawry, bank`.
+
+**a. Late entry charges the student again every thirty seconds.** `src/lib/sync.ts:118` inserts
+`method: 'late_entry'` into `payments`. That value is **not in the constraint**, so the insert always
+fails. The error *is* checked here, so the queue item is never dead-lettered and retries. Each retry
+re-runs the `attendance_scans` insert at `:92` first, and there is no dedup: the unique constraint is
+`UNIQUE (session_id, student_id)` and the scanner never sets `session_id`, so Postgres treats every
+row as distinct. **A late-entry grant left open in a busy front-desk tab inflates the student's
+balance by the session fee, repeatedly, for as long as the tab stays open.**
+
+**b. The main payment path swallows its error.** `sync.ts:182` is a bare
+`await dbInsert({ table: 'payments', ... })` with no error destructured. Lines 74, 92, 112 and 156 in
+the same file all check theirs, so this call is the exception rather than the pattern. `:188` then
+removes the queue item regardless. The attendance row lands, the student is billed, the payment row
+is never written, and staff and parent both see success.
+
+**These two must be fixed together.** Adding an error check to (b) alone converts a silent missing
+payment into (a): a retry loop that re-charges. Retry-safe dedup has to land with it.
+
+**c. Fee-exempt admissions may not record at all.** `attendance_scans_payment_status_at_scan_check`
+allows only `'paid'` and `'unpaid'`. The exempt path writes `'admitted'`, which
+`studentBalance.ts` treats as load-bearing vocabulary with its own exclusion logic. The insert should
+fail at the database layer. Not a typo to patch: changing the string changes balance semantics for
+every exempt session.
+
+**d. Four of the six methods lose most of their payload.** `paymentSchema`
+(`src/lib/validations.ts:87-94`) declares only `student_id, amount, method, payment_date`, extended
+at `:327` with `center_id`. Zod strips unknown keys, so `recorded_by`, `paid_at`, `status`,
+`confirmed`, `confirmed_at` and `group_id`, all set by `sync.ts`, never reach Postgres. `group_id`
+lands `NULL`, breaking per-group attribution for multi-group students; `recorded_by` lands `NULL`,
+losing which staff member recorded it.
+
+**e. No permission gate on the payments insert.** `src/lib/dbProxyScope.ts:151` gates on
+`table === 'attendance_scans' && operation === 'insert'` only. There is no equivalent branch for
+`payments`, so any authenticated user tied to a centre can record a payment through this route
+regardless of `can_record_payments`. **This compounds with (d):** fixing the Zod stripping without
+adding the gate would let an under-privileged account set `confirmed`, `status` and `recorded_by`
+directly.
+
+*Touches money and auth. Source: `BUILD-AFTER-REDESIGN.md` F20. Verified 6 August 2026.*
+
+---
+
+## 15. A migration filename is not its recorded version, so absence proves nothing
+
+`supabase_migrations.schema_migrations` stamps a version at apply time that **does not match the
+filename**. Verified live:
+
+| File | Recorded as |
+|---|---|
+| `20260804120000_sessions_tenant_key_and_occurrence_uniqueness.sql` | `20260804094631` |
+| `20260730110000_students_inactive_reason.sql` | `20260730122204` |
+| `20260730090000_permissions_canonical_admin_store.sql` | `20260729184405` |
+
+So a filename cannot be looked up in that table, and **absence from it is not evidence that a file
+has not been applied.** Match on the migration *name*, or better, check the catalog for the objects
+the file creates. `CLAUDE.md` already says the ledger is bookkeeping and not proof; this is the
+concrete mechanism, with the drift measured rather than asserted.
+
+**Related and already handled, recorded so it is not re-opened.** `schedule_slots.parent_slot_id` is
+dropped (catalog: 0) and the rule against reviving it is carried **in the database itself** as a
+`COMMENT ON TABLE public.schedule_slots`, verified present. It reads in part: *"Do NOT add a
+parent/child slot pointer to build a second materialisation path."* That comment outlives any
+document, so the rule needs no entry here beyond this pointer.
+
+*Source: `BUILD-AFTER-REDESIGN.md` F27. Verified 6 August 2026.*
+
+---
+
 # Four the ledger called open and verification closed
 
 **Recorded so nobody re-opens them from an old copy of a deleted document.** Each was carried as an
@@ -255,7 +330,10 @@ which is the point: a ledger marker is a claim, not evidence, whichever directio
 
 Not yet checked, and therefore not yet claimed either way.
 
-**10 F-codes:** F5b, F6, F8, F14, F20, F27, F28, F29, F32, F38.
+**8 F-codes:** F5b, F6, F8, F14, F28, F29, F32, F38. Plus **S9**, a CSRF gap on four CEO and admin
+mutation routes found in the same file, which meets the scoping rule and is queued with them.
+
+F20 produced finding 14 and F27 produced finding 15.
 
 **Five have been worked since this file opened.** F16 yielded finding 13 and F39 yielded finding 12.
 F12, F36 and F37 were **dropped**, and the reason matters: each asserts that a design drew something
