@@ -3,369 +3,238 @@
 ================================================================
  TutoringHQ · MERGED DESIGN REFERENCE
  File: Merged-Center-Groups.html
- Center · Groups, rooms and branches
+ Center · Groups
 
- CONTENTS (5 screens):
+ CONTENTS (4 screens):
   01. Groups   <-  Screen - Groups.html
-  02. Center Groups Verified   <-  Screen-Center-Groups-Verified.html
-  03. Rooms   <-  Screen-Rooms.html
-  04. Branches   <-  Screen-Branches.html
-  05. Schedule   <-  Screen - Schedule.html
+  02. Rooms   <-  Screen-Rooms.html
+  03. Branches   <-  Screen-Branches.html
+  04. Schedule   <-  Screen - Schedule.html
 
 ----------------------------------------------------------------
- HOW TO READ THIS FILE WHEN IMPLEMENTING IT
-----------------------------------------------------------------
- 1. CSS IS SCOPED. Every rule carries a .mgdN prefix so that
-    several screens can share one page without their styles
-    colliding.
-        in this file:   .mgd4 .pins{ ... }
-        in your code:   .pins{ ... }
-    Strip the .mgdN prefix. It is bookkeeping for this reference
-    file only and must never reach the codebase.
-
- 2. ONE SECTION = ONE SCREEN. Each section bar shows its number,
-    its name, and the original screen file it came from. Use that
-    filename as the screen's identity, not the section number.
-
- 3. FRAMES ARE STATES, NOT PAGES. Each phone inside a section is
-    one state of that screen (empty, filled, error, and so on).
-    The caption under or above each phone names the state.
-
- 4. THE TWO LANGUAGES ARE SEPARATE SCREENS. English and Arabic
-    are never a translation overlay. Arabic frames use Eastern
-    Arabic numerals (0-9 written as Arabic-Indic) and the Arabic
-    currency mark. English frames use Western numerals and EGP.
-    Directional icons such as chevrons flip with the language.
-
- 5. SAMPLE DATA IS PLACEHOLDER. Names, amounts, dates and phone
-    numbers are illustrative. Do not treat them as fixtures or
-    seed data.
-
- 6. THIS IS DESIGN, NOT PRODUCTION CODE. Markup here is built to
-    be read, not shipped. Take the layout, spacing, type scale
-    and colour decisions from it. Do not copy the DOM wholesale.
-
- 7. ANY UI OR BRANDING CHANGE BUMPS SW_VERSION in public/sw.js.
+ 1. CSS IS SCOPED with .mgdN. Strip it; it never reaches code.
+ 2. ONE SECTION = ONE SCREEN.
+ 3. FRAMES ARE STATES, not pages.
+ 4. THE TWO LANGUAGES ARE SEPARATE SCREENS.
+ 5. SAMPLE DATA IS PLACEHOLDER.
+ 6. ANY UI CHANGE BUMPS SW_VERSION in public/sw.js.
 ================================================================
 -->
-
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="color-scheme" content="light">
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Center · Groups, rooms and branches · TutoringHQ</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>Center · Groups</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 html{background:#D8D3C6;color-scheme:light}
-:root{color-scheme:light}
-
-html,body{margin:0;padding:0}
-body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;-webkit-font-smoothing:antialiased}
-.mgd-top{max-width:1180px;margin:0 auto;padding:48px 24px 8px;color:#14181A}
-.mgd-eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#5D635C;font-weight:600}
-.mgd-h1{font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em;margin:12px 0 8px}
-.mgd-lede{font-size:15px;line-height:1.55;color:#5D635C;max-width:82ch;margin:0}
-.mgd-toc{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 0}
-.mgd-toc a{font-size:12px;font-weight:600;color:#0A514A;background:#DFEEEB;border:1px solid rgba(14,107,97,.18);padding:8px 12px;border-radius:999px;text-decoration:none}
-.mgd-sec{max-width:1180px;margin:0 auto;padding:16px 24px 0}
-.mgd-bar{display:flex;align-items:baseline;gap:12px;border-top:1px solid rgba(28,33,30,.16);padding-top:16px;margin-top:32px}
-.mgd-num{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#9A6B1F;font-weight:500}
-.mgd-name{font-size:22px;font-weight:700;color:#14181A;letter-spacing:-.01em}
-.mgd-src{margin-inline-start:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#80827A}
-/* ===== Screen - Groups ===== */
+body{margin:0;background:#D8D3C6}
+.mgd-bar{max-width:1180px;margin:0 auto;padding:24px;display:flex;align-items:baseline;gap:12px;border-bottom:1px solid #E2DDD1;font-family:'IBM Plex Sans',sans-serif}
+.mgd-num{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#9A6B1F}
+.mgd-name{font-size:22px;font-weight:700;color:#14181A}
+.mgd-src{margin-inline-start:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#80827A}
+[class^="mgd"]{content-visibility:auto;contain-intrinsic-size:1px 4000px}
 .mgd1 *{box-sizing:border-box}
-.mgd1{margin:0;background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#14181A}
+.mgd1{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
 .mgd1 .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
 .mgd1 .mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
 .mgd1 svg{display:block;flex-shrink:0}
-
-  @keyframes sweep{.mgd1 0%{background-position:200% 0}
-.mgd1 100%{background-position:-200% 0}}
-.mgd1 .phone{width:340px;background:#14181A;border-radius:44px;padding:12px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
-.mgd1 .screen{background:#ECE8DF;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
-.mgd1 .sbar{display:flex;justify-content:space-between;align-items:center;padding:16px 24px 8px;font-size:13px;font-weight:600}
+.mgd1 0%{background-position:200% 0}
+.mgd1 100%{background-position:-200% 0}
+.mgd1 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd1 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
+.mgd1 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:13px;font-weight:600}
 .mgd1 .topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 12px}
-.mgd1 .topbtn{width:42px;height:42px;border-radius:12px;background:#FFFDF8;border:1px solid #E2DDD1;display:flex;align-items:center;justify-content:center;color:#3A3F3A;flex-shrink:0}
-.mgd1 .addbtn{width:42px;height:42px;border-radius:12px;background:#0E6B61;color:#FFFDF8;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(14,107,97,.28);flex-shrink:0}
-.mgd1 .body{flex:1;overflow-y:auto;padding:4px 16px 8px;display:flex;flex-direction:column;gap:12px}
-.mgd1 .badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 12px;border-radius:999px;white-space:nowrap;flex-shrink:0}
+.mgd1 .topbtn{width:42px;height:42px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a;flex-shrink:0}
+.mgd1 .addbtn{width:42px;height:42px;border-radius:12px;background:#0e6b61;color:#fffdf8;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(14,107,97,.28);flex-shrink:0}
+.mgd1 .body{flex:1;overflow-y:auto;padding:2px 16px 8px;display:flex;flex-direction:column;gap:14px}
+.mgd1 .badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 9px;border-radius:999px;white-space:nowrap;flex-shrink:0}
 .mgd1 /* group card */
-  .gcard{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:16px;padding:16px;box-shadow:0 1px 2px rgba(28,33,30,.05)}
-.mgd1 .gdot{width:34px;height:34px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.mgd1 .fill{height:6px;border-radius:999px;background:#F2EEE5;overflow:hidden;flex:1}
-.mgd1 .fill i{display:block;height:100%;border-radius:999px;background:#0E6B61}
-.mgd1 .tchip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 8px;border-radius:999px;background:#F4EBD7;color:#9A6B1F}
-
-  @keyframes sweep{.mgd1 0%{background-position:200% 0}
-.mgd1 100%{background-position:-200% 0}}
-.mgd1 .skel{background:linear-gradient(90deg,#ECE8DF 25%,#E2DDD1 50%,#ECE8DF 75%);background-size:200% 100%;animation:sweep 1.5s linear infinite;border-radius:4px}
-
-  @media (prefers-reduced-motion:reduce){.mgd1 .skel{animation:none!important}}
-.mgd1 .lab{font-size:12px;color:#80827A;font-weight:600;margin:0 4px 4px}
-.mgd1 .inp{height:46px;border-radius:12px;background:#FFFDF8;border:1px solid #E2DDD1;display:flex;align-items:center;padding:0 12px;color:#14181A;font-size:15px;font-weight:600}
-.mgd1 .inp.ph{color:#A09A8E;font-weight:400}
-.mgd1 .suf{margin-inline-start:auto;color:#80827A;font-size:13px;font-weight:600}
+  .gcard{background:#fffdf8;border:1px solid #e2ddd1;border-radius:16px;padding:14px;box-shadow:0 1px 2px rgba(28,33,30,.05)}
+.mgd1 .gdot{width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mgd1 .fill{height:6px;border-radius:999px;background:#f2eee5;overflow:hidden;flex:1}
+.mgd1 .fill i{display:block;height:100%;border-radius:999px;background:#0e6b61}
+.mgd1 .tchip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 8px;border-radius:999px;background:#f4ebd7;color:#9a6b1f}
+.mgd1 0%{background-position:200% 0}
+.mgd1 100%{background-position:-200% 0}
+.mgd1 .skel{background:linear-gradient(90deg,#eae5d9 25%,#ded9cb 50%,#eae5d9 75%);background-size:200% 100%;animation:sweep 1.5s linear infinite;border-radius:6px}
+.mgd1 .skel{animation:none!important}
+.mgd1 .lab{font-size:12px;color:#80827a;font-weight:600;margin:0 2px 6px}
+.mgd1 .inp{height:46px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;padding:0 12px;color:#1b201d;font-size:15px;font-weight:600}
+.mgd1 .inp.ph{color:#a6a79d;font-weight:400}
+.mgd1 .suf{margin-inline-start:auto;color:#80827a;font-size:13px;font-weight:600}
 .mgd1 .pick{display:flex;gap:8px;flex-wrap:wrap}
-.mgd1 .pchip{font-size:13px;font-weight:600;padding:8px 16px;border-radius:999px;background:#F2EEE5;color:#5D635C;border:1px solid transparent}
-.mgd1 .pchip.on{background:#DFEEEB;color:#0A514A;border-color:rgba(14,107,97,.2)}
+.mgd1 .pchip{font-size:13px;font-weight:600;padding:8px 13px;border-radius:999px;background:#f2eee5;color:#5d635c;border:1px solid transparent}
+.mgd1 .pchip.on{background:#dfeeeb;color:#0a514a;border-color:rgba(14,107,97,.2)}
 .mgd1 /* stat tiles */
-  .statrow{display:flex;gap:8px}
-.mgd1 .stat{flex:1;background:#FFFDF8;border:1px solid #E2DDD1;border-radius:16px;padding:12px 16px}
-.mgd1 .stat .lbl{font-size:12px;color:#80827A;margin-bottom:4px}
-.mgd1 .stat .val{font-size:22px;font-weight:600;line-height:1.1}
+  .statrow{display:flex;gap:10px}
+.mgd1 .stat{flex:1;background:#fffdf8;border:1px solid #e2ddd1;border-radius:16px;padding:12px 14px}
+.mgd1 .stat .lbl{font-size:12px;color:#80827a;margin-bottom:4px}
+.mgd1 .stat .val{font-size:20px;font-weight:600;line-height:1.1}
 .mgd1 /* invite */
-  .invite{display:flex;align-items:center;gap:8px;background:#F2EEE5;border:1px solid #E2DDD1;border-radius:12px;padding:8px 8px 8px 12px}
+  .invite{display:flex;align-items:center;gap:8px;background:#f2eee5;border:1px solid #e2ddd1;border-radius:12px;padding:8px 8px 8px 12px}
 .mgd1 /* heatmap */
   .hm{display:flex;flex-direction:column;gap:4px}
 .mgd1 .hmr{display:flex;gap:4px}
 .mgd1 .hc{flex:1;height:16px;border-radius:4px}
 .mgd1 /* segmented tabs */
-  .seg{display:flex;background:#F2EEE5;border-radius:12px;padding:4px;gap:4px}
-.mgd1 .seg .s{flex:1;text-align:center;font-size:13px;font-weight:600;color:#5D635C;padding:8px 0;border-radius:8px}
-.mgd1 .seg .s.on{background:#FFFDF8;color:#0A514A;box-shadow:0 1px 2px rgba(28,33,30,.06)}
+  .seg{display:flex;background:#f2eee5;border-radius:12px;padding:4px;gap:4px}
+.mgd1 .seg .s{flex:1;text-align:center;font-size:13px;font-weight:600;color:#5d635c;padding:8px 0;border-radius:9px}
+.mgd1 .seg .s.on{background:#fffdf8;color:#0a514a;box-shadow:0 1px 2px rgba(28,33,30,.06)}
 .mgd1 /* rows */
-  .srow{display:flex;align-items:center;gap:12px;background:#FFFDF8;border:1px solid #E2DDD1;border-radius:12px;padding:12px 16px;box-shadow:0 1px 2px rgba(28,33,30,.05)}
-.mgd1 .av{width:36px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;flex-shrink:0}
-.mgd1 .wnum{width:28px;height:28px;border-radius:8px;background:#F2EEE5;color:#5D635C;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;flex-shrink:0}
+  .srow{display:flex;align-items:center;gap:12px;background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:11px 14px;box-shadow:0 1px 2px rgba(28,33,30,.05)}
+.mgd1 .av{width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;flex-shrink:0}
+.mgd1 .wnum{width:28px;height:28px;border-radius:9px;background:#f2eee5;color:#5d635c;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;flex-shrink:0}
 .mgd1 .nm{flex:1;min-width:0}
 .mgd1 .nm .n{font-size:15px;font-weight:600;line-height:1.25}
-.mgd1 .nm .m{font-size:12px;color:#80827A;margin-top:4px}
-.mgd1 .sect{font-size:12px;font-weight:600;letter-spacing:.02em;color:#80827A;text-transform:uppercase;margin-bottom:4px}
-.mgd1 .bottombar{padding:12px 16px 16px;background:linear-gradient(0deg,#ECE8DF 70%,rgba(236,232,223,0));display:flex;gap:8px}
-.mgd1 .btn-primary{flex:1;height:50px;background:#0E6B61;color:#FFFDF8;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;box-shadow:0 2px 10px rgba(14,107,97,.28)}
-.mgd1 .board{max-width:1180px;margin:0 auto;padding:48px 32px 48px}
-.mgd1 .masthead{background:#ECE8DF;border:1px solid #E2DDD1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:48px 48px 48px}
-.mgd1 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:32px}
-.mgd1 .frame{display:flex;flex-direction:column;align-items:center;gap:12px}
-/* ===== Screen-Center-Groups-Verified ===== */
+.mgd1 .nm .m{font-size:12px;color:#80827a;margin-top:2px}
+.mgd1 .sect{font-size:12px;font-weight:600;letter-spacing:.02em;color:#80827a;text-transform:uppercase;margin-bottom:2px}
+.mgd1 .bottombar{padding:12px 16px 16px;background:linear-gradient(0deg,#ece8df 70%,rgba(236,232,223,0));display:flex;gap:10px}
+.mgd1 .btn-primary{flex:1;height:50px;background:#0e6b61;color:#fffdf8;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;box-shadow:0 2px 10px rgba(14,107,97,.28)}
+.mgd1 .board{max-width:1180px;margin:0 auto;padding:56px 28px 96px}
+.mgd1 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
+.mgd1 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.mgd1 .frame{display:flex;flex-direction:column;align-items:center;gap:14px}
 .mgd2 *{box-sizing:border-box}
-.mgd2{margin:0;background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;color:#14181A;-webkit-font-smoothing:antialiased}
-.mgd2 .board{max-width:1180px;margin:0 auto;padding:48px 24px 48px}
-.mgd2 .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#80827A;font-weight:600}
-.mgd2 .pill0{display:inline-block;margin:8px 0;padding:4px 12px;border-radius:999px;background:#DFEEEB;color:#0A514A;font-size:12px;font-weight:600}
-.mgd2 h1.mh{font-size:30px;margin:4px 0 8px;font-weight:700;letter-spacing:-.01em}
-.mgd2 .board>p.lead{margin:0 0 32px;color:#5D635C;font-size:15px;line-height:1.5;max-width:80ch}
-.mgd2 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center}
-.mgd2 .frame{display:flex;flex-direction:column;align-items:center;gap:12px}
-.mgd2 .cap{font-size:13px;color:#5D635C;font-weight:600}
-.mgd2 .phone{width:340px;background:#14181A;border-radius:44px;padding:12px;box-shadow:0 30px 60px -20px rgba(0,0,0,.4)}
-.mgd2 .screen{background:#ECE8DF;border-radius:34px;height:748px;display:flex;flex-direction:column;overflow:hidden;position:relative}
-.mgd2 .sbar{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:13px;font-weight:600;flex-shrink:0}
-.mgd2 .topbar{display:flex;align-items:center;gap:8px;padding:4px 16px 8px;flex-shrink:0}
-.mgd2 .topbtn{width:40px;height:40px;border-radius:12px;background:#FFFDF8;border:1px solid #E2DDD1;display:flex;align-items:center;justify-content:center;color:#3A3F3A;flex-shrink:0}
-.mgd2 .topbtn svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.mgd2 .tt{font-size:17px;font-weight:700;line-height:1.2}
-.mgd2 .ts{font-size:11px;color:#80827A;margin-top:4px}
-.mgd2 .vbadge{margin-inline-start:auto;font-size:11px;font-weight:700;color:#0A514A;background:#DFEEEB;border:1px solid rgba(14,107,97,.22);padding:4px 12px;border-radius:999px;flex-shrink:0}
-.mgd2 .body{flex:1;overflow-y:auto;padding:4px 16px 16px}
-.mgd2 .note{background:#DFEEEB;border:1px solid rgba(14,107,97,.2);border-radius:12px;padding:12px 16px;font-size:11px;color:#0A514A;line-height:1.45;margin-bottom:12px}
-.mgd2 .dl{font-size:11px;font-weight:700;letter-spacing:.03em;color:#80827A;margin:12px 4px 8px}
-.mgd2 .grp{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:12px;padding:12px 16px;margin-bottom:8px}
-.mgd2 .gtop{display:flex;align-items:center;gap:8px}
-.mgd2 .gn{flex:1;min-width:0}
-.mgd2 .gnm{font-size:15px;font-weight:700;display:flex;align-items:center;gap:4px}
-.mgd2 .gnm .arrow{width:12px;height:12px;fill:none;stroke:#A09A8E;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
-.mgd2 .gs{font-size:11px;color:#80827A;margin-top:4px}
-.mgd2 .tog{width:44px;height:26px;border-radius:999px;background:#E2DDD1;position:relative;flex-shrink:0}
-.mgd2 .tog i{position:absolute;top:3px;inset-inline-start:3px;width:20px;height:20px;border-radius:50%;background:#FFFDF8;box-shadow:0 1px 3px rgba(0,0,0,.2)}
-.mgd2 .tog.on{background:#0E6B61}
-.mgd2 .tog.on i{inset-inline-start:21px}
-.mgd2 .gmeta{display:flex;gap:4px;flex-wrap:wrap;margin-top:8px;padding-top:12px;border-top:1px solid #F0ECE2}
-.mgd2 .mc{font-size:11px;font-weight:700;padding:4px 8px;border-radius:999px;background:#F2EEE5;color:#5D635C}
-.mgd2 .mc.acc{background:#DFEEEB;color:#0A514A}
-.mgd2 .mc.br{background:#F4EBD7;color:#9A6B1F}
-.mgd2 .mc.bl{background:#DFEEEB;color:#0E6B61}
-.mgd2 .footer{padding:12px 16px 24px;border-top:1px solid #E2DDD1;background:#ECE8DF;flex-shrink:0}
-.mgd2 .fnote{text-align:center;font-size:11px;color:#80827A;margin-bottom:8px}
-.mgd2 .btn{display:block;width:100%;border:none;border-radius:12px;padding:16px;font-size:15px;font-weight:700;background:#0E6B61;color:#FFFDF8;text-align:center;font-family:inherit}
-.mgd2 .btn2{display:block;width:100%;background:none;border:none;text-align:center;font-size:13px;color:#5D635C;font-weight:600;padding:12px 0 0;font-family:inherit}
-.mgd2 .scrim{position:absolute;inset:0;background:rgba(20,24,26,.42)}
-.mgd2 .sheet{position:absolute;inset-inline:0;bottom:0;background:#ECE8DF;border-radius:24px 24px 34px 34px;padding:12px 16px 24px;max-height:96%;overflow-y:auto}
-.mgd2 .grab{width:38px;height:4px;border-radius:999px;background:#D8D3C6;margin:0 auto 12px}
-.mgd2 .sh{font-size:17px;font-weight:700;margin:0 4px 4px}
-.mgd2 .shs{font-size:12px;color:#80827A;margin:0 4px 12px;line-height:1.45}
-.mgd2 .sec{font-size:12px;font-weight:700;color:#80827A;margin:4px 4px 4px;letter-spacing:.02em}
-.mgd2 .optrow{display:flex;align-items:center;justify-content:space-between;background:#FFFDF8;border:1.5px solid #E2DDD1;border-radius:12px;padding:12px 16px;margin-bottom:8px}
-.mgd2 .optrow.on{border-color:#0E6B61;background:#FFFDF8;box-shadow:0 0 0 2px rgba(14,107,97,.1)}
-.mgd2 .on1{font-size:13px;font-weight:600}
-.mgd2 .os{font-size:11px;color:#80827A;margin-top:4px}
-.mgd2 .radio{width:20px;height:20px;border-radius:50%;border:1.5px solid #D8D3C6;background:#FFFDF8;flex-shrink:0;position:relative}
-.mgd2 .optrow.on .radio{border-color:#0E6B61}
-.mgd2 .optrow.on .radio::after{content:"";position:absolute;inset:4px;border-radius:50%;background:#0E6B61}
-.mgd2 .price{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:12px;padding:16px;margin-bottom:8px}
-.mgd2 .pl{font-size:11px;color:#80827A;margin-bottom:4px}
-.mgd2 .pv{display:flex;align-items:baseline;gap:4px}
-.mgd2 .pv b{font-size:30px;font-weight:700;font-variant-numeric:tabular-nums}
-.mgd2 .pv span{font-size:13px;color:#80827A}
-.mgd2 .pbrk{background:#F2EEE5;border:1px solid #E2DDD1;border-radius:12px;padding:4px 12px;margin-top:8px}
-.mgd2 .pbr{display:flex;align-items:center;justify-content:space-between;padding:12px 0;font-size:12px;border-bottom:1px solid #E2DDD1}
-.mgd2 .pbr:last-child{border-bottom:none}
-.mgd2 .pbk{color:#5D635C}
-.mgd2 .pbv{font-weight:600;font-variant-numeric:tabular-nums}
-.mgd2 .pbr.tot{border-top:1.5px solid #D8D3C6}
-.mgd2 .pbr.tot .pbk{font-weight:700;color:#14181A}
-.mgd2 .pbr.tot .pbv{font-weight:700;font-size:13px}
-.mgd2 .pbr.you .pbk{font-weight:700;color:#0A514A}
-.mgd2 .pbr.you .pbv{font-weight:700;font-size:15px;color:#0A514A}
-.mgd2 .pp{font-size:11px;color:#0A514A;background:#DFEEEB;border-radius:8px;padding:8px 12px;margin-top:8px;line-height:1.45}
-.mgd2 .badge{margin-inline-start:4px;font-size:11px;font-weight:700;padding:4px 8px;border-radius:999px;background:#F4EBD7;color:#9A6B1F}
-/* ===== Screen-Rooms ===== */
-.mgd3 *{box-sizing:border-box}
-.mgd3{margin:0;background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#14181A}
-.mgd3 .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
-.mgd3 .mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
-.mgd3 svg{display:block;flex-shrink:0}
-.mgd3 .phone{width:340px;background:#14181A;border-radius:44px;padding:12px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
-.mgd3 .screen{background:#ECE8DF;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
-.mgd3 .sbar{display:flex;justify-content:space-between;align-items:center;padding:16px 24px 8px;font-size:13px;font-weight:600}
-.mgd3 .topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 12px}
-.mgd3 .topbtn{width:42px;height:42px;border-radius:12px;background:#FFFDF8;border:1px solid #E2DDD1;display:flex;align-items:center;justify-content:center;color:#3A3F3A;flex-shrink:0}
-.mgd3 .addbtn{width:42px;height:42px;border-radius:12px;background:#0E6B61;color:#FFFDF8;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(14,107,97,.28);flex-shrink:0}
-.mgd3 .body{flex:1;overflow-y:auto;padding:4px 16px 8px;display:flex;flex-direction:column;gap:12px}
-.mgd3 .count{font-size:12px;color:#80827A;font-weight:600;padding:0 4px}
-.mgd3 .rgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.mgd3 .rcard{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:16px;padding:16px;box-shadow:0 1px 2px rgba(28,33,30,.05);display:flex;flex-direction:column;gap:4px}
-.mgd3 .rtop{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
-.mgd3 .ricon{width:38px;height:38px;border-radius:12px;background:#DFEEEB;color:#0A514A;display:flex;align-items:center;justify-content:center}
-.mgd3 .kb{color:#A09A8E}
-.mgd3 .rn{font-size:15px;font-weight:600;line-height:1.15}
-.mgd3 .rc{display:flex;align-items:center;gap:4px;font-size:13px;color:#5D635C;margin-top:4px}
-.mgd3 .rmeta{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;margin-top:8px;padding:4px 8px;border-radius:999px;width:fit-content}
-.mgd3 .inuse{background:#DFEEEB;color:#0E6B61}
-.mgd3 .free{background:#F2EEE5;color:#80827A}
-.mgd3 /* sheet */
+.mgd2{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
+.mgd2 .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+.mgd2 .mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.mgd2 svg{display:block;flex-shrink:0}
+.mgd2 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd2 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
+.mgd2 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:13px;font-weight:600}
+.mgd2 .topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 10px}
+.mgd2 .topbtn{width:42px;height:42px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a;flex-shrink:0}
+.mgd2 .addbtn{width:42px;height:42px;border-radius:12px;background:#0e6b61;color:#fffdf8;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(14,107,97,.28);flex-shrink:0}
+.mgd2 .body{flex:1;overflow-y:auto;padding:2px 16px 8px;display:flex;flex-direction:column;gap:12px}
+.mgd2 .count{font-size:12px;color:#80827a;font-weight:600;padding:0 2px}
+.mgd2 .rgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mgd2 .rcard{background:#fffdf8;border:1px solid #e2ddd1;border-radius:16px;padding:13px;box-shadow:0 1px 2px rgba(28,33,30,.05);display:flex;flex-direction:column;gap:2px}
+.mgd2 .rtop{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.mgd2 .ricon{width:38px;height:38px;border-radius:11px;background:#dfeeeb;color:#0a514a;display:flex;align-items:center;justify-content:center}
+.mgd2 .kb{color:#b0b1a7}
+.mgd2 .rn{font-size:16px;font-weight:600;line-height:1.15}
+.mgd2 .rc{display:flex;align-items:center;gap:5px;font-size:13px;color:#5d635c;margin-top:3px}
+.mgd2 .rmeta{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;margin-top:8px;padding:3px 8px;border-radius:999px;width:fit-content}
+.mgd2 .inuse{background:#e4f0e9;color:#1a6d4d}
+.mgd2 .free{background:#f2eee5;color:#80827a}
+.mgd2 /* sheet */
   .scrim{position:absolute;inset:0;background:rgba(20,24,22,.42)}
-.mgd3 .sheet{position:absolute;left:0;right:0;bottom:0;background:#FFFDF8;border-radius:24px 24px 0 0;padding:8px 16px 24px;box-shadow:0 -8px 30px rgba(28,33,30,.18)}
-.mgd3 .grab{width:38px;height:4px;border-radius:999px;background:#E2DDD1;margin:4px auto 12px}
-.mgd3 .sheet-h{font-size:17px;font-weight:600;padding:0 4px 12px}
-.mgd3 .fieldlabel{font-size:12px;color:#80827A;margin:0 4px 4px}
-.mgd3 .field{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:8px;font-size:15px}
-.mgd3 .field.on{border-color:#0E6B61;box-shadow:0 0 0 3px rgba(14,107,97,.12)}
-.mgd3 .ph{color:#A09A8E}
-.mgd3 .btn-primary{width:100%;height:50px;background:#0E6B61;color:#FFFDF8;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;box-shadow:0 2px 10px rgba(14,107,97,.28);border:none}
-.mgd3 .btn-primary.dim{background:#BFE3DD;box-shadow:none}
-.mgd3 /* empty */
-  .empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:8px;padding:0 32px}
-.mgd3 .eill{width:96px;height:96px;border-radius:24px;background:#FFFDF8;border:1px solid #E2DDD1;display:flex;align-items:center;justify-content:center;color:#D8D3C6;margin-bottom:4px;box-shadow:0 4px 14px rgba(28,33,30,.06)}
-.mgd3 .board{max-width:1180px;margin:0 auto;padding:48px 32px 48px}
-.mgd3 .masthead{background:#ECE8DF;border:1px solid #E2DDD1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:48px 48px 48px}
-.mgd3 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:32px}
-.mgd3 .frame{display:flex;flex-direction:column;align-items:center;gap:12px}
-/* ===== Screen-Branches ===== */
+.mgd2 .sheet{position:absolute;left:0;right:0;bottom:0;background:#fffdf8;border-radius:24px 24px 0 0;padding:8px 16px 22px;box-shadow:0 -8px 30px rgba(28,33,30,.18)}
+.mgd2 .grab{width:38px;height:4px;border-radius:999px;background:#e2ddd1;margin:6px auto 12px}
+.mgd2 .sheet-h{font-size:17px;font-weight:600;padding:0 2px 12px}
+.mgd2 .fieldlabel{font-size:12px;color:#80827a;margin:0 2px 5px}
+.mgd2 .field{background:#faf7f0;border:1px solid #e2ddd1;border-radius:12px;padding:12px 13px;display:flex;align-items:center;gap:9px;font-size:15px}
+.mgd2 .field.on{border-color:#0e6b61;box-shadow:0 0 0 3px rgba(14,107,97,.12)}
+.mgd2 .ph{color:#a6a79d}
+.mgd2 .btn-primary{width:100%;height:50px;background:#0e6b61;color:#fffdf8;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;box-shadow:0 2px 10px rgba(14,107,97,.28);border:none}
+.mgd2 .btn-primary.dim{background:#a9c8c3;box-shadow:none}
+.mgd2 /* empty */
+  .empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:8px;padding:0 30px}
+.mgd2 .eill{width:96px;height:96px;border-radius:26px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#b9bbB0;margin-bottom:6px;box-shadow:0 4px 14px rgba(28,33,30,.06)}
+.mgd2 .board{max-width:1180px;margin:0 auto;padding:56px 28px 96px}
+.mgd2 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
+.mgd2 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.mgd2 .frame{display:flex;flex-direction:column;align-items:center;gap:14px}
+.mgd3 *{box-sizing:border-box}
+.mgd3{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
+.mgd3 .num{font-variant-numeric:tabular-nums}
+.mgd3 .mono{font-family:'IBM Plex Mono',monospace}
+.mgd3 svg{display:block;flex-shrink:0}
+.mgd3 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd3 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
+.mgd3 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:13px;font-weight:600}
+.mgd3 .topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 10px}
+.mgd3 .topbtn{width:42px;height:42px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a}
+.mgd3 .addbtn{width:42px;height:42px;border-radius:12px;background:#0e6b61;color:#fffdf8;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(14,107,97,.28)}
+.mgd3 .body{flex:1;overflow-y:auto;padding:2px 16px 16px;display:flex;flex-direction:column;gap:12px}
+.mgd3 .sec{font-size:13px;font-weight:600;color:#80827a;margin:6px 2px -2px}
+.mgd3 .badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px}
+.mgd3 .ok{background:#e4f0e9;color:#1a6d4d}
+.mgd3 .brass{background:#f0e6d2;color:#8a5e16}
+.mgd3 .strip{display:flex;gap:10px}
+.mgd3 .kpi{flex:1;background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:12px}
+.mgd3 .kpiv{font-size:20px;font-weight:700;letter-spacing:-.01em}
+.mgd3 .kpil{font-size:11px;color:#80827a;margin-top:2px}
+.mgd3 .brow{background:#fffdf8;border:1px solid #e2ddd1;border-radius:16px;padding:13px 14px}
+.mgd3 .brow.cur{border-color:rgba(14,107,97,.35);box-shadow:0 0 0 2px rgba(14,107,97,.10)}
+.mgd3 .mstat{flex:1}
+.mgd3 .mv{font-size:15px;font-weight:700}
+.mgd3 .ml{font-size:10px;color:#80827a;margin-top:1px}
+.mgd3 .kb{color:#b0b1a7;flex-shrink:0}
+.mgd3 .chip{border:1px solid #e2ddd1;background:#faf7f0;border-radius:999px;padding:8px 12px;font-size:12.5px;font-weight:600;color:#5d635c;display:flex;align-items:center;gap:6px}
+.mgd3 .chip.pri{background:#0e6b61;border-color:#0e6b61;color:#fffdf8}
+.mgd3 .scrim{position:absolute;inset:0;background:rgba(20,22,20,.34)}
+.mgd3 .sheet{position:absolute;left:0;right:0;bottom:0;background:#fffdf8;border-radius:24px 24px 0 0;padding:8px 18px 20px;box-shadow:0 -10px 40px rgba(0,0,0,.16)}
+.mgd3 .grab{width:40px;height:4px;border-radius:999px;background:#d8d3c6;margin:6px auto 12px}
+.mgd3 .inp{background:#faf7f0;border:1px solid #e2ddd1;border-radius:12px;padding:12px 13px;font-size:14px;color:#a6a79d}
+.mgd3 .btn-primary{width:100%;height:48px;background:#0e6b61;color:#fffdf8;border-radius:13px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;box-shadow:0 2px 10px rgba(14,107,97,.28);border:none}
+.mgd3 .board{max-width:1180px;margin:0 auto;padding:56px 28px 96px}
+.mgd3 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
+.mgd3 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.mgd3 .frame{display:flex;flex-direction:column;align-items:center;gap:14px}
 .mgd4 *{box-sizing:border-box}
-.mgd4{margin:0;background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#14181A}
-.mgd4 .num{font-variant-numeric:tabular-nums}
-.mgd4 .mono{font-family:'IBM Plex Mono',monospace}
+.mgd4{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
+.mgd4 .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+.mgd4 .mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
 .mgd4 svg{display:block;flex-shrink:0}
-.mgd4 .phone{width:340px;background:#14181A;border-radius:44px;padding:12px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
-.mgd4 .screen{background:#ECE8DF;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
-.mgd4 .sbar{display:flex;justify-content:space-between;align-items:center;padding:16px 24px 8px;font-size:13px;font-weight:600}
-.mgd4 .topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 12px}
-.mgd4 .topbtn{width:42px;height:42px;border-radius:12px;background:#FFFDF8;border:1px solid #E2DDD1;display:flex;align-items:center;justify-content:center;color:#3A3F3A}
-.mgd4 .addbtn{width:42px;height:42px;border-radius:12px;background:#0E6B61;color:#FFFDF8;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(14,107,97,.28)}
-.mgd4 .body{flex:1;overflow-y:auto;padding:4px 16px 16px;display:flex;flex-direction:column;gap:12px}
-.mgd4 .sec{font-size:13px;font-weight:600;color:#80827A;margin:4px 4px -2px}
-.mgd4 .badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 12px;border-radius:999px}
-.mgd4 .ok{background:#DFEEEB;color:#0E6B61}
-.mgd4 .brass{background:#F4EBD7;color:#9A6B1F}
-.mgd4 .strip{display:flex;gap:8px}
-.mgd4 .kpi{flex:1;background:#FFFDF8;border:1px solid #E2DDD1;border-radius:12px;padding:12px}
-.mgd4 .kpiv{font-size:22px;font-weight:700;letter-spacing:-.01em}
-.mgd4 .kpil{font-size:11px;color:#80827A;margin-top:4px}
-.mgd4 .brow{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:16px;padding:16px 16px}
-.mgd4 .brow.cur{border-color:rgba(14,107,97,.35);box-shadow:0 0 0 2px rgba(14,107,97,.10)}
-.mgd4 .mstat{flex:1}
-.mgd4 .mv{font-size:15px;font-weight:700}
-.mgd4 .ml{font-size:11px;color:#80827A;margin-top:4px}
-.mgd4 .kb{color:#A09A8E;flex-shrink:0}
-.mgd4 .chip{border:1px solid #E2DDD1;background:#FFFDF8;border-radius:999px;padding:8px 12px;font-size:12px;font-weight:600;color:#5D635C;display:flex;align-items:center;gap:4px}
-.mgd4 .chip.pri{background:#0E6B61;border-color:#0E6B61;color:#FFFDF8}
-.mgd4 .scrim{position:absolute;inset:0;background:rgba(20,22,20,.34)}
-.mgd4 .sheet{position:absolute;left:0;right:0;bottom:0;background:#FFFDF8;border-radius:24px 24px 0 0;padding:8px 24px 24px;box-shadow:0 -10px 40px rgba(0,0,0,.16)}
-.mgd4 .grab{width:40px;height:4px;border-radius:999px;background:#D8D3C6;margin:4px auto 12px}
-.mgd4 .inp{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:12px;padding:12px 16px;font-size:13px;color:#A09A8E}
-.mgd4 .btn-primary{width:100%;height:48px;background:#0E6B61;color:#FFFDF8;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;box-shadow:0 2px 10px rgba(14,107,97,.28);border:none}
-.mgd4 .board{max-width:1180px;margin:0 auto;padding:48px 32px 48px}
-.mgd4 .masthead{background:#ECE8DF;border:1px solid #E2DDD1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:48px 48px 48px}
-.mgd4 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:32px}
-.mgd4 .frame{display:flex;flex-direction:column;align-items:center;gap:12px}
-/* ===== Screen - Schedule ===== */
-.mgd5 *{box-sizing:border-box}
-.mgd5{margin:0;background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#14181A}
-.mgd5 .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
-.mgd5 .mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
-.mgd5 svg{display:block;flex-shrink:0}
-.mgd5 .phone{width:340px;background:#14181A;border-radius:44px;padding:12px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
-.mgd5 .screen{background:#ECE8DF;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
-.mgd5 .sbar{display:flex;justify-content:space-between;align-items:center;padding:16px 24px 8px;font-size:13px;font-weight:600}
-.mgd5 .topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 12px}
-.mgd5 .topbtn{width:42px;height:42px;border-radius:12px;background:#FFFDF8;border:1px solid #E2DDD1;display:flex;align-items:center;justify-content:center;color:#3A3F3A;flex-shrink:0}
-.mgd5 .addbtn{width:42px;height:42px;border-radius:12px;background:#0E6B61;color:#FFFDF8;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(14,107,97,.28);flex-shrink:0}
-.mgd5 .body{flex:1;overflow-y:auto;padding:4px 16px 8px;display:flex;flex-direction:column;gap:12px}
-.mgd5 .badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 12px;border-radius:999px;white-space:nowrap;flex-shrink:0}
-.mgd5 .seg{display:flex;background:#F2EEE5;border-radius:12px;padding:4px;gap:4px}
-.mgd5 .seg .s{flex:1;text-align:center;font-size:13px;font-weight:600;color:#5D635C;padding:8px 0;border-radius:8px}
-.mgd5 .seg .s.on{background:#FFFDF8;color:#0A514A;box-shadow:0 1px 2px rgba(28,33,30,.06)}
-.mgd5 /* day pills + density dots */
-  .days{display:flex;gap:4px;overflow-x:auto;padding-bottom:4px}
-.mgd5 .day{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:44px;padding:8px 4px 8px;border-radius:12px;background:#F2EEE5;color:#5D635C}
-.mgd5 .day .wd{font-size:11px;font-weight:600}
-.mgd5 .day .dn{font-size:15px;font-weight:600}
-.mgd5 .day.on{background:#0E6B61;color:#FFFDF8}
-.mgd5 .day.we{color:#A09A8E}
-.mgd5 .load{display:flex;gap:4px;height:5px;align-items:center;margin-top:4px}
-.mgd5 .load i{width:5px;height:5px;border-radius:50%;background:#0E6B61}
-.mgd5 .day.on .load i{background:rgba(255,255,255,.92)}
-.mgd5 .dayhdr{font-size:13px;font-weight:600;color:#5D635C;margin:0 4px}
-.mgd5 /* session */
-  .sess{display:flex;align-items:center;gap:12px;background:#FFFDF8;border:1px solid #E2DDD1;border-radius:12px;padding:12px 16px;box-shadow:0 1px 2px rgba(28,33,30,.05)}
-.mgd5 .time{width:46px;text-align:center;flex-shrink:0}
-.mgd5 .time .t1{font-size:15px;font-weight:600;line-height:1.1}
-.mgd5 .time .t2{font-size:11px;color:#80827A}
-.mgd5 .sname{font-size:15px;font-weight:600;line-height:1.2}
-.mgd5 .smeta{font-size:12px;color:#80827A;margin-top:4px}
-.mgd5 .flag{font-size:11px;color:#9C3322;margin-top:4px;display:flex;align-items:center;gap:4px;font-weight:600}
-.mgd5 .rhdr{display:flex;align-items:center;gap:8px;margin:4px 4px 0}
-.mgd5 .rhdr .rn{font-size:13px;font-weight:700}
-.mgd5 .rhdr .rc{font-size:12px;color:#80827A}
-.mgd5 /* week grid */
-  .wnav{display:flex;align-items:center;justify-content:space-between;margin:0 4px}
-.mgd5 .navbtn{width:30px;height:30px;border-radius:8px;background:#FFFDF8;border:1px solid #E2DDD1;display:flex;align-items:center;justify-content:center;color:#5D635C}
-.mgd5 .wg{overflow-x:auto;border:1px solid #E2DDD1;border-radius:12px;background:#FFFDF8}
-.mgd5 .wgrid{display:flex;min-width:max-content}
-.mgd5 .gutter{flex-shrink:0;width:32px;border-inline-end:1px solid #F2EEE5}
-.mgd5 .ghead{height:38px;border-block-end:1px solid #F2EEE5;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#A09A8E}
-.mgd5 .gtime{height:46px;font-size:11px;color:#80827A;text-align:center;padding-top:4px}
-.mgd5 .wcol{flex-shrink:0;width:66px;border-inline-end:1px solid #F2EEE5}
-.mgd5 .wcol.lastcol{border-inline-end:none}
-.mgd5 .whead{height:38px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-block-end:1px solid #F2EEE5}
-.mgd5 .whead .wd{font-size:11px;color:#80827A;font-weight:600}
-.mgd5 .whead .dd{font-size:13px;font-weight:600}
-.mgd5 .whead.on .dd{color:#0E6B61}
-.mgd5 .wtrack{position:relative;height:230px}
-.mgd5 .wblk{position:absolute;inset-inline:3px;border-radius:8px;padding:4px 8px;font-size:11px;line-height:1.15;font-weight:600;overflow:hidden}
-.mgd5 /* buttons */
-  .btn-primary{flex:1;height:50px;background:#0E6B61;color:#FFFDF8;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;box-shadow:0 2px 10px rgba(14,107,97,.28)}
-.mgd5 .board{max-width:1180px;margin:0 auto;padding:48px 32px 48px}
-.mgd5 .masthead{background:#ECE8DF;border:1px solid #E2DDD1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:48px 48px 48px}
-.mgd5 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:32px}
-.mgd5 .frame{display:flex;flex-direction:column;align-items:center;gap:12px}
-</style>
-</head>
-<body>
-<div class="mgd-top">
-  <div class="mgd-eyebrow">TutoringHQ · Merged reference</div>
-  <h1 class="mgd-h1">Center · Groups, rooms and branches</h1>
-  <p class="mgd-lede">Everything the center schedules into: groups, the rooms they sit in, the branches above them, and the week as a whole.</p>
-  <div class="mgd-toc"><a href="#Merged-Center-Groups-1">Groups</a><a href="#Merged-Center-Groups-2">Center Groups Verified</a><a href="#Merged-Center-Groups-3">Rooms</a><a href="#Merged-Center-Groups-4">Branches</a><a href="#Merged-Center-Groups-5">Schedule</a></div>
-</div>
-<div class="mgd-sec" id="Merged-Center-Groups-1">
-  <div class="mgd-bar"><span class="mgd-num">01</span><span class="mgd-name">Groups</span><span class="mgd-src">Screen - Groups.html</span></div>
-</div>
+.mgd4 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd4 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
+.mgd4 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:13px;font-weight:600}
+.mgd4 .topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 10px}
+.mgd4 .topbtn{width:42px;height:42px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a;flex-shrink:0}
+.mgd4 .addbtn{width:42px;height:42px;border-radius:12px;background:#0e6b61;color:#fffdf8;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(14,107,97,.28);flex-shrink:0}
+.mgd4 .body{flex:1;overflow-y:auto;padding:2px 16px 8px;display:flex;flex-direction:column;gap:12px}
+.mgd4 .badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 9px;border-radius:999px;white-space:nowrap;flex-shrink:0}
+.mgd4 .seg{display:flex;background:#f2eee5;border-radius:12px;padding:4px;gap:4px}
+.mgd4 .seg .s{flex:1;text-align:center;font-size:13px;font-weight:600;color:#5d635c;padding:7px 0;border-radius:9px}
+.mgd4 .seg .s.on{background:#fffdf8;color:#0a514a;box-shadow:0 1px 2px rgba(28,33,30,.06)}
+.mgd4 /* day pills + density dots */
+  .days{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.mgd4 .day{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:1px;min-width:44px;padding:7px 4px 6px;border-radius:14px;background:#f2eee5;color:#5d635c}
+.mgd4 .day .wd{font-size:11px;font-weight:600}
+.mgd4 .day .dn{font-size:16px;font-weight:600}
+.mgd4 .day.on{background:#0e6b61;color:#fffdf8}
+.mgd4 .day.we{color:#a6a79d}
+.mgd4 .load{display:flex;gap:3px;height:5px;align-items:center;margin-top:2px}
+.mgd4 .load i{width:5px;height:5px;border-radius:50%;background:#0e6b61}
+.mgd4 .day.on .load i{background:rgba(255,255,255,.92)}
+.mgd4 .dayhdr{font-size:13px;font-weight:600;color:#5d635c;margin:0 2px}
+.mgd4 /* session */
+  .sess{display:flex;align-items:center;gap:12px;background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:11px 14px;box-shadow:0 1px 2px rgba(28,33,30,.05)}
+.mgd4 .time{width:46px;text-align:center;flex-shrink:0}
+.mgd4 .time .t1{font-size:15px;font-weight:600;line-height:1.1}
+.mgd4 .time .t2{font-size:11px;color:#80827a}
+.mgd4 .sname{font-size:15px;font-weight:600;line-height:1.2}
+.mgd4 .smeta{font-size:12px;color:#80827a;margin-top:2px}
+.mgd4 .flag{font-size:11px;color:#9c3322;margin-top:3px;display:flex;align-items:center;gap:4px;font-weight:600}
+.mgd4 .rhdr{display:flex;align-items:center;gap:8px;margin:4px 2px 0}
+.mgd4 .rhdr .rn{font-size:13px;font-weight:700}
+.mgd4 .rhdr .rc{font-size:12px;color:#80827a}
+.mgd4 /* week grid */
+  .wnav{display:flex;align-items:center;justify-content:space-between;margin:0 2px}
+.mgd4 .navbtn{width:30px;height:30px;border-radius:9px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#5d635c}
+.mgd4 .wg{overflow-x:auto;border:1px solid #e2ddd1;border-radius:14px;background:#fffdf8}
+.mgd4 .wgrid{display:flex;min-width:max-content}
+.mgd4 .gutter{flex-shrink:0;width:32px;border-inline-end:1px solid #f2eee5}
+.mgd4 .ghead{height:38px;border-block-end:1px solid #f2eee5;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;color:#a6a79d}
+.mgd4 .gtime{height:46px;font-size:10px;color:#80827a;text-align:center;padding-top:2px}
+.mgd4 .wcol{flex-shrink:0;width:66px;border-inline-end:1px solid #f2eee5}
+.mgd4 .wcol.lastcol{border-inline-end:none}
+.mgd4 .whead{height:38px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-block-end:1px solid #f2eee5}
+.mgd4 .whead .wd{font-size:10px;color:#80827a;font-weight:600}
+.mgd4 .whead .dd{font-size:13px;font-weight:600}
+.mgd4 .whead.on .dd{color:#0e6b61}
+.mgd4 .wtrack{position:relative;height:230px}
+.mgd4 .wblk{position:absolute;inset-inline:3px;border-radius:7px;padding:3px 5px;font-size:10px;line-height:1.15;font-weight:600;overflow:hidden}
+.mgd4 /* buttons */
+  .btn-primary{flex:1;height:50px;background:#0e6b61;color:#fffdf8;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;box-shadow:0 2px 10px rgba(14,107,97,.28)}
+.mgd4 .board{max-width:1180px;margin:0 auto;padding:56px 28px 96px}
+.mgd4 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
+.mgd4 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.mgd4 .frame{display:flex;flex-direction:column;align-items:center;gap:14px}
+</style></head><body>
+<div class="mgd-bar"><span class="mgd-num">01</span><span class="mgd-name">Groups</span><span class="mgd-src">Screen - Groups.html</span></div>
 <div class="mgd1">
-
 <div class="board">
 
   <div class="masthead">
@@ -653,176 +522,9 @@ body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10
 
   </div>
 </div>
-
 </div>
-<div class="mgd-sec" id="Merged-Center-Groups-2">
-  <div class="mgd-bar"><span class="mgd-num">02</span><span class="mgd-name">Center Groups Verified</span><span class="mgd-src">Screen-Center-Groups-Verified.html</span></div>
-</div>
+<div class="mgd-bar"><span class="mgd-num">02</span><span class="mgd-name">Rooms</span><span class="mgd-src">Screen-Rooms.html</span></div>
 <div class="mgd2">
-<div class="board">
-  <div class="eyebrow">TutoringHQ · Reference Screen</div>
-  <div class="pill0">Center groups · Verified · Draft</div>
-  <h1 class="mh">Center groups, verified</h1>
-  <p class="lead">Where the billing basis and the session price that attendance bills are set. Every group collects digitally, always. There is no cash-only group, because cash is not a property of a group any more than it is a property of a student: it is a switch made for one student in one session, while taking attendance. Per session is the default basis and covers almost all real usage; monthly and bundle sit beside it for the centers that work that way, and a bundle draws down by attendance rather than by date. The sheet shows what the parent will see, so the price is never set blind. English and Arabic. Sample data is placeholder.</p>
-
-  <div class="phones">
-
-    <!-- EN · LIST -->
-    <div class="frame">
-    <div class="phone"><div class="screen">
-      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
-      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="tt">Groups</div><div class="ts">6 groups · all collecting digitally</div></div><span class="vbadge">Verified</span></div>
-      <div class="body">
-        <div class="note">Every group collects digitally by default. To take one payment in cash, switch that student while taking attendance.</div>
-
-        <div class="dl">ALL GROUPS</div>
-        <div class="grp">
-          <div class="gtop"><div class="gn"><div class="gnm">Physics · Sun 4PM<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="gs">Aly Shady · 18 students</div></div></div>
-          <div class="gmeta"><span class="mc acc">Per session</span><span class="mc">150 EGP</span><span class="mc bl">Parents pay 168.75</span></div>
-        </div>
-        <div class="grp">
-          <div class="gtop"><div class="gn"><div class="gnm">Chemistry · Mon 6PM<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="gs">Hana Fouad · 24 students</div></div></div>
-          <div class="gmeta"><span class="mc acc">Per session</span><span class="mc">180 EGP</span><span class="mc bl">Parents pay 201.00</span></div>
-        </div>
-        <div class="grp">
-          <div class="gtop"><div class="gn"><div class="gnm">Math HL · Tue 5PM<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="gs">Tarek Naguib · 12 students</div></div></div>
-          <div class="gmeta"><span class="mc br">Monthly</span><span class="mc">1,200 EGP</span><span class="mc bl">Parents pay 1,297.50</span></div>
-        </div>
-        <div class="grp">
-          <div class="gtop"><div class="gn"><div class="gnm">Biology · Wed 3PM<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="gs">Hana Fouad · 9 students</div></div></div>
-          <div class="gmeta"><span class="mc bl">Bundle · 8</span><span class="mc">1,100 EGP</span><span class="mc bl">Parents pay 1,190.00</span></div>
-        </div>
-
-        <div class="grp">
-          <div class="gtop"><div class="gn"><div class="gnm">English · Thu 2PM<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="gs">Mona Adel · 15 students</div></div></div>
-          <div class="gmeta"><span class="mc acc">Per session</span><span class="mc">140 EGP</span><span class="mc bl">Parents pay 158.00</span></div>
-        </div>
-        <div class="grp">
-          <div class="gtop"><div class="gn"><div class="gnm">Arabic · Sun 6PM<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="gs">Mona Adel · 11 students</div></div></div>
-          <div class="gmeta"><span class="mc acc">Per session</span><span class="mc">140 EGP</span><span class="mc bl">Parents pay 158.00</span></div>
-        </div>
-      </div>
-      <div class="footer"><button class="btn">Add group</button></div>
-    </div></div>
-    <div class="cap">EN · groups</div>
-    </div>
-
-    <!-- EN · GROUP BILLING SHEET -->
-    <div class="frame">
-    <div class="phone"><div class="screen">
-      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
-      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="tt">Groups</div><div class="ts">6 groups · all collecting digitally</div></div><span class="vbadge">Verified</span></div>
-      <div class="body" style="filter:blur(1.5px);opacity:.5">
-        <div class="note">Every group collects digitally by default. To take one payment in cash, switch that student while taking attendance.</div>
-        <div class="dl">ALL GROUPS</div>
-        <div class="grp"><div class="gtop"><div class="gn"><div class="gnm">Physics · Sun 4PM</div><div class="gs">Aly Shady · 18 students</div></div></div></div>
-      </div>
-      <div class="scrim"></div>
-      <div class="sheet">
-        <div class="grab"></div>
-        <div class="sh">Physics · Sun 4PM</div>
-        <div class="shs">Aly Shady · Room 2 · 18 students</div>
-
-        <div class="sec">HOW THIS GROUP BILLS</div>
-        <div class="optrow on"><div><div class="on1">Per session<span class="badge">Default</span></div><div class="os">Billed when you end each session</div></div><div class="radio"></div></div>
-        <div class="optrow"><div><div class="on1">Monthly</div><div class="os">Billed on a cycle date</div></div><div class="radio"></div></div>
-        <div class="optrow"><div><div class="on1">Bundle</div><div class="os">Prepaid sessions, drawn down by attendance</div></div><div class="radio"></div></div>
-
-        <div class="sec" style="margin-top:14px">PRICE PER SESSION</div>
-        <div class="price">
-          <div class="pl">What you charge</div>
-          <div class="pv"><b>150</b><span>EGP per session</span></div>
-          <div class="pbrk"><div class="pbr"><span class="pbk">Your fee</span><span class="pbv">150.00</span></div><div class="pbr"><span class="pbk">Platform markup</span><span class="pbv">+18.75</span></div><div class="pbr tot"><span class="pbk">Your price to parents</span><span class="pbv">168.75</span></div><div class="pbr you"><span class="pbk">You receive · 90% of your fee</span><span class="pbv">135.00</span></div></div><div class="pp">Parents see this one price. They never see your fee or the markup.</div>
-        </div>
-        <button class="btn">Save</button>
-        <button class="btn2">Cancel</button>
-      </div>
-    </div></div>
-    <div class="cap">EN · billing basis and price</div>
-    </div>
-
-    <!-- AR · LIST -->
-    <div class="frame">
-    <div class="phone"><div class="screen" dir="rtl" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
-      <div class="sbar"><span>٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
-      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="tt">المجموعات</div><div class="ts">٦ مجموعات · كلها تُحصّل رقميًا</div></div><span class="vbadge">موثّق</span></div>
-      <div class="body">
-        <div class="note">كل مجموعة تُحصّل رقميًا افتراضيًا. لتحصيل دفعة نقدًا، حوّل الطالب أثناء تسجيل الحضور.</div>
-
-        <div class="dl">كل المجموعات</div>
-        <div class="grp">
-          <div class="gtop"><div class="gn"><div class="gnm">فيزياء · الأحد ٤ م<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="gs">علي شادي · ١٨ طالبًا</div></div></div>
-          <div class="gmeta"><span class="mc acc">بالحصة</span><span class="mc">١٥٠ ج.م</span><span class="mc bl">يدفع ١٦٨٫٧٥</span></div>
-        </div>
-        <div class="grp">
-          <div class="gtop"><div class="gn"><div class="gnm">كيمياء · الاثنين ٦ م<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="gs">هنا فؤاد · ٢٤ طالبًا</div></div></div>
-          <div class="gmeta"><span class="mc acc">بالحصة</span><span class="mc">١٨٠ ج.م</span><span class="mc bl">يدفع ٢٠١٫٠٠</span></div>
-        </div>
-        <div class="grp">
-          <div class="gtop"><div class="gn"><div class="gnm">رياضيات HL · الثلاثاء ٥ م<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="gs">طارق نجيب · ١٢ طالبًا</div></div></div>
-          <div class="gmeta"><span class="mc br">شهري</span><span class="mc">١٬٢٠٠ ج.م</span><span class="mc bl">يدفع ١٬٢٩٧٫٥٠</span></div>
-        </div>
-        <div class="grp">
-          <div class="gtop"><div class="gn"><div class="gnm">أحياء · الأربعاء ٣ م<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="gs">هنا فؤاد · ٩ طلاب</div></div></div>
-          <div class="gmeta"><span class="mc bl">باقة · ٨</span><span class="mc">١٬١٠٠ ج.م</span><span class="mc bl">يدفع ١٬١٩٠٫٠٠</span></div>
-        </div>
-
-        <div class="grp">
-          <div class="gtop"><div class="gn"><div class="gnm">إنجليزي · الخميس ٢ م<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="gs">منى عادل · ١٥ طالبًا</div></div></div>
-          <div class="gmeta"><span class="mc acc">بالحصة</span><span class="mc">١٤٠ ج.م</span><span class="mc bl">يدفع ١٥٨٫٠٠</span></div>
-        </div>
-        <div class="grp">
-          <div class="gtop"><div class="gn"><div class="gnm">عربي · الأحد ٦ م<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="gs">منى عادل · ١١ طالبًا</div></div></div>
-          <div class="gmeta"><span class="mc acc">بالحصة</span><span class="mc">١٤٠ ج.م</span><span class="mc bl">يدفع ١٥٨٫٠٠</span></div>
-        </div>
-      </div>
-      <div class="footer"><button class="btn">إضافة مجموعة</button></div>
-    </div></div>
-    <div class="cap">AR · المجموعات</div>
-    </div>
-
-    <!-- AR · GROUP BILLING SHEET -->
-    <div class="frame">
-    <div class="phone"><div class="screen" dir="rtl" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
-      <div class="sbar"><span>٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
-      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="tt">المجموعات</div><div class="ts">٦ مجموعات · كلها تُحصّل رقميًا</div></div><span class="vbadge">موثّق</span></div>
-      <div class="body" style="filter:blur(1.5px);opacity:.5">
-        <div class="note">كل مجموعة تُحصّل رقميًا افتراضيًا. لتحصيل دفعة نقدًا، حوّل الطالب أثناء تسجيل الحضور.</div>
-        <div class="dl">كل المجموعات</div>
-        <div class="grp"><div class="gtop"><div class="gn"><div class="gnm">فيزياء · الأحد ٤ م</div><div class="gs">علي شادي · ١٨ طالبًا</div></div></div></div>
-      </div>
-      <div class="scrim"></div>
-      <div class="sheet">
-        <div class="grab"></div>
-        <div class="sh">فيزياء · الأحد ٤ م</div>
-        <div class="shs">علي شادي · قاعة ٢ · ١٨ طالبًا</div>
-
-        <div class="sec">كيف تُحصَّل هذه المجموعة</div>
-        <div class="optrow on"><div><div class="on1">بالحصة<span class="badge">الافتراضي</span></div><div class="os">تُحصَّل عند إنهاء كل حصة</div></div><div class="radio"></div></div>
-        <div class="optrow"><div><div class="on1">شهري</div><div class="os">تُحصَّل في تاريخ الدورة</div></div><div class="radio"></div></div>
-        <div class="optrow"><div><div class="on1">باقة</div><div class="os">حصص مدفوعة مسبقًا، تُخصم بالحضور</div></div><div class="radio"></div></div>
-
-        <div class="sec" style="margin-top:14px">سعر الحصة</div>
-        <div class="price">
-          <div class="pl">ما تتقاضاه</div>
-          <div class="pv"><b>١٥٠</b><span>ج.م للحصة</span></div>
-          <div class="pbrk"><div class="pbr"><span class="pbk">سعرك</span><span class="pbv">١٥٠٫٠٠</span></div><div class="pbr"><span class="pbk">هامش المنصة</span><span class="pbv">+١٨٫٧٥</span></div><div class="pbr tot"><span class="pbk">سعرك لولي الأمر</span><span class="pbv">١٦٨٫٧٥</span></div><div class="pbr you"><span class="pbk">تستلم · ٩٠٪ من سعرك</span><span class="pbv">١٣٥٫٠٠</span></div></div><div class="pp">يرى ولي الأمر هذا السعر وحده. لا يرى سعرك ولا الهامش أبدًا.</div>
-        </div>
-        <button class="btn">حفظ</button>
-        <button class="btn2">إلغاء</button>
-      </div>
-    </div></div>
-    <div class="cap">AR · أساس التحصيل والسعر</div>
-    </div>
-
-  </div>
-</div>
-</div>
-<div class="mgd-sec" id="Merged-Center-Groups-3">
-  <div class="mgd-bar"><span class="mgd-num">03</span><span class="mgd-name">Rooms</span><span class="mgd-src">Screen-Rooms.html</span></div>
-</div>
-<div class="mgd3">
-
 <div class="board">
 
   <div class="masthead">
@@ -969,13 +671,9 @@ body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10
 
   </div>
 </div>
-
 </div>
-<div class="mgd-sec" id="Merged-Center-Groups-4">
-  <div class="mgd-bar"><span class="mgd-num">04</span><span class="mgd-name">Branches</span><span class="mgd-src">Screen-Branches.html</span></div>
-</div>
-<div class="mgd4">
-<div class="board">
+<div class="mgd-bar"><span class="mgd-num">03</span><span class="mgd-name">Branches</span><span class="mgd-src">Screen-Branches.html</span></div>
+<div class="mgd3"><div class="board">
   <div class="masthead">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39)"></div><span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Reference Screen</span><span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#0e6b61;background:#dfeeeb;border:1px solid rgba(14,107,97,.18);padding:5px 11px;border-radius:999px">Lucide icons</span></div>
     <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">Branches</h1>
@@ -1065,13 +763,9 @@ body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10
     </div></div></div>
 
   </div>
-</div>
-</div>
-<div class="mgd-sec" id="Merged-Center-Groups-5">
-  <div class="mgd-bar"><span class="mgd-num">05</span><span class="mgd-name">Schedule</span><span class="mgd-src">Screen - Schedule.html</span></div>
-</div>
-<div class="mgd5">
-
+</div></div>
+<div class="mgd-bar"><span class="mgd-num">04</span><span class="mgd-name">Schedule</span><span class="mgd-src">Screen - Schedule.html</span></div>
+<div class="mgd4">
 <div class="board">
 
   <div class="masthead">
@@ -1311,6 +1005,5 @@ body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10
 
   </div>
 </div>
-
 </div>
 </body></html>

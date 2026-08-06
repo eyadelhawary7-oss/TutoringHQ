@@ -3,148 +3,96 @@
 ================================================================
  TutoringHQ · MERGED DESIGN REFERENCE
  File: Merged-Teacher-WhatsApp.html
- Teacher · WhatsApp
+ Teacher · WhatsApp · TutoringHQ
 
- CONTENTS (1 screen):
+ CONTENTS (1 screens):
   01. Teacher WhatsApp   <-  Screen-Teacher-WhatsApp.html
 
 ----------------------------------------------------------------
- HOW TO READ THIS FILE WHEN IMPLEMENTING IT
-----------------------------------------------------------------
- 1. CSS IS SCOPED. Every rule carries a .mgdN prefix so that
-    several screens can share one page without their styles
-    colliding.
-        in this file:   .mgd4 .pins{ ... }
-        in your code:   .pins{ ... }
-    Strip the .mgdN prefix. It is bookkeeping for this reference
-    file only and must never reach the codebase.
-
- 2. ONE SECTION = ONE SCREEN. Each section bar shows its number,
-    its name, and the original screen file it came from. Use that
-    filename as the screen's identity, not the section number.
-
- 3. FRAMES ARE STATES, NOT PAGES. Each phone inside a section is
-    one state of that screen (empty, filled, error, and so on).
-    The caption under or above each phone names the state.
-
- 4. THE TWO LANGUAGES ARE SEPARATE SCREENS. English and Arabic
-    are never a translation overlay. Arabic frames use Eastern
-    Arabic numerals (0-9 written as Arabic-Indic) and the Arabic
-    currency mark. English frames use Western numerals and EGP.
-    Directional icons such as chevrons flip with the language.
-
- 5. SAMPLE DATA IS PLACEHOLDER. Names, amounts, dates and phone
-    numbers are illustrative. Do not treat them as fixtures or
-    seed data.
-
- 6. THIS IS DESIGN, NOT PRODUCTION CODE. Markup here is built to
-    be read, not shipped. Take the layout, spacing, type scale
-    and colour decisions from it. Do not copy the DOM wholesale.
-
- 7. ANY UI OR BRANDING CHANGE BUMPS SW_VERSION in public/sw.js.
+ 1. CSS IS SCOPED with .mgdN. Strip it; it never reaches code.
+ 2. ONE SECTION = ONE SCREEN.
+ 3. FRAMES ARE STATES, not pages.
+ 4. THE TWO LANGUAGES ARE SEPARATE SCREENS.
+ 5. SAMPLE DATA IS PLACEHOLDER.
+ 6. ANY UI CHANGE BUMPS SW_VERSION in public/sw.js.
 ================================================================
 -->
-
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="color-scheme" content="light">
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Teacher · WhatsApp · TutoringHQ</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 html{background:#D8D3C6;color-scheme:light}
-:root{color-scheme:light}
-
-html,body{margin:0;padding:0}
-body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;-webkit-font-smoothing:antialiased}
-.mgd-top{max-width:1180px;margin:0 auto;padding:48px 24px 8px;color:#14181A}
-.mgd-eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#5D635C;font-weight:600}
-.mgd-h1{font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em;margin:12px 0 8px}
-.mgd-lede{font-size:15px;line-height:1.55;color:#5D635C;max-width:82ch;margin:0}
-.mgd-toc{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 0}
-.mgd-toc a{font-size:12px;font-weight:600;color:#0A514A;background:#DFEEEB;border:1px solid rgba(14,107,97,.18);padding:8px 12px;border-radius:999px;text-decoration:none}
-.mgd-sec{max-width:1180px;margin:0 auto;padding:16px 24px 0}
-.mgd-bar{display:flex;align-items:baseline;gap:12px;border-top:1px solid rgba(28,33,30,.16);padding-top:16px;margin-top:32px}
-.mgd-num{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#9A6B1F;font-weight:500}
-.mgd-name{font-size:22px;font-weight:700;color:#14181A;letter-spacing:-.01em}
-.mgd-src{margin-inline-start:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#80827A}
-/* ===== Screen-Teacher-WhatsApp ===== */
+body{margin:0;background:#D8D3C6}
+.mgd-bar{max-width:1180px;margin:0 auto;padding:24px;display:flex;align-items:baseline;gap:12px;border-bottom:1px solid #E2DDD1;font-family:'IBM Plex Sans',sans-serif}
+.mgd-num{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#9A6B1F}
+.mgd-name{font-size:22px;font-weight:700;color:#14181A}
+.mgd-src{margin-inline-start:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#80827A}
+[class^="mgd"]{content-visibility:auto;contain-intrinsic-size:1px 4000px}
 .mgd1 *{box-sizing:border-box}
-.mgd1{margin:0;background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;color:#14181A;-webkit-font-smoothing:antialiased}
-.mgd1 .board{max-width:1180px;margin:0 auto;padding:48px 24px 48px}
-.mgd1 .masthead{background:#ECE8DF;border:1px solid #E2DDD1;border-radius:24px;padding:48px 48px 32px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10)}
-.mgd1 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:32px}
-.mgd1 .frame{display:flex;flex-direction:column;align-items:center;gap:12px}
-.mgd1 .cap{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5D635C}
-.mgd1 .phone{width:340px;background:#14181A;border-radius:44px;padding:12px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
-.mgd1 .screen{background:#ECE8DF;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column}
+.mgd1{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;color:#1b201d;-webkit-font-smoothing:antialiased}
+.mgd1 .board{max-width:1180px;margin:0 auto;padding:48px 24px 90px}
+.mgd1 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;padding:38px 42px 32px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10)}
+.mgd1 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:38px}
+.mgd1 .frame{display:flex;flex-direction:column;align-items:center;gap:13px}
+.mgd1 .cap{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5d635c}
+.mgd1 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd1 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column}
 .mgd1 .ar{font-family:'IBM Plex Sans Arabic',sans-serif}
-.mgd1 .sbar{display:flex;justify-content:space-between;align-items:center;padding:16px 24px 8px;font-size:13px;font-weight:600}
-.mgd1 .topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 12px}
-.mgd1 .topbtn{width:42px;height:42px;border-radius:12px;background:#FFFDF8;border:1px solid #E2DDD1;display:flex;align-items:center;justify-content:center;color:#3A3F3A;flex-shrink:0}
+.mgd1 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:13px;font-weight:600}
+.mgd1 .topbar{display:flex;align-items:center;gap:12px;padding:6px 16px 10px}
+.mgd1 .topbtn{width:42px;height:42px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a;flex-shrink:0}
 .mgd1 .tt{font-size:17px;font-weight:700;line-height:1.2}
-.mgd1 .ts{font-size:11px;color:#80827A;margin-top:4px}
-.mgd1 .body{flex:1;overflow-y:auto;padding:4px 16px 16px}
-.mgd1 .hero{background:linear-gradient(150deg,#0E6B61,#0A514A);border-radius:16px;padding:16px;color:#F2EEE5;margin-bottom:12px}
-.mgd1 .hl{font-size:12px;opacity:.9}
-.mgd1 .hn{font-size:30px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
+.mgd1 .ts{font-size:11.5px;color:#80827a;margin-top:2px}
+.mgd1 .body{flex:1;overflow-y:auto;padding:2px 16px 16px}
+.mgd1 .hero{background:linear-gradient(150deg,#0f766b,#0a514a);border-radius:16px;padding:16px;color:#eef6f4;margin-bottom:13px}
+.mgd1 .hl{font-size:12.5px;opacity:.9}
+.mgd1 .hn{font-size:29px;font-weight:700;margin-top:3px;font-variant-numeric:tabular-nums}
 .mgd1 .hn span{font-size:13px;font-weight:500;opacity:.85}
-.mgd1 .hint{font-size:11px;opacity:.82;margin-top:8px;padding-top:12px;border-top:1px solid rgba(255,255,255,.18);line-height:1.5}
-.mgd1 .sec{font-size:15px;font-weight:700;margin:12px 4px 4px}
-.mgd1 .sub{font-size:12px;color:#80827A;margin:0 4px 8px;line-height:1.45}
-.mgd1 .note{background:#DFEEEB;border:1px solid #DFEEEB;border-radius:12px;padding:12px 12px;font-size:11px;color:#0E6B61;line-height:1.5;margin-bottom:12px}
-.mgd1 .note.acc{background:#DFEEEB;border-color:rgba(14,107,97,.2);color:#0A514A}
-.mgd1 .trow{display:flex;align-items:flex-start;gap:8px;background:#FFFDF8;border:1px solid #E2DDD1;border-radius:12px;padding:12px 16px;margin-bottom:8px}
-.mgd1 .tic{width:34px;height:34px;border-radius:12px;background:#DFEEEB;color:#0E6B61;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mgd1 .hint{font-size:11px;opacity:.82;margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.18);line-height:1.5}
+.mgd1 .sec{font-size:15px;font-weight:700;margin:15px 2px 3px}
+.mgd1 .sub{font-size:12px;color:#80827a;margin:0 2px 10px;line-height:1.45}
+.mgd1 .note{background:#e3ecf6;border:1px solid #cdddf3;border-radius:12px;padding:10px 12px;font-size:11.5px;color:#274b8a;line-height:1.5;margin-bottom:12px}
+.mgd1 .note.acc{background:#dfeeeb;border-color:rgba(14,107,97,.2);color:#0a514a}
+.mgd1 .trow{display:flex;align-items:flex-start;gap:11px;background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:12px 13px;margin-bottom:8px}
+.mgd1 .tic{width:34px;height:34px;border-radius:11px;background:#dff3ea;color:#12684a;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .mgd1 .tic svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.mgd1 .tic.co{background:#F4EBD7;color:#9A6B1F}
+.mgd1 .tic.co{background:#f0e6d2;color:#8a5e16}
 .mgd1 .tn{flex:1;min-width:0}
-.mgd1 .tnm{font-size:13px;font-weight:600;display:flex;align-items:center;gap:4px;flex-wrap:wrap}
-.mgd1 .tpv{font-size:11px;color:#5D635C;margin-top:4px;line-height:1.5}
-.mgd1 .tok{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#0A514A;background:#DFEEEB;padding:4px 8px;border-radius:4px}
-.mgd1 .pill{font-size:11px;font-weight:700;padding:4px 8px;border-radius:999px}
-.mgd1 .p-auto{background:#DFEEEB;color:#0E6B61}
-.mgd1 .p-man{background:#F2EEE5;color:#5D635C}
-.mgd1 .p-co{background:#F4EBD7;color:#9A6B1F}
-.mgd1 .tier{display:flex;align-items:center;justify-content:space-between;background:#FFFDF8;border:1.5px solid #E2DDD1;border-radius:12px;padding:16px;margin-bottom:8px}
-.mgd1 .tier.on{border-color:#0E6B61;background:#FFFDF8}
-.mgd1 .tnn{font-size:15px;font-weight:700;display:flex;align-items:center;gap:4px}
-.mgd1 .tsub{font-size:11px;color:#80827A;margin-top:4px}
+.mgd1 .tnm{font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.mgd1 .tpv{font-size:11.5px;color:#5d635c;margin-top:4px;line-height:1.5}
+.mgd1 .tok{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#0a514a;background:#dfeeeb;padding:1px 5px;border-radius:5px}
+.mgd1 .pill{font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:999px}
+.mgd1 .p-auto{background:#e4f0e9;color:#1a6d4d}
+.mgd1 .p-man{background:#f2eee5;color:#5d635c}
+.mgd1 .p-co{background:#f0e6d2;color:#8a5e16}
+.mgd1 .tier{display:flex;align-items:center;justify-content:space-between;background:#fffdf8;border:1.5px solid #e2ddd1;border-radius:14px;padding:13px;margin-bottom:9px}
+.mgd1 .tier.on{border-color:#0e6b61;background:#f6faf9}
+.mgd1 .tnn{font-size:14.5px;font-weight:700;display:flex;align-items:center;gap:7px}
+.mgd1 .tsub{font-size:11px;color:#80827a;margin-top:3px}
 .mgd1 .tp{text-align:end;flex-shrink:0}
-.mgd1 .tp b{font-size:17px;font-weight:700}
-.mgd1 .tp span{font-size:11px;color:#80827A;display:block}
-.mgd1 .badge{font-size:11px;font-weight:700;background:#DFEEEB;color:#0A514A;padding:4px 8px;border-radius:999px}
-.mgd1 .use{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:12px;padding:4px 16px;margin-bottom:8px}
-.mgd1 .ur{display:flex;align-items:center;justify-content:space-between;padding:12px 0;font-size:12px;border-bottom:1px solid #F0ECE2}
+.mgd1 .tp b{font-size:19px;font-weight:700}
+.mgd1 .tp span{font-size:11px;color:#80827a;display:block}
+.mgd1 .badge{font-size:9px;font-weight:700;background:#dfeeeb;color:#0a514a;padding:2px 7px;border-radius:999px}
+.mgd1 .use{background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:4px 14px;margin-bottom:11px}
+.mgd1 .ur{display:flex;align-items:center;justify-content:space-between;padding:10px 0;font-size:12.5px;border-bottom:1px solid #f0ece2}
 .mgd1 .ur:last-child{border-bottom:none}
-.mgd1 .uk{color:#5D635C}
+.mgd1 .uk{color:#5d635c}
 .mgd1 .uv{font-weight:600;font-variant-numeric:tabular-nums}
-.mgd1 .ur.sum{border-top:1.5px solid #E2DDD1}
-.mgd1 .ur.sum .uk{font-weight:700;color:#14181A}
-.mgd1 .ur.sum .uv{font-size:15px;color:#0A514A}
-.mgd1 .footer{padding:12px 16px 24px;border-top:1px solid #E2DDD1;background:#ECE8DF;flex-shrink:0}
-.mgd1 .fnote{text-align:center;font-size:11px;color:#80827A;margin-bottom:8px;line-height:1.45}
-.mgd1 .btn{display:block;width:100%;border:none;border-radius:12px;padding:16px;font-size:15px;font-weight:700;background:#0E6B61;color:#FFFDF8;text-align:center;font-family:inherit}
-.mgd1 .tabbar{display:flex;background:#FFFDF8;border-top:1px solid #E2DDD1;padding:8px 4px 12px;flex-shrink:0}
-.mgd1 .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:#A09A8E;font-size:11px;font-weight:600;text-decoration:none}
+.mgd1 .ur.sum{border-top:1.5px solid #e2ddd1}
+.mgd1 .ur.sum .uk{font-weight:700;color:#1b201d}
+.mgd1 .ur.sum .uv{font-size:15px;color:#0a514a}
+.mgd1 .footer{padding:11px 16px 17px;border-top:1px solid #e2ddd1;background:#ece8df;flex-shrink:0}
+.mgd1 .fnote{text-align:center;font-size:10.5px;color:#80827a;margin-bottom:8px;line-height:1.45}
+.mgd1 .btn{display:block;width:100%;border:none;border-radius:13px;padding:15px;font-size:15px;font-weight:700;background:#0e6b61;color:#fffdf8;text-align:center;font-family:inherit}
+.mgd1 .tabbar{display:flex;background:#fffdf8;border-top:1px solid #e2ddd1;padding:8px 4px 11px;flex-shrink:0}
+.mgd1 .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:#9a9c92;font-size:9.5px;font-weight:600;text-decoration:none}
 .mgd1 .tab svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-.mgd1 .tab.on{color:#0E6B61}
-</style>
-</head>
-<body>
-<div class="mgd-top">
-  <div class="mgd-eyebrow">TutoringHQ · Merged reference</div>
-  <h1 class="mgd-h1">Teacher · WhatsApp</h1>
-  <p class="mgd-lede">Balance, templates and packs. Shorter than the center's list, because a teacher runs their own groups rather than a reception desk.</p>
-  <div class="mgd-toc"><a href="#Merged-Teacher-WhatsApp-1">Teacher WhatsApp</a></div>
-</div>
-<div class="mgd-sec" id="Merged-Teacher-WhatsApp-1">
-  <div class="mgd-bar"><span class="mgd-num">01</span><span class="mgd-name">Teacher WhatsApp</span><span class="mgd-src">Screen-Teacher-WhatsApp.html</span></div>
-</div>
-<div class="mgd1">
-<div class="board">
+.mgd1 .tab.on{color:#0a6b60}
+</style></head><body>
+<div class="mgd-bar"><span class="mgd-num">01</span><span class="mgd-name">Teacher WhatsApp</span><span class="mgd-src">Screen-Teacher-WhatsApp.html</span></div>
+<div class="mgd1"><div class="board">
   <div class="masthead">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39)"></div><span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Reference Screen</span><span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#0a514a;background:#dfeeeb;padding:5px 11px;border-radius:999px">Teacher · Draft</span></div>
     <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">Teacher WhatsApp</h1>
@@ -341,6 +289,5 @@ body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10
     </div>
 
   </div>
-</div>
-</div>
+</div></div>
 </body></html>

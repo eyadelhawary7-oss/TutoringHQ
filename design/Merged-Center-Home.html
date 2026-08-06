@@ -5,181 +5,180 @@
  File: Merged-Center-Home.html
  Center · Home
 
- CONTENTS (2 screens):
-  01. Center Dashboard Verified   <-  Screen-Center-Dashboard-Verified.html
+ CONTENTS (3 screens):
+  01. Center Dashboard   <-  Screen-Center-Dashboard-Verified.html
   02. Notifications   <-  Screen-Notifications.html
+  03. Active Balance   <-  Screen-Active-Balance.html
 
 ----------------------------------------------------------------
- HOW TO READ THIS FILE WHEN IMPLEMENTING IT
-----------------------------------------------------------------
- 1. CSS IS SCOPED. Every rule carries a .mgdN prefix so that
-    several screens can share one page without their styles
-    colliding.
-        in this file:   .mgd4 .pins{ ... }
-        in your code:   .pins{ ... }
-    Strip the .mgdN prefix. It is bookkeeping for this reference
-    file only and must never reach the codebase.
-
- 2. ONE SECTION = ONE SCREEN. Each section bar shows its number,
-    its name, and the original screen file it came from. Use that
-    filename as the screen's identity, not the section number.
-
- 3. FRAMES ARE STATES, NOT PAGES. Each phone inside a section is
-    one state of that screen (empty, filled, error, and so on).
-    The caption under or above each phone names the state.
-
- 4. THE TWO LANGUAGES ARE SEPARATE SCREENS. English and Arabic
-    are never a translation overlay. Arabic frames use Eastern
-    Arabic numerals (0-9 written as Arabic-Indic) and the Arabic
-    currency mark. English frames use Western numerals and EGP.
-    Directional icons such as chevrons flip with the language.
-
- 5. SAMPLE DATA IS PLACEHOLDER. Names, amounts, dates and phone
-    numbers are illustrative. Do not treat them as fixtures or
-    seed data.
-
- 6. THIS IS DESIGN, NOT PRODUCTION CODE. Markup here is built to
-    be read, not shipped. Take the layout, spacing, type scale
-    and colour decisions from it. Do not copy the DOM wholesale.
-
- 7. ANY UI OR BRANDING CHANGE BUMPS SW_VERSION in public/sw.js.
+ 1. CSS IS SCOPED with .mgdN. Strip it; it never reaches code.
+ 2. ONE SECTION = ONE SCREEN.
+ 3. FRAMES ARE STATES, not pages.
+ 4. THE TWO LANGUAGES ARE SEPARATE SCREENS.
+ 5. SAMPLE DATA IS PLACEHOLDER.
+ 6. ANY UI CHANGE BUMPS SW_VERSION in public/sw.js.
 ================================================================
 -->
-
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="color-scheme" content="light">
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Center · Home · TutoringHQ</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>Center · Home</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 html{background:#D8D3C6;color-scheme:light}
-:root{color-scheme:light}
-
-html,body{margin:0;padding:0}
-body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;-webkit-font-smoothing:antialiased}
-.mgd-top{max-width:1180px;margin:0 auto;padding:48px 24px 8px;color:#14181A}
-.mgd-eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#5D635C;font-weight:600}
-.mgd-h1{font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em;margin:12px 0 8px}
-.mgd-lede{font-size:15px;line-height:1.55;color:#5D635C;max-width:82ch;margin:0}
-.mgd-toc{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 0}
-.mgd-toc a{font-size:12px;font-weight:600;color:#0A514A;background:#DFEEEB;border:1px solid rgba(14,107,97,.18);padding:8px 12px;border-radius:999px;text-decoration:none}
-.mgd-sec{max-width:1180px;margin:0 auto;padding:16px 24px 0}
-.mgd-bar{display:flex;align-items:baseline;gap:12px;border-top:1px solid rgba(28,33,30,.16);padding-top:16px;margin-top:32px}
-.mgd-num{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#9A6B1F;font-weight:500}
-.mgd-name{font-size:22px;font-weight:700;color:#14181A;letter-spacing:-.01em}
-.mgd-src{margin-inline-start:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#80827A}
-/* ===== Screen-Center-Dashboard-Verified ===== */
+body{margin:0;background:#D8D3C6}
+.mgd-bar{max-width:1180px;margin:0 auto;padding:24px;display:flex;align-items:baseline;gap:12px;border-bottom:1px solid #E2DDD1;font-family:'IBM Plex Sans',sans-serif}
+.mgd-num{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#9A6B1F}
+.mgd-name{font-size:22px;font-weight:700;color:#14181A}
+.mgd-src{margin-inline-start:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#80827A}
+[class^="mgd"]{content-visibility:auto;contain-intrinsic-size:1px 4000px}
 .mgd1 *{box-sizing:border-box}
-.mgd1{margin:0;background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;color:#14181A;-webkit-font-smoothing:antialiased}
-.mgd1 .board{max-width:1180px;margin:0 auto;padding:48px 24px 48px}
-.mgd1 .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#80827A;font-weight:600}
-.mgd1 .pill0{display:inline-block;margin:8px 0;padding:4px 12px;border-radius:999px;background:#DFEEEB;color:#0A514A;font-size:12px;font-weight:600}
-.mgd1 h1.mh{font-size:30px;margin:4px 0 8px;font-weight:700;letter-spacing:-.01em}
-.mgd1 .board>p.lead{margin:0 0 32px;color:#5D635C;font-size:15px;line-height:1.5;max-width:80ch}
-.mgd1 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center}
+.mgd1{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;color:#1b201d;-webkit-font-smoothing:antialiased}
+.mgd1 .board{max-width:1180px;margin:0 auto;padding:48px 24px 90px}
+.mgd1 .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#80827a;font-weight:600}
+.mgd1 .pill0{display:inline-block;margin:10px 0;padding:4px 12px;border-radius:999px;background:#dfeeeb;color:#0a514a;font-size:12px;font-weight:600}
+.mgd1 h1.mh{font-size:30px;margin:6px 0 8px;font-weight:700;letter-spacing:-.01em}
+.mgd1 .board>p.lead{margin:0 0 34px;color:#5d635c;font-size:16px;line-height:1.5;max-width:80ch}
+.mgd1 .phones{display:flex;gap:34px;flex-wrap:wrap;justify-content:center}
 .mgd1 .frame{display:flex;flex-direction:column;align-items:center;gap:12px}
-.mgd1 .cap{font-size:13px;color:#5D635C;font-weight:600}
-.mgd1 .phone{width:340px;background:#14181A;border-radius:44px;padding:12px;box-shadow:0 30px 60px -20px rgba(0,0,0,.4)}
-.mgd1 .screen{background:#ECE8DF;border-radius:34px;height:748px;display:flex;flex-direction:column;overflow:hidden}
-.mgd1 .sbar{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:13px;font-weight:600;flex-shrink:0}
-.mgd1 .topbar{display:flex;align-items:center;gap:8px;padding:4px 16px 8px;flex-shrink:0}
-.mgd1 .tt{font-size:17px;font-weight:700;line-height:1.2}
-.mgd1 .ts{font-size:11px;color:#80827A;margin-top:4px}
-.mgd1 .vbadge{margin-inline-start:auto;font-size:11px;font-weight:700;color:#0A514A;background:#DFEEEB;border:1px solid rgba(14,107,97,.22);padding:4px 12px;border-radius:999px;flex-shrink:0}
-.mgd1 .body{flex:1;overflow-y:auto;padding:4px 16px 24px}
-.mgd1 .bal{background:linear-gradient(150deg,#0E6B61,#0A514A);border-radius:16px;padding:16px;color:#F2EEE5;margin-bottom:12px}
-.mgd1 .bal .hl{font-size:12px;opacity:.9}
-.mgd1 .bal .hn{font-size:30px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
+.mgd1 .cap{font-size:13px;color:#5d635c;font-weight:600}
+.mgd1 .phone{width:340px;background:#14181a;border-radius:44px;padding:11px;box-shadow:0 30px 60px -20px rgba(0,0,0,.4)}
+.mgd1 .screen{background:#ece8df;border-radius:34px;height:748px;display:flex;flex-direction:column;overflow:hidden}
+.mgd1 .sbar{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:14px;font-weight:600;flex-shrink:0}
+.mgd1 .topbar{display:flex;align-items:center;gap:11px;padding:4px 16px 8px;flex-shrink:0}
+.mgd1 .tt{font-size:19px;font-weight:700;line-height:1.2}
+.mgd1 .ts{font-size:11.5px;color:#80827a;margin-top:2px}
+.mgd1 .vbadge{margin-inline-start:auto;font-size:10px;font-weight:700;color:#0a514a;background:#dfeeeb;border:1px solid rgba(14,107,97,.22);padding:4px 9px;border-radius:999px;flex-shrink:0}
+.mgd1 .body{flex:1;overflow-y:auto;padding:2px 16px 18px}
+.mgd1 .bal{background:linear-gradient(150deg,#0f766b,#0a514a);border-radius:16px;padding:16px;color:#eef6f4;margin-bottom:12px}
+.mgd1 .bal .hl{font-size:12.5px;opacity:.9}
+.mgd1 .bal .hn{font-size:29px;font-weight:700;margin-top:3px;font-variant-numeric:tabular-nums}
 .mgd1 .bal .hn span{font-size:13px;font-weight:500;opacity:.85}
-.mgd1 .balrow{display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.18)}
+.mgd1 .balrow{display:flex;gap:10px;margin-top:13px;padding-top:12px;border-top:1px solid rgba(255,255,255,.18)}
 .mgd1 .balrow div{flex:1}
 .mgd1 .balrow .bk{font-size:11px;opacity:.82}
-.mgd1 .balrow .bv{font-size:15px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
-.mgd1 .alert{display:flex;align-items:center;gap:8px;background:#F4EBD7;border:1px solid rgba(138,94,22,.25);border-radius:12px;padding:12px 16px;margin-bottom:12px}
-.mgd1 .alert svg{width:20px;height:20px;fill:none;stroke:#9A6B1F;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
-.mgd1 .alert .at{font-size:13px;font-weight:700;color:#9A6B1F}
-.mgd1 .alert .as{font-size:11px;color:#9A6B1F;opacity:.85;margin-top:4px}
-.mgd1 .alert .ab{margin-inline-start:auto;font-size:11px;font-weight:700;color:#FFFDF8;background:#9A6B1F;border-radius:8px;padding:8px 12px;flex-shrink:0}
-.mgd1 .sec{font-size:15px;font-weight:700;margin:12px 4px 4px}
-.mgd1 .sub{font-size:12px;color:#80827A;margin:0 4px 8px}
-.mgd1 .kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px}
-.mgd1 .kpi{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:12px;padding:12px 16px}
-.mgd1 .kl{font-size:11px;color:#80827A}
-.mgd1 .kv{font-size:17px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
-.mgd1 .kv span{font-size:11px;font-weight:500;color:#80827A}
-.mgd1 .share{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:12px;padding:16px;margin-bottom:4px}
-.mgd1 .shtop{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px}
-.mgd1 .shn{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
-.mgd1 .shl{font-size:11px;color:#80827A}
-.mgd1 .track{height:9px;border-radius:999px;background:#ECE8DF;overflow:hidden;display:flex}
+.mgd1 .balrow .bv{font-size:14.5px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+.mgd1 .alert{display:flex;align-items:center;gap:11px;background:#f4ebd7;border:1px solid rgba(138,94,22,.25);border-radius:14px;padding:12px 13px;margin-bottom:12px}
+.mgd1 .alert svg{width:20px;height:20px;fill:none;stroke:#8a5e16;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.mgd1 .alert .at{font-size:13px;font-weight:700;color:#8a5e16}
+.mgd1 .alert .as{font-size:11px;color:#8a5e16;opacity:.85;margin-top:2px}
+.mgd1 .alert .ab{margin-inline-start:auto;font-size:11.5px;font-weight:700;color:#fffdf8;background:#8a5e16;border-radius:9px;padding:7px 11px;flex-shrink:0}
+.mgd1 .sec{font-size:15px;font-weight:700;margin:15px 2px 3px}
+.mgd1 .sub{font-size:12px;color:#80827a;margin:0 2px 10px}
+.mgd1 .kpis{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:4px}
+.mgd1 .kpi{background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:12px 13px}
+.mgd1 .kl{font-size:11px;color:#80827a}
+.mgd1 .kv{font-size:19px;font-weight:700;margin-top:3px;font-variant-numeric:tabular-nums}
+.mgd1 .kv span{font-size:11.5px;font-weight:500;color:#80827a}
+.mgd1 .share{background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:14px;margin-bottom:4px}
+.mgd1 .shtop{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px}
+.mgd1 .shn{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums}
+.mgd1 .shl{font-size:11.5px;color:#80827a}
+.mgd1 .track{height:9px;border-radius:999px;background:#eceae1;overflow:hidden;display:flex}
 .mgd1 .track i{height:100%;display:block}
-.mgd1 .legend{display:flex;gap:12px;margin-top:8px}
-.mgd1 .lg{display:flex;align-items:center;gap:4px;font-size:11px;color:#5D635C}
-.mgd1 .dot{width:8px;height:8px;border-radius:4px;flex-shrink:0}
-.mgd1 .sess{display:flex;align-items:center;gap:8px;background:#FFFDF8;border:1px solid #E2DDD1;border-radius:12px;padding:12px 12px;margin-bottom:8px}
+.mgd1 .legend{display:flex;gap:14px;margin-top:10px}
+.mgd1 .lg{display:flex;align-items:center;gap:6px;font-size:11.5px;color:#5d635c}
+.mgd1 .dot{width:8px;height:8px;border-radius:3px;flex-shrink:0}
+.mgd1 .sess{display:flex;align-items:center;gap:11px;background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:11px 12px;margin-bottom:8px}
 .mgd1 .tm{width:52px;flex-shrink:0;text-align:center}
-.mgd1 .tm b{display:block;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
-.mgd1 .tm span{font-size:11px;color:#80827A}
+.mgd1 .tm b{display:block;font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
+.mgd1 .tm span{font-size:10px;color:#80827a}
 .mgd1 .sn{flex:1;min-width:0}
-.mgd1 .snm{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mgd1 .ssub{font-size:11px;color:#80827A;margin-top:4px}
-.mgd1 .schip{font-size:11px;font-weight:700;padding:4px 12px;border-radius:999px;flex-shrink:0}
-.mgd1 .sdone{background:#DFEEEB;color:#0E6B61}
-.mgd1 .snext{background:#DFEEEB;color:#0A514A}
-.mgd1 .slater{background:#ECE8DF;color:#80827A}
-.mgd1 .arrow{width:12px;height:12px;fill:none;stroke:#A09A8E;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;margin-inline-start:4px;vertical-align:middle}
-/* ===== Screen-Notifications ===== */
+.mgd1 .snm{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mgd1 .ssub{font-size:11px;color:#80827a;margin-top:2px}
+.mgd1 .schip{font-size:10.5px;font-weight:700;padding:4px 9px;border-radius:999px;flex-shrink:0}
+.mgd1 .sdone{background:#e4f0e9;color:#1a6d4d}
+.mgd1 .snext{background:#dfeeeb;color:#0a514a}
+.mgd1 .slater{background:#eceae1;color:#80827a}
+.mgd1 .arrow{width:12px;height:12px;fill:none;stroke:#b6b1a4;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;margin-inline-start:5px;vertical-align:middle}
 .mgd2 *{box-sizing:border-box}
-.mgd2{margin:0;background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#14181A}
+.mgd2{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
 .mgd2 .num{font-variant-numeric:tabular-nums}
 .mgd2 .mono{font-family:'IBM Plex Mono',monospace}
 .mgd2 svg{display:block;flex-shrink:0}
-.mgd2 .phone{width:340px;background:#14181A;border-radius:44px;padding:12px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
-.mgd2 .screen{background:#ECE8DF;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
-.mgd2 .sbar{display:flex;justify-content:space-between;align-items:center;padding:16px 24px 8px;font-size:13px;font-weight:600}
-.mgd2 .topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 12px}
-.mgd2 .topbtn{width:42px;height:42px;border-radius:12px;background:#FFFDF8;border:1px solid #E2DDD1;display:flex;align-items:center;justify-content:center;color:#3A3F3A}
-.mgd2 .markall{font-size:12px;font-weight:600;color:#0A514A;background:#DFEEEB;border:1px solid rgba(14,107,97,.18);padding:8px 12px;border-radius:999px}
-.mgd2 .body{flex:1;overflow-y:auto;padding:4px 16px 16px;display:flex;flex-direction:column;gap:8px}
-.mgd2 .sec{font-size:13px;font-weight:600;color:#80827A;margin:8px 4px -1px}
-.mgd2 .nrow{display:flex;gap:8px;padding:12px 16px;border-radius:12px;background:#FFFDF8;border:1px solid #ECE8DF}
-.mgd2 .nrow.unread{background:#FFFDF8;border-color:rgba(14,107,97,.22)}
-.mgd2 .nic{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.mgd2 .i-ok{background:#DFEEEB;color:#0E6B61}
-.mgd2 .i-warn{background:#F4EBD7;color:#9A6B1F}
-.mgd2 .i-danger{background:#F0ECE2;color:#9C3322}
-.mgd2 .i-info{background:#DFEEEB;color:#0E6B61}
-.mgd2 .i-brass{background:#F4EBD7;color:#9A6B1F}
-.mgd2 .i-accent{background:#DFEEEB;color:#0A514A}
-.mgd2 .nt{font-size:13px;font-weight:600;line-height:1.25}
-.mgd2 .ns{font-size:12px;color:#80827A;margin-top:4px;line-height:1.35}
-.mgd2 .ntime{font-size:11px;color:#A09A8E;flex-shrink:0;margin-inline-start:4px}
-.mgd2 .udot{width:8px;height:8px;border-radius:50%;background:#0E6B61;flex-shrink:0;margin-top:4px}
-.mgd2 .board{max-width:760px;margin:0 auto;padding:48px 32px 48px}
-.mgd2 .masthead{background:#ECE8DF;border:1px solid #E2DDD1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:48px 48px 48px}
-.mgd2 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:32px}
-.mgd2 .frame{display:flex;flex-direction:column;align-items:center;gap:12px}
-</style>
-</head>
-<body>
-<div class="mgd-top">
-  <div class="mgd-eyebrow">TutoringHQ · Merged reference</div>
-  <h1 class="mgd-h1">Center · Home</h1>
-  <p class="mgd-lede">The first screen after login, and the alert feed behind it.</p>
-  <div class="mgd-toc"><a href="#Merged-Center-Home-1">Center Dashboard Verified</a><a href="#Merged-Center-Home-2">Notifications</a></div>
-</div>
-<div class="mgd-sec" id="Merged-Center-Home-1">
-  <div class="mgd-bar"><span class="mgd-num">01</span><span class="mgd-name">Center Dashboard Verified</span><span class="mgd-src">Screen-Center-Dashboard-Verified.html</span></div>
-</div>
-<div class="mgd1">
-<div class="board">
+.mgd2 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd2 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
+.mgd2 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:13px;font-weight:600}
+.mgd2 .topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 10px}
+.mgd2 .topbtn{width:42px;height:42px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a}
+.mgd2 .markall{font-size:12px;font-weight:600;color:#0a514a;background:#dfeeeb;border:1px solid rgba(14,107,97,.18);padding:8px 11px;border-radius:999px}
+.mgd2 .body{flex:1;overflow-y:auto;padding:4px 16px 16px;display:flex;flex-direction:column;gap:9px}
+.mgd2 .sec{font-size:13px;font-weight:600;color:#80827a;margin:8px 2px -1px}
+.mgd2 .nrow{display:flex;gap:11px;padding:12px 13px;border-radius:14px;background:#fbf8f2;border:1px solid #eae4d8}
+.mgd2 .nrow.unread{background:#fffdf8;border-color:rgba(14,107,97,.22)}
+.mgd2 .nic{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mgd2 .i-ok{background:#e4f0e9;color:#1a6d4d}
+.mgd2 .i-warn{background:#f4ebd7;color:#8a5e16}
+.mgd2 .i-danger{background:#f4e5e2;color:#9c3322}
+.mgd2 .i-info{background:#e3ecf6;color:#2563eb}
+.mgd2 .i-brass{background:#f0e6d2;color:#8a5e16}
+.mgd2 .i-accent{background:#dfeeeb;color:#0a514a}
+.mgd2 .nt{font-size:14px;font-weight:600;line-height:1.25}
+.mgd2 .ns{font-size:12px;color:#80827a;margin-top:2px;line-height:1.35}
+.mgd2 .ntime{font-size:11px;color:#a6a79d;flex-shrink:0;margin-inline-start:6px}
+.mgd2 .udot{width:8px;height:8px;border-radius:50%;background:#0e6b61;flex-shrink:0;margin-top:6px}
+.mgd2 .board{max-width:760px;margin:0 auto;padding:56px 28px 96px}
+.mgd2 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
+.mgd2 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.mgd2 .frame{display:flex;flex-direction:column;align-items:center;gap:14px}
+.mgd3 *{box-sizing:border-box}
+.mgd3{background:#D8D3C6;color-scheme:light}
+.mgd3{margin:0;background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',system-ui,sans-serif;color:#14181A;-webkit-font-smoothing:antialiased}
+.mgd3 .board{max-width:1180px;margin:0 auto;padding:48px 24px 96px}
+.mgd3 .masthead{background:#ECE8DF;border:1px solid #E2DDD1;border-radius:24px;box-shadow:0 4px 8px rgba(28,33,30,.06),0 16px 48px rgba(28,33,30,.10);padding:32px 32px 24px}
+.mgd3 .secbar{display:flex;align-items:baseline;border-top:1px solid rgba(28,33,30,.16);padding-top:16px;margin:48px 0 0}
+.mgd3 .secname{font-size:22px;font-weight:700;letter-spacing:-.01em}
+.mgd3 .secnote{margin:8px 0 0;font-size:15px;line-height:1.65;color:#5D635C;max-width:82ch}
+.mgd3 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:32px}
+.mgd3 .frame{display:flex;flex-direction:column;align-items:center;gap:12px}
+.mgd3 .cap{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5D635C;text-align:center;max-width:340px;line-height:1.55}
+.mgd3 .phone{width:340px;background:#0A514A;border-radius:44px;padding:12px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 32px 48px rgba(28,33,30,.22)}
+.mgd3 .screen{background:#ECE8DF;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative;font-family:'IBM Plex Sans',system-ui,sans-serif}
+.mgd3 .screen.ar{font-family:'IBM Plex Sans Arabic',system-ui,sans-serif}
+.mgd3 .sbar{display:flex;justify-content:space-between;align-items:center;padding:12px 24px 4px;font-size:13px;font-weight:600;flex-shrink:0}
+.mgd3 .topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 8px;flex-shrink:0}
+.mgd3 .topbtn{width:40px;height:40px;border-radius:12px;background:#FFFDF8;border:1px solid #E2DDD1;display:flex;align-items:center;justify-content:center;color:#3A3F3A;flex-shrink:0}
+.mgd3 .topbtn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.mgd3 .ttl{font-size:17px;font-weight:700;line-height:1.2}
+.mgd3 .tsub{font-size:12px;color:#80827A;margin-top:4px}
+.mgd3 .body{flex:1;overflow:hidden;padding:4px 16px 8px;display:flex;flex-direction:column;gap:12px}
+.mgd3 .card{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:12px;padding:16px}
+.mgd3 .row{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:12px}
+.mgd3 .lbl{font-size:12px;color:#80827A}
+.mgd3 .val{font-size:15px;font-weight:600}
+.mgd3 .big{font-size:30px;font-weight:700;letter-spacing:-.02em}
+.mgd3 .mono{font-family:'IBM Plex Mono',monospace}
+.mgd3 .ar .mono{font-family:'IBM Plex Sans Arabic';font-weight:600}
+.mgd3 .btn{display:block;width:100%;border:none;border-radius:12px;padding:16px;font-size:15px;font-weight:700;background:#0E6B61;color:#FFFDF8;text-align:center;font-family:inherit}
+.mgd3 .btn.ghost{background:#FFFDF8;color:#3A3F3A;border:1px solid #E2DDD1}
+.mgd3 .btn.half{padding:16px 8px}
+.mgd3 .pair{display:flex;gap:12px}
+.mgd3 .pair .btn{flex:1}
+.mgd3 .pill{display:inline-block;font-size:11px;font-weight:600;padding:4px 12px;border-radius:999px}
+.mgd3 .p-mint{background:#DFEEEB;color:#0A514A;border:1px solid #BFE3DD}
+.mgd3 .p-sand{background:#F4EBD7;color:#9A6B1F;border:1px solid #E8DCC0}
+.mgd3 .p-dang{background:#F6E4E0;color:#9C3322;border:1px solid #EDD0C9}
+.mgd3 .p-quiet{background:#F2EEE5;color:#80827A;border:1px solid #E2DDD1}
+.mgd3 .note{display:flex;gap:8px;align-items:flex-start;border-radius:12px;padding:12px;font-size:12px;line-height:1.6}
+.mgd3 .n-mint{background:#DFEEEB;color:#0A514A;border:1px solid #BFE3DD}
+.mgd3 .n-sand{background:#F4EBD7;color:#7A5A1C;border:1px solid #E8DCC0}
+.mgd3 .n-dang{background:#F6E4E0;color:#9C3322;border:1px solid #EDD0C9}
+.mgd3 .note svg{width:16px;height:16px;flex-shrink:0;margin-top:1px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.mgd3 .ar .note{line-height:1.75}
+.mgd3 .foot{padding:12px 16px 16px;border-top:1px solid #E2DDD1;flex-shrink:0;background:#ECE8DF}
+.mgd3 .rule{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:16px;padding:24px 24px;margin-top:32px}
+.mgd3 .rule h3{margin:0 0 12px;font-size:15px;font-weight:700}
+.mgd3 .rule ul{margin:0;padding-inline-start:20px}
+.mgd3 .rule li{font-size:15px;line-height:1.7;color:#3A3F3A;margin-bottom:8px}
+.mgd3 .yes{color:#0A514A;font-weight:600}
+.mgd3 .no{color:#9C3322;font-weight:600}
+</style></head><body>
+<div class="mgd-bar"><span class="mgd-num">01</span><span class="mgd-name">Center Dashboard</span><span class="mgd-src">Screen-Center-Dashboard-Verified.html</span></div>
+<div class="mgd1"><div class="board">
   <div class="eyebrow">TutoringHQ · Reference Screen</div>
   <div class="pill0">Center dashboard · Verified · Draft</div>
   <h1 class="mh">Center dashboard, verified</h1>
-  <p class="lead">Money first, because on a verified center the balance is the thing an owner opens the app to see. Unpaid sits directly under it, since that is the only number on the screen they can act on today. The digital share is deliberate: it is the one metric that tells a center whether the switch away from cash is actually happening, and it makes the trend visible without anyone being nagged about it. English and Arabic. Sample data is placeholder.</p>
+  <p class="lead">Money first, because on a verified center the balance is the thing an owner opens the app to see. Unpaid sits directly under it, since that is the only number on the screen they can act on today. The InstaPay share is deliberate: it is the one metric that tells a center whether the switch away from cash is actually happening, and it makes the trend visible without anyone being nagged about it. English and Arabic. Sample data is placeholder.</p>
 
   <div class="phones">
 
@@ -187,7 +186,7 @@ body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10
     <div class="frame">
     <div class="phone"><div class="screen">
       <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
-      <div class="topbar"><div><div class="tt">Nile Prep Academy</div><div class="ts">Sunday 19 July</div></div><span class="vbadge">Verified</span></div>
+      <div class="topbar"><div><div class="tt">Nile Prep Academy</div><div class="ts">Sunday 19 July</div></div></div>
       <div class="body">
         <div class="bal">
           <div class="hl">Available now</div>
@@ -208,7 +207,7 @@ body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10
           <div class="kpi"><div class="kl">Attendance</div><div class="kv">94<span>%</span></div></div>
         </div>
 
-        <div class="sec">Digital share</div>
+        <div class="sec">InstaPay share</div>
         <div class="sub">This week, of everything collected</div>
         <div class="share">
           <div class="shtop"><span class="shn">82%</span><span class="shl">18,600 EGP total</span></div>
@@ -234,7 +233,7 @@ body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10
     <div class="frame">
     <div class="phone"><div class="screen" dir="rtl" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
       <div class="sbar"><span>٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
-      <div class="topbar"><div><div class="tt">أكاديمية النيل</div><div class="ts">الأحد ١٩ يوليو</div></div><span class="vbadge">موثّق</span></div>
+      <div class="topbar"><div><div class="tt">أكاديمية النيل</div><div class="ts">الأحد ١٩ يوليو</div></div></div>
       <div class="body">
         <div class="bal">
           <div class="hl">المتاح الآن</div>
@@ -255,7 +254,7 @@ body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10
           <div class="kpi"><div class="kl">الحضور</div><div class="kv">٩٤<span>٪</span></div></div>
         </div>
 
-        <div class="sec">نسبة التحصيل الرقمي</div>
+        <div class="sec">نسبة التحصيل الإنستاباي</div>
         <div class="sub">هذا الأسبوع، من إجمالي المُحصَّل</div>
         <div class="share">
           <div class="shtop"><span class="shn">٨٢٪</span><span class="shl">١٨٬٦٠٠ ج.م إجمالًا</span></div>
@@ -278,13 +277,9 @@ body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10
     </div>
 
   </div>
-</div>
-</div>
-<div class="mgd-sec" id="Merged-Center-Home-2">
-  <div class="mgd-bar"><span class="mgd-num">02</span><span class="mgd-name">Notifications</span><span class="mgd-src">Screen-Notifications.html</span></div>
-</div>
-<div class="mgd2">
-<div class="board">
+</div></div>
+<div class="mgd-bar"><span class="mgd-num">02</span><span class="mgd-name">Notifications</span><span class="mgd-src">Screen-Notifications.html</span></div>
+<div class="mgd2"><div class="board">
   <div class="masthead">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39)"></div><span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Reference Screen</span><span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#0e6b61;background:#dfeeeb;border:1px solid rgba(14,107,97,.18);padding:5px 11px;border-radius:999px">Lucide icons</span></div>
     <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">Notifications</h1>
@@ -300,12 +295,12 @@ body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10
       <div class="body">
         <div class="sec">Today</div>
         <div class="nrow unread"><div class="nic i-ok"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><div style="flex:1"><div style="display:flex;justify-content:space-between"><span class="nt">Payment received</span><span class="ntime">10m</span></div><div class="ns num">Mariam Hassan paid 350 EGP</div></div><div class="udot"></div></div>
-        <div class="nrow unread"><div class="nic i-warn"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="13" rx="2"/><path d="M2 10h20"/></svg></div><div style="flex:1"><div style="display:flex;justify-content:space-between"><span class="nt">Payment failed</span><span class="ntime">25m</span></div><div class="ns num">Habiba Sameh · card declined, retry sent</div></div><div class="udot"></div></div>
+        <div class="nrow unread"><div class="nic i-warn"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="13" rx="2"/><path d="M2 10h20"/></svg></div><div style="flex:1"><div style="display:flex;justify-content:space-between"><span class="nt">Payment failed</span><span class="ntime">25m</span></div><div class="ns num">Habiba Sameh · InstaPay not received, retry sent</div></div><div class="udot"></div></div>
         <div class="nrow unread"><div class="nic i-warn"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg></div><div style="flex:1"><div style="display:flex;justify-content:space-between"><span class="nt">8 unpaid links</span><span class="ntime">2h</span></div><div class="ns num">1,350 EGP outstanding · oldest 4 days</div></div><div class="udot"></div></div>
-        <div class="nrow"><div class="nic i-ok"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 11l5 5 5-5M4 21h16"/></svg></div><div style="flex:1"><div style="display:flex;justify-content:space-between"><span class="nt">Payout sent</span><span class="ntime">Thu</span></div><div class="ns num">13,509 EGP to CIB ····4821</div></div></div>
-        <div class="nrow unread"><div class="nic i-ok"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></div><div style="flex:1"><div style="display:flex;justify-content:space-between"><span class="nt">Identity verified</span><span class="ntime">5m</span></div><div class="ns">Payouts and fee collection are enabled</div></div><div class="udot"></div></div>
+        <div class="nrow"><div class="nic i-ok"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 11l5 5 5-5M4 21h16"/></svg></div><div style="flex:1"><div style="display:flex;justify-content:space-between"><span class="nt">Receipt confirmed</span><span class="ntime">Thu</span></div><div class="ns num">350 EGP · Mariam Hassan</div></div></div>
+        <div class="nrow unread"><div class="nic i-ok"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></div><div style="flex:1"><div style="display:flex;justify-content:space-between"><span class="nt">Receipt uploaded</span><span class="ntime">5m</span></div><div class="ns">InstaPay collection is on</div></div><div class="udot"></div></div>
         <div class="nrow"><div class="nic i-ok"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><div style="flex:1"><div style="display:flex;justify-content:space-between"><span class="nt">Fee collected · auto</span><span class="ntime">1h</span></div><div class="ns num">Youssef Adel paid 300 EGP automatically</div></div></div>
-        <div class="nrow"><div class="nic i-brass"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6"/><path d="M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/></svg></div><div style="flex:1"><div style="display:flex;justify-content:space-between"><span class="nt">Payout sent</span><span class="ntime">2h</span></div><div class="ns num">1,350 EGP sent to your InstaPay</div></div></div>
+        <div class="nrow"><div class="nic i-brass"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6"/><path d="M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/></svg></div><div style="flex:1"><div style="display:flex;justify-content:space-between"><span class="nt">Receipt confirmed</span><span class="ntime">2h</span></div><div class="ns num">1,350 EGP sent to your InstaPay</div></div></div>
         <div class="nrow unread"><div class="nic i-warn"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></div><div style="flex:1"><div style="display:flex;justify-content:space-between"><span class="nt">Student absent</span><span class="ntime">1h</span></div><div class="ns">Sara Ahmed was marked absent in Physics G10</div></div><div class="udot"></div></div>
         <div class="nrow unread"><div class="nic i-accent"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></div><div style="flex:1"><div style="display:flex;justify-content:space-between"><span class="nt">New student</span><span class="ntime">2h</span></div><div class="ns">Nour Tarek joined Physics G10</div></div><div class="udot"></div></div>
         <div class="nrow"><div class="nic i-danger"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg></div><div style="flex:1"><div style="display:flex;justify-content:space-between"><span class="nt">Fee overdue</span><span class="ntime">3h</span></div><div class="ns num">Youssef Adel is 300 EGP overdue</div></div></div>
@@ -337,6 +332,108 @@ body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10
       </div>
     </div></div></div>
 
+  </div>
+</div></div>
+<div class="mgd-bar"><span class="mgd-num">03</span><span class="mgd-name">Active Balance</span><span class="mgd-src">Screen-Active-Balance.html</span></div>
+<div class="mgd3">
+<div class="board">
+  <div class="masthead">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+      <div style="width:24px;height:24px;border-radius:8px;background:linear-gradient(150deg,#0E6B61,#083F39)"></div>
+      <span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5D635C">TutoringHQ &middot; Balance</span>
+    </div>
+    <h1 style="margin:0 0 12px;font-size:44px;line-height:1.1;font-weight:700;letter-spacing:-.02em">The balance is visible wherever money is</h1>
+    <p style="margin:0;max-width:80ch;font-size:17px;line-height:1.6;color:#5D635C">Referral credit sits on the dashboard and on every page where an invoice is paid. It is applied before anything is charged, so a center with enough credit pays nothing and sees why. Showing it only inside the referral page would mean a center paying an invoice it already had the credit for.</p>
+  </div>
+  <div class="secbar"><span class="secname">On the dashboard, first</span></div>
+  <p class="secnote">Above the day’s numbers, because it is money the account already has. The route to sending credit sits with it rather than buried in a referral page.</p>
+  <div class="phones">
+    <div class="frame">
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• &#9662; &#9646;</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="ttl">Dashboard</div><div class="tsub">Nile Prep Academy</div></div></div>
+      <div class="body">
+        <div class="card" style="background:#DFEEEB;border-color:#BFE3DD"><div style="display:flex;align-items:center;gap:8px"><div style="flex:1"><div class="lbl" style="color:#0A514A">Your balance</div><div class="mono" style="font-size:30px;font-weight:700;color:#0A514A;margin-top:4px">1,840 <span style="font-size:15px;font-weight:600">EGP</span></div></div><span class="pill p-mint">applied to invoices</span></div></div>
+        <div class="pair">
+          <div class="card" style="flex:1;padding:12px"><div class="lbl">Sessions today</div><div class="mono" style="font-size:17px;font-weight:700;margin-top:4px">4</div></div>
+          <div class="card" style="flex:1;padding:12px"><div class="lbl">Students expected</div><div class="mono" style="font-size:17px;font-weight:700;margin-top:4px">63</div></div>
+        </div>
+        <div class="pair">
+          <div class="card" style="flex:1;padding:12px"><div class="lbl">Collected</div><div class="mono" style="font-size:17px;font-weight:700;margin-top:4px">2,340</div></div>
+          <div class="card" style="flex:1;padding:12px"><div class="lbl">Attendance</div><div class="mono" style="font-size:17px;font-weight:700;margin-top:4px">94%</div></div>
+        </div>
+        <div class="note n-mint"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg><span>The balance comes from referrals and is applied automatically to any upcoming invoice. You can send part of it to another center or teacher.</span></div>
+        <div style="flex:1"></div>
+      </div>
+      <div class="foot"><button class="btn ghost">Send credit</button></div>
+    </div></div>
+    <div class="cap">EN &middot; balance above the day</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="rtl" class="screen ar">
+      <div class="sbar"><span>&#1641;:&#1636;&#1633;</span><span style="letter-spacing:2px">&#9646; &#9662; •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="ttl">لوحة التحكم</div><div class="tsub">أكاديمية النيل</div></div></div>
+      <div class="body">
+        <div class="card" style="background:#DFEEEB;border-color:#BFE3DD"><div style="display:flex;align-items:center;gap:8px"><div style="flex:1"><div class="lbl" style="color:#0A514A">رصيدك</div><div class="mono" style="font-size:30px;font-weight:700;color:#0A514A;margin-top:4px">١٬٨٤٠ <span style="font-size:15px;font-weight:600">ج.م</span></div></div><span class="pill p-mint">بيتخصم من الفواتير</span></div></div>
+        <div class="pair">
+          <div class="card" style="flex:1;padding:12px"><div class="lbl">حصص النهارده</div><div class="mono" style="font-size:17px;font-weight:700;margin-top:4px">٤</div></div>
+          <div class="card" style="flex:1;padding:12px"><div class="lbl">طلاب متوقعين</div><div class="mono" style="font-size:17px;font-weight:700;margin-top:4px">٦٣</div></div>
+        </div>
+        <div class="pair">
+          <div class="card" style="flex:1;padding:12px"><div class="lbl">المحصّل</div><div class="mono" style="font-size:17px;font-weight:700;margin-top:4px">٢٬٣٤٠</div></div>
+          <div class="card" style="flex:1;padding:12px"><div class="lbl">الحضور</div><div class="mono" style="font-size:17px;font-weight:700;margin-top:4px">٩٤٪</div></div>
+        </div>
+        <div class="note n-mint"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg><span>الرصيد جاي من الإحالات وبيتخصم أوتوماتيك من أي فاتورة جاية. تقدر تبعت جزء منه لسنتر أو مدرّس تاني.</span></div>
+        <div style="flex:1"></div>
+      </div>
+      <div class="foot"><button class="btn ghost">ابعت رصيد</button></div>
+    </div></div>
+    <div class="cap">AR &middot; الرصيد فوق أرقام اليوم</div>
+    </div>
+  </div>
+  <div class="secbar"><span class="secname">On every paying page</span></div>
+  <p class="secnote">Credit is applied before the total, not offered as an option afterwards. The line shows what it covered and what carries forward, so the arithmetic is visible rather than a balance quietly dropping.</p>
+  <div class="phones">
+    <div class="frame">
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• &#9662; &#9646;</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="ttl">Pay invoice</div><div class="tsub">September 2026</div></div></div>
+      <div class="body">
+        <div class="card" style="padding:12px 16px">
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0ECE2"><span style="font-size:13px;color:#5D635C">Subscription</span><span class="mono" style="font-size:13px;font-weight:600">899.00</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0ECE2"><span style="font-size:13px;color:#5D635C">Service fees · 37 receipts</span><span class="mono" style="font-size:13px;font-weight:600">370.00</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0ECE2"><span style="font-size:13px;color:#5D635C">Processing fee · VAT incl</span><span class="mono" style="font-size:13px;font-weight:600">20.00</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0ECE2"><span style="font-size:13px;font-weight:700">Total</span><span class="mono" style="font-size:13px;font-weight:700">1,289.00</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0ECE2"><span style="font-size:13px;color:#0A514A">Your balance</span><span class="mono" style="font-size:13px;font-weight:600;color:#0A514A">−1,289.00</span></div>
+          <div style="display:flex;justify-content:space-between;padding:12px 0 4px"><span style="font-size:15px;font-weight:700">Due</span><span class="mono" style="font-size:22px;font-weight:700;color:#0A514A">0.00</span></div>
+        </div>
+        <div class="note n-mint"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg><span>Your balance covers this invoice in full. 551 EGP carries into next month.</span></div>
+        <div style="flex:1"></div>
+      </div>
+      <div class="foot"><button class="btn">Pay with balance</button></div>
+    </div></div>
+    <div class="cap">EN &middot; applied before the total, not after</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="rtl" class="screen ar">
+      <div class="sbar"><span>&#1641;:&#1636;&#1633;</span><span style="letter-spacing:2px">&#9646; &#9662; •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="ttl">ادفع الفاتورة</div><div class="tsub">سبتمبر ٢٠٢٦</div></div></div>
+      <div class="body">
+        <div class="card" style="padding:12px 16px">
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0ECE2"><span style="font-size:13px;color:#5D635C">الاشتراك</span><span class="mono" style="font-size:13px;font-weight:600">٨٩٩٫٠٠</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0ECE2"><span style="font-size:13px;color:#5D635C">رسوم الخدمة · ٣٧ إيصال</span><span class="mono" style="font-size:13px;font-weight:600">٣٧٠٫٠٠</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0ECE2"><span style="font-size:13px;color:#5D635C">رسوم المعالجة · شامل الضريبة</span><span class="mono" style="font-size:13px;font-weight:600">٢٠٫٠٠</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0ECE2"><span style="font-size:13px;font-weight:700">الإجمالي</span><span class="mono" style="font-size:13px;font-weight:700">١٬٢٨٩٫٠٠</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0ECE2"><span style="font-size:13px;color:#0A514A">رصيدك</span><span class="mono" style="font-size:13px;font-weight:600;color:#0A514A">−١٬٢٨٩٫٠٠</span></div>
+          <div style="display:flex;justify-content:space-between;padding:12px 0 4px"><span style="font-size:15px;font-weight:700">المستحق</span><span class="mono" style="font-size:22px;font-weight:700;color:#0A514A">٠٫٠٠</span></div>
+        </div>
+        <div class="note n-mint"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg><span>رصيدك بيغطي الفاتورة دي بالكامل. فاضل ٥٥١ ج.م للشهر الجاي.</span></div>
+        <div style="flex:1"></div>
+      </div>
+      <div class="foot"><button class="btn">ادفع بالرصيد</button></div>
+    </div></div>
+    <div class="cap">AR &middot; بيتخصم قبل الإجمالي</div>
+    </div>
   </div>
 </div>
 </div>
