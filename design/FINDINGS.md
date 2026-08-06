@@ -49,12 +49,12 @@ than one centre. Real in code, no violation produced, which is a very different 
 Adsero than the alternative.
 
 **Not remotely forgeable, checked because it would have changed the priority.** This route *is* on
-`PUBLIC_WEBHOOK_PREFIXES` (`proxy.ts:32`), so it is exempt from the Origin check that entry 11
+`PUBLIC_WEBHOOK_PREFIXES` (`proxy.ts:32`), so it is exempt from the Origin check that entry 12
 describes. That exemption is paid for: the route verifies a Meta-signed HMAC and **fails closed at
 all three gates** — missing `WHATSAPP_APP_SECRET` returns 401 at `:411`, missing
 `x-hub-signature-256` returns 401 at `:416`, and a mismatch returns 401 at `:428` after a
 timing-safe compare. So this is reachable only by a real parent tapping the button in a genuine Meta
-delivery. **Entry 1 and entry 11 do not compound**, and either can be fixed alone.
+delivery. **Entry 1 and entry 12 do not compound**, and either can be fixed alone.
 
 This is obligation 3 of the four the platform owns, and it touches obligation 4. Both are now
 recorded in `docs/LEGAL-STATUS.md`.
@@ -107,7 +107,63 @@ long, separately from the question of whether the control was required. Recorded
 
 ---
 
-## 3. `requireSuperAdminRow` does not require a row
+## 3. Erasure strips the student row and leaves the parent's phone in nine other tables
+
+**Obligation 1 of the four the platform owns. Better built than feared, and incomplete.**
+
+Three questions were asked of it.
+
+**Does a self-serve delete path exist?** No. There is a public request form
+(`src/app/api/privacy-request/route.ts`, service-role insert, `status` server-set to `'pending'`)
+and an admin action (`src/app/api/admin/privacy-requests/anonymize/route.ts`). A subject cannot
+erase anything themselves; a human has to act. No SLA, timer or escalation exists in code, so a
+request sits at `pending` until someone looks.
+
+**Does it actually erase, or set a flag?** It genuinely erases. `:89-102` sets `name` to `'[erased]'`
+and nulls `phone`, `parent_phone`, `qr_code`, `qr_data`, `qr_code_data` and `grade_level`, resets
+`parent_phone_verified` and `parent_consent_given`, and marks the row inactive with
+`inactive_reason: 'anonymized'`. `student_notes` rows are deleted outright and
+`student_group_notes.note` is blanked. A de-identified audit row is written. This is not a flag.
+
+**Does it respect the tax retention carve-out?** Yes, deliberately. The comment at `:86` reads
+*"Strip every personal/identifying field; keep the row + financial links."* Keeping the row is what
+preserves referential integrity for invoices, payments and attendance, which is exactly the right
+shape.
+
+**Where it falls down.** The route's own comment claims it strips *every* personal field. It strips
+the `students` row and two notes tables. Verified against the catalog, **at least nine other tables
+still hold that parent's phone number afterwards**: `families.parent_phone`,
+`paid_parents.parent_phone`, `parent_pack_monthly_counts.parent_phone`,
+`pending_enrollments.parent_phone`, `wa_conversations.contact_phone`, `wa_message_queue.to_phone`,
+`wa_onboarding_schedule.to_phone`, `whatsapp_messages.to_phone`, and `whatsapp_usage.parent_phone`
+plus `whatsapp_usage.to_phone`.
+
+**`parent_portal_tokens` is not revoked either.** The route never touches that table, so a live,
+unexpired portal token keyed to the erased student keeps resolving. That is obligation 4's
+revocation capability existing and not being invoked at the one moment it exists for.
+
+**It also handles one student per call.** The body is `{ requestId, studentId }`. A parent with three
+children needs three separate actions and nothing links them, so partial erasure is the default
+outcome rather than an edge case, even though `students.sibling_family_id` exists.
+
+**Nobody has exercised the right.** Live catalog, 6 August 2026: `privacy_requests` holds **0** rows.
+So this is a pre-launch fix, not a disclosure.
+
+**No false statement found in live copy**, which was the specific risk. The only data-rights
+sentence in shipped content (`src/app/[locale]/legal/legalContent.ts:163`) tells the subject to go to
+their centre first and use the platform form if the centre cannot help, which matches the
+processor/controller split. The thirty-day erasure window quoted in older material appears nowhere in
+live copy. It may still be in the Adsero drafts, which are not in this repository and therefore
+cannot be checked here. **Check it at rewrite**, because promising thirty days against a queue with
+no timer is how this becomes a false statement rather than a gap.
+
+*Touches consent and privacy. Source: consent obligations list, obligation 1. Verified 6 August 2026.*
+
+---
+
+---
+
+## 4. `requireSuperAdminRow` does not require a row
 
 **`src/lib/admin-access.ts`.** The function computes
 `adminUser?.role === 'super_admin' || isSuperAdminPhone(sessionPhone)`.
@@ -127,7 +183,7 @@ it entirely off-catalog.
 
 ---
 
-## 4. Every centre is capped at two team members and told it is on Starter
+## 5. Every centre is capped at two team members and told it is on Starter
 
 **`src/app/api/invite-user/route.ts:67`.** The query selects `plan, max_teachers` from `centers`.
 **`centers.max_teachers` does not exist** (catalog: 0). The error is **not destructured**:
@@ -150,7 +206,7 @@ never read.**
 
 ---
 
-## 5. The scanner billing pipeline, five live faults from one vocabulary mismatch
+## 6. The scanner billing pipeline, five live faults from one vocabulary mismatch
 
 The scanner is the core attendance-to-billing path, not an edge screen. One item of the original
 finding was fixed; **five remain live and all five were re-verified**.
@@ -199,7 +255,7 @@ directly.
 
 ---
 
-## 6. The centre all-in rate is computed five ways and three of them are wrong
+## 7. The centre all-in rate is computed five ways and three of them are wrong
 
 `getQuarterlyAllInMonthlyRateFromCenter` (`src/lib/pricing.ts:235`) is the canonical helper and it
 resolves `top_centers` then `early_adopter_price` then `all_in_price`. **It has exactly one external
@@ -224,7 +280,7 @@ an `early_adopter_price`. This becomes real on the first early adopter.
 
 ---
 
-## 7. The early-adopter badge contradicts the number beside it
+## 8. The early-adopter badge contradicts the number beside it
 
 **`src/app/[locale]/(dashboard)/billing/BillingPageClient.tsx:344`** renders the "Early adopter" chip
 from `center.is_early_adopter`, directly beside `displayAmount` computed at `:298-301`, which never
@@ -235,7 +291,7 @@ timing or by data.
 
 ---
 
-## 8. `/api/settings/limits` returns 404 for every centre, always
+## 9. `/api/settings/limits` returns 404 for every centre, always
 
 **`src/app/api/settings/limits/route.ts:18`** selects `max_teachers, max_students, plan`. Neither
 `centers.max_teachers` nor `centers.max_students` exists (catalog: 0 and 0). The select errors,
@@ -246,7 +302,7 @@ endpoint cannot succeed under any conditions.
 
 ---
 
-## 9. Every vendor print PDF for every card order is dead
+## 10. Every vendor print PDF for every card order is dead
 
 **`src/app/api/admin/card-orders/[orderId]/pdf/route.ts:33`** selects `card_style`.
 **`card_orders.card_style` does not exist** (catalog: 0). The select errors and the route returns
@@ -261,7 +317,7 @@ exist. Card orders are parked, which lowers the urgency but not the fact.
 
 ---
 
-## 10. `bosta_shipments` is queried and does not exist
+## 11. `bosta_shipments` is queried and does not exist
 
 **`src/lib/loadCardOrderDetail.ts:72`** runs
 `admin.from('bosta_shipments').select('*').eq('card_order_id', id).maybeSingle()`.
@@ -271,7 +327,7 @@ exist. Card orders are parked, which lowers the urgency but not the fact.
 
 ---
 
-## 11. Four CEO and admin mutation routes have no CSRF check, including a platform kill switch
+## 12. Four CEO and admin mutation routes have no CSRF check, including a platform kill switch
 
 `POST /api/ceo/leads`, `PATCH /api/ceo/actions/[id]`, `PATCH /api/ceo/platform-config` and
 `PATCH /api/admin/centers/[id]` contain **zero** `validateCSRFRequest` calls. Sibling routes have
@@ -297,13 +353,22 @@ same list.
 **Not a trivial add.** The CEO client helper `getAuthJsonHeaders()` never sends `X-CSRF-Token` or
 `X-Session-ID`, so adding server-side validation alone breaks the UI. Both sides land together.
 
+**Do not read "exempt from the Origin check" as "unprotected".** `PUBLIC_WEBHOOK_PREFIXES` exists
+because the callers have no session with us, and every entry on it pays for the exemption with a
+stronger control of its own. `/api/whatsapp/webhook` verifies a Meta-signed HMAC and fails closed on
+a missing secret, a missing signature header and a mismatch, all three returning 401 (`:411`, `:416`,
+`:428`). `/api/webhooks/payout-provider` rejects with 503 while its secret is a placeholder. **The
+danger is not the list, it is adding a route to it without that substitute control**, which is why
+entry 1's cross-tenant write is not forgeable and why the #322 removal must delete the two entries it
+orphans.
+
 *Touches auth and account state. Source: `BUILD-AFTER-REDESIGN.md` S9. Verified 6 August 2026.*
 
 ---
 
 ---
 
-## 12. `center_invites.status` does not exist
+## 13. `center_invites.status` does not exist
 
 Catalog: 0. Any invite flow that filters or transitions on invite status has nothing to read or
 write.
@@ -312,7 +377,7 @@ write.
 
 ---
 
-## 13. `subjects.is_active` does not exist, and neither does any grades table
+## 14. `subjects.is_active` does not exist, and neither does any grades table
 
 Catalog: `public.subjects` carries no `is_active` column, and no grades table exists in `public`. Any
 subject on/off control and the entire grades concept have no backing schema.
@@ -321,7 +386,7 @@ subject on/off control and the entire grades concept have no backing schema.
 
 ---
 
-## 14. `student_groups.teacher_split_pct` and `assign_teacher_to_group` are dead
+## 15. `student_groups.teacher_split_pct` and `assign_teacher_to_group` are dead
 
 The column exists in the catalog and has **zero** references anywhere in `src/`. The RPC
 `assign_teacher_to_group` likewise has **zero** references. Dead schema carrying an implied teacher
@@ -331,7 +396,7 @@ revenue split that nothing computes.
 
 ---
 
-## 15. `student_groups.capacity_cap` is dead
+## 16. `student_groups.capacity_cap` is dead
 
 The column exists in the catalog and has **zero** references anywhere in `src/`.
 
@@ -339,7 +404,7 @@ The column exists in the catalog and has **zero** references anywhere in `src/`.
 
 ---
 
-## 16. `students.payment_status` and `students.fee` are still live and still misleading
+## 17. `students.payment_status` and `students.fee` are still live and still misleading
 
 Both columns remain: `payment_status` is `text NOT NULL DEFAULT 'unpaid'`, `fee` is `numeric
 DEFAULT 0`. Neither is maintained after insert. The authoritative values are computed by
@@ -362,7 +427,7 @@ fix that makes an eighth impossible rather than merely findable.
 
 ---
 
-## 17. A migration filename is not its recorded version, so absence proves nothing
+## 18. A migration filename is not its recorded version, so absence proves nothing
 
 `supabase_migrations.schema_migrations` stamps a version at apply time that **does not match the
 filename**. Verified live:
@@ -385,6 +450,8 @@ parent/child slot pointer to build a second materialisation path."* That comment
 document, so the rule needs no entry here beyond this pointer.
 
 *Source: `BUILD-AFTER-REDESIGN.md` F27. Verified 6 August 2026.*
+
+---
 
 ---
 
@@ -411,8 +478,8 @@ Not yet checked, and therefore not yet claimed either way.
 
 **8 F-codes:** F5b, F6, F8, F14, F28, F29, F32, F38.
 
-F20 produced finding 5, F27 produced finding 17, and S9 was pulled forward out of order to become
-finding 11 because a CSRF gap on a platform kill switch does not queue behind eight F-codes.
+F20 produced finding 6, F27 produced finding 18, and S9 was pulled forward out of order to become
+finding 12 because a CSRF gap on a platform kill switch does not queue behind eight F-codes.
 Finding 1 came out of checking consent obligation 3 while writing up entry 2.
 
 **Entries are ordered by severity, not by when they were found.** The two consent failures lead

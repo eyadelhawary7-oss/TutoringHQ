@@ -73,10 +73,10 @@ therefore uncitable.
 
 | | Obligation | State |
 |---|---|---|
-| 1 | Right-to-erasure self-serve delete | Not verified |
+| 1 | Right-to-erasure self-serve delete | **No self-serve path, and erasure is incomplete.** See below. |
 | 2 | Consent check before parent alert crons | **Broken.** See below. |
 | 3 | Per-center scoping of consent opt-outs | **Broken.** See below. |
-| 4 | Short-lived revokable parent-portal links | `parent_portal_tokens` exists with expiry and revocation, but see item 3 |
+| 4 | Short-lived revokable parent-portal links | Exists, but not revoked on erasure and minted across centres. See items 1 and 3. |
 
 **A consent control existed and did not work.** `students` carries three per-student parent
 notification toggles. All three are writable and are displayed back as set, but only
@@ -111,6 +111,27 @@ tokens are minted across that same boundary.
 **Nobody has been affected yet.** Live catalog, 6 August 2026: **zero** parent phone numbers appear
 at more than one center. Same position as obligation 2, real in code and no violation produced.
 Detail in `design/FINDINGS.md` entry 1.
+
+**Obligation 1: better built than expected, and incomplete.** There is no self-serve delete. A public
+request form files a `privacy_requests` row at `status='pending'`, and an admin then runs
+`api/admin/privacy-requests/anonymize`, which genuinely strips the student's identifying fields
+rather than setting a flag, and deliberately keeps the row so invoices and payments retain their
+links. That is the retention carve-out done correctly.
+
+What it misses is everything outside `students`. Verified against the catalog 6 August 2026: **at
+least nine other tables still hold that parent's phone number afterwards**, including
+`whatsapp_messages`, `wa_conversations`, `families`, `paid_parents` and `pending_enrollments`.
+`parent_portal_tokens` is not revoked either, so a live token keyed to the erased student keeps
+resolving. The route also handles one student per call, so a parent with three children gets partial
+erasure by default.
+
+**Nobody has exercised the right.** `privacy_requests` holds **0** rows. Pre-launch fix, not a
+disclosure. Detail in `design/FINDINGS.md` entry 3.
+
+**One thing to check at rewrite.** No live copy promises a thirty-day erasure window; the only
+shipped data-rights sentence points the subject at their center first. That promise may still sit in
+the Adsero drafts, which are not in this repository. **Promising thirty days against a queue with no
+timer, no SLA and no escalation is how a gap becomes a false statement in a published policy.**
 
 ---
 
