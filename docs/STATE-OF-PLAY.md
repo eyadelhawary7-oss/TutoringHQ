@@ -53,19 +53,36 @@ thing. Both are worth looking for first when something behaves oddly.
 
 ---
 
-## The seven defects gating payouts
+## The payout defects, three of seven still live
 
-Recorded here and nowhere else, since the spec that held them is deleted. Numbers 1 and 2 cost correctness today, not at some future point.
+**Verified against live code on 6 August**, not against the spec that listed them. The original list
+said seven; three have since been fixed and one narrowed.
 
-1. `payout_requests` has no approval path. A request can never leave `pending`.
-2. Credit-withdrawal approval **double-pays on a double-click**. Both requests succeed and both fire the WhatsApp.
-3. `centers.instapay_number` is writable through `/api/db`, missing from `CENTERS_PROTECTED_COLUMNS`.
-4. `nextProcessingQuarterStart('2026-01-05')` returns `2026-04-01`. A January requester waits a quarter.
-5. Credit reservations never expire. Abandoned requests fence credits indefinitely.
-6. No CSRF on the referral payout route.
-7. `/api/billing/withdrawal` and `/api/referrals/payout` enforce different authorization.
+**Still live:**
+
+1. **`payout_requests` has no approval path.** A request can never leave `pending`. The live approval route operates on `withdrawal_requests`, a different table.
+2. **Credit withdrawal double-pays on a double-click.** The credit spend at `admin/withdrawals/[id]:94` runs *before* the status update guarded at `:115`, so two racers both spend.
+5. **Credit reservations never expire.** The only `cancel_reservation_atomic` sweep covers `combined_payment_sessions`, and no cron touches `withdrawal_requests`.
+
+**Fixed, do not rework:**
+
+3. `centers.instapay_number` is now in `CENTERS_PROTECTED_COLUMNS`, with a comment that payout destinations must not go through the proxy.
+4. `nextProcessingQuarterStart` returns the current quarter inside an open window. Its own comment describes the old behaviour in the past tense.
+6. CSRF is validated at `referrals/payout/route.ts:18`.
+
+**Narrowed, not closed:**
+
+7. `billing/withdrawal` is owner-only at `:22`; `referrals/payout` allows owner or delegated staff. Still different, just less so.
 
 Also: the `SUPER_ADMIN_PHONES` path mints a CEO with **no database row and no forensic trail**.
+
+**One collision to watch.** PR #334 is open and adds the `payout_requests` approval path. The #322
+removal deletes `/api/admin/center-payouts/*`, which is the only place `payout_requests` carries
+approval semantics today. If #334 builds there, the two conflict.
+
+**And a prior question.** Defects 1, 2 and 5 all serve credit withdrawal. `NEW-MODEL` says credit
+cannot be withdrawn as cash, and the cash-out question is open with the tax advisor. Fixing an
+approval path for a withdrawal that may not be permitted is work that could be discarded.
 
 ---
 
