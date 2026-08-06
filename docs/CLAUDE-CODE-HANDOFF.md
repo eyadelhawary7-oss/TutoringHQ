@@ -2,7 +2,7 @@
 
 **Rewritten 6 August 2026.** The previous version described a model that no longer exists.
 
-Read `MODEL.md` first. Then this.
+Read `design/NEW-MODEL.md` first. Then this.
 
 ---
 
@@ -130,7 +130,7 @@ moved, say nothing.
 
 ## What is authoritative
 
-`MODEL.md` for what the product is.
+`design/NEW-MODEL.md` for what the product is.
 `SPEC-instapay-fee-collection.md` for fee collection mechanics.
 `MERGED-FILE-MAP.md` for what lives where.
 `TOKEN-SPEC.md` for the design scale.

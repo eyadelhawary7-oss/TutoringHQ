@@ -15,6 +15,7 @@ This folder is the source of truth for what every screen looks like and what log
 | `NEW-FEATURES.md` | Every feature added on 6 August, with its rules and where its screens live. |
 | `MERGED-FILE-MAP.md` | Which screens live in which file. |
 | `TOKEN-SPEC.md` | The design scale. Spacing, type, radii, colour. |
+| `tutoringhq-public-design-system.md` | The public surface: components, copy rules, page patterns. |
 | `SPEC-instapay-fee-collection.md` | Fee collection mechanics. Authoritative on the flow. |
 
 ---

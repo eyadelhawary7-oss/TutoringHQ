@@ -10,7 +10,7 @@ Build `Screen-Public-Auth` and `Screen-Public-Pricing` against this file.
 
 1. **Each language stands alone.** English frames are 100% English with Latin numerals and EGP. Arabic frames are 100% Arabic with Eastern numerals and ج.م. Neither is a translation of the other; the Arabic is written.
 2. **The only Latin on an Arabic frame** is the TutoringHQ wordmark and the language switcher. The only Arabic on an English frame is the switcher label عربي, which is correct because a switcher names its target language in its own script.
-3. **Never show the collection cut** on any public page. Plans and income potential only.
+3. **Never show a percentage cut** on any public page. There is none. Plans and income potential only.
 4. **No role gate.** The root URL shows a page, never a question.
 5. **One animated thing per page**, and it is the session-row stack. Everything else holds still.
 6. **No dashboard screenshots, no angled laptops, no three feature cards with icons.**
@@ -34,11 +34,11 @@ faint        #A09A8E   placeholders, disabled
 accent       #0E6B61   primary buttons, ticks
 accent-deep  #0A514A   text on mint, gradient end
 mint         #DFEEEB   accent backgrounds, confirmed chips
-hero-ground  #083F39   dark gradient end
+ground       #083F39   dark gradient end
 brass        #9A6B1F   kickers, warnings, the cash motif
 sand         #F4EBD7   warning backgrounds
 good         #1A6D4D   paid, success text
-bad          #9C3322   declined, destructive
+danger       #9C3322   declined, destructive
 ```
 
 **Gradients.** Accent panel `linear-gradient(155deg,#0F766B,#083F39)`. Brand mark `linear-gradient(150deg,#0F766B,#083F39)`. Dark footer block is flat `#14181A`.
@@ -151,7 +151,7 @@ Paid rows take `border-color:rgba(14,107,97,.3)` and `background:#F6FAF9`; the a
 
 Used on Join and reusable on Auth and Pricing wherever a center or teacher is named.
 
-`.who` panel → `.wtop` (46px `.wav` avatar, `.wnm` name , `.wrole` beneath) → `.wdiv` hairline → `.glab` uppercase brass label → `.gnm` 19px title → `.gmeta` two-column meta.
+`.who` panel → `.wtop` (46px `.wav` avatar, `.wnm` name, `.wrole` beneath) → `.wdiv` hairline → `.glab` uppercase brass label → `.gnm` 19px title → `.gmeta` two-column meta.
 
 ### Form field
 
@@ -213,7 +213,7 @@ Mint on accent, 11.5px, 1.55 line height. **This exact sentence is required on t
 ## 8. How the design is filed
 
 **25 merged files, 110 screens.** Index in `MERGED-FILE-MAP.md`. Every single screen also survives
-on its own in `_originals/`.
+on its own. The merged files are the only source now.
 
 Each merged file is one standalone page: a title block, a table of contents, then one numbered
 section per screen. Every file opens with a comment block for whoever implements it.

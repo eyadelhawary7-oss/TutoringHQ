@@ -2,7 +2,7 @@
 
 **Written 27 July 2026. This is the source of truth for the token layer.**
 
-The 26 design files were drawn screen by screen over several weeks, and they drifted: 38 font sizes,
+The 25 design files were drawn screen by screen over several weeks, and they drifted: 38 font sizes,
 33 spacing values, 25 radii, 170 colours. That is not a system, it is a pile of literals. This
 collapses them to a scale.
 

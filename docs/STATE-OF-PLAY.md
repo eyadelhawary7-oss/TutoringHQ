@@ -2,7 +2,7 @@
 
 **6 August 2026.** Everything outside the design set that someone picking this up needs to know.
 
-`MODEL.md` says what the product is. This says where it actually stands.
+`design/NEW-MODEL.md` says what the product is. This says where it actually stands.
 
 ---
 
@@ -55,7 +55,7 @@ thing. Both are worth looking for first when something behaves oddly.
 
 ## The seven defects gating payouts
 
-From `PAYOUT-SYSTEM-SPEC.md` §2. Numbers 1 and 2 cost correctness today, not at some future point.
+Recorded here and nowhere else, since the spec that held them is deleted. Numbers 1 and 2 cost correctness today, not at some future point.
 
 1. `payout_requests` has no approval path. A request can never leave `pending`.
 2. Credit-withdrawal approval **double-pays on a double-click**. Both requests succeed and both fire the WhatsApp.
