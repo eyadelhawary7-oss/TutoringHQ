@@ -309,6 +309,72 @@ document, so the rule needs no entry here beyond this pointer.
 
 ---
 
+## 16. Consent granted to one centre is written to every centre that parent touches
+
+**The mirror image of entry 12. That one ignores an opt-out; this one manufactures an opt-in.**
+
+A parent taps the Arabic consent button in a WhatsApp thread. `src/app/api/whatsapp/webhook/route.ts:350`
+then runs:
+
+```ts
+.from('students')
+.select('id, center_id')
+.eq('parent_phone', normalized)
+.eq('parent_consent_given', false)
+```
+
+**No `center_id` filter**, although `centerId` is in scope and used two lines earlier for
+`wa_conversations`. The loop at `:362` sets `parent_consent_given`, `parent_consent_at` and
+`parent_phone_verified` on every row returned, **and inserts a `parent_portal_tokens` row for each**.
+
+A parent with children at two centres who agrees in Centre A's thread has consent recorded at Centre
+B, which never asked. Centre B's send gate (`src/lib/whatsapp/flows/parentNotifications.ts:174`
+filters `parent_consent_given = true`) then opens, so Centre B begins sending consent-gated, billed
+WhatsApp messages on the strength of an agreement given to someone else. Portal tokens cross the same
+boundary.
+
+**Nobody is affected yet.** Live catalog, 6 August 2026: **zero** parent phone numbers appear at more
+than one centre. Real in code, no violation produced, which is a very different conversation with
+Adsero than the alternative.
+
+This is obligation 3 of the four the platform owns, and it touches obligation 4. Both are now
+recorded in `docs/LEGAL-STATUS.md`.
+
+*Touches consent and tenancy. Source: `SURVEY-Verification-Payouts.md` follow-through and the
+consent obligations list. Verified 6 August 2026.*
+
+---
+
+## 17. Four CEO and admin mutation routes have no CSRF check, including a platform kill switch
+
+`POST /api/ceo/leads`, `PATCH /api/ceo/actions/[id]`, `PATCH /api/ceo/platform-config` and
+`PATCH /api/admin/centers/[id]` contain **zero** `validateCSRFRequest` calls. Sibling routes have
+them: `api/admin/centers/route.ts` has 4 and `.../subscription/suspend/route.ts` has 2.
+
+`platform-config` flips `maintenance_mode`, `wa_sending_enabled`, `read_only_mode` and `cron_paused`
+platform-wide. `admin/centers/[id]` handles invoices, blacklisting, plan overrides and cancellations.
+`getAdminContext` falls back to a cookie session at `src/lib/admin-auth.ts:51` when no Bearer token
+is present, which is precisely the situation CSRF protection exists for.
+
+**It is not exploitable today, and the reason matters.** `src/proxy.ts:210` rejects
+POST/PUT/PATCH/DELETE to `/api/*` carrying a disallowed `Origin`, and `:207` rejects the preflight.
+Every browser-reachable cross-site vector against these four sends `Origin`: a cross-site `PATCH` via
+fetch triggers a preflight, and a cross-site form `POST` to the one POST route sends it too. So the
+middleware is currently doing the job the missing call would do.
+
+**The risk is that one control is now load-bearing alone.** `isAllowedCorsOrigin` returns `true` for
+an absent `Origin` (`proxy.ts:61`), by design for server-to-server calls, and `:211` exempts
+`PUBLIC_WEBHOOK_PREFIXES` from the check entirely. **Any route added to that allowlist without its
+own CSRF call is genuinely open**, which is worth holding in mind because the #322 removal edits that
+same list.
+
+**Not a trivial add.** The CEO client helper `getAuthJsonHeaders()` never sends `X-CSRF-Token` or
+`X-Session-ID`, so adding server-side validation alone breaks the UI. Both sides land together.
+
+*Touches auth and account state. Source: `BUILD-AFTER-REDESIGN.md` S9. Verified 6 August 2026.*
+
+---
+
 # Four the ledger called open and verification closed
 
 **Recorded so nobody re-opens them from an old copy of a deleted document.** Each was carried as an
@@ -330,10 +396,16 @@ which is the point: a ledger marker is a claim, not evidence, whichever directio
 
 Not yet checked, and therefore not yet claimed either way.
 
-**8 F-codes:** F5b, F6, F8, F14, F28, F29, F32, F38. Plus **S9**, a CSRF gap on four CEO and admin
-mutation routes found in the same file, which meets the scoping rule and is queued with them.
+**8 F-codes:** F5b, F6, F8, F14, F28, F29, F32, F38.
 
-F20 produced finding 14 and F27 produced finding 15.
+F20 produced finding 14, F27 produced finding 15, and S9 was pulled forward out of order to become
+finding 17 because a CSRF gap on a platform kill switch does not queue behind eight F-codes.
+Finding 16 came out of checking consent obligation 3 while writing up entry 12.
+
+**Check the live data on anything consent-shaped.** Both consent findings are real in code and have
+produced no violation, and establishing that took one query each. A defect that has harmed nobody is
+a different conversation with counsel than one that has, and fixing it before launch means there is
+nothing to disclose at all.
 
 **Five have been worked since this file opened.** F16 yielded finding 13 and F39 yielded finding 12.
 F12, F36 and F37 were **dropped**, and the reason matters: each asserts that a design drew something

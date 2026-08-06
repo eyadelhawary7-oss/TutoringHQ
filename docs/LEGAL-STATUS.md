@@ -65,6 +65,19 @@ licence, a separate sensitive-data permit, and a registered DPO.
 warrant and indemnity clause confirming they obtained explicit written parental consent before
 entering a minor's data. **No current agreement has one.**
 
+## The four consent obligations the platform owns directly
+
+These are not passed to centers under the agreement. The platform builds them, and a center can
+neither see nor fix them. Recorded here because they previously lived only in Eyad's notes and were
+therefore uncitable.
+
+| | Obligation | State |
+|---|---|---|
+| 1 | Right-to-erasure self-serve delete | Not verified |
+| 2 | Consent check before parent alert crons | **Broken.** See below. |
+| 3 | Per-center scoping of consent opt-outs | **Broken.** See below. |
+| 4 | Short-lived revokable parent-portal links | `parent_portal_tokens` exists with expiry and revocation, but see item 3 |
+
 **A consent control existed and did not work.** `students` carries three per-student parent
 notification toggles. All three are writable and are displayed back as set, but only
 `notify_on_scan` is checked before sending. `api/cron/parent-absence-alerts` does not select
@@ -82,6 +95,22 @@ of which **zero** have any of the three flags set to false. Nobody has ever exer
 no message has gone out against one. The defect is real in code and has produced no violation. Fix it
 before launch and there is nothing to disclose; ship it as-is and the first parent to use the toggle
 creates one.
+
+**Obligation 3 is broken in the opposite direction: consent is manufactured, not ignored.** When a
+parent taps the Arabic consent button in a WhatsApp thread, `api/whatsapp/webhook/route.ts:350`
+selects every student row carrying that `parent_phone` **with no `center_id` filter**, although
+`centerId` is in scope and used two lines earlier. The loop at `:362` then sets
+`parent_consent_given`, `parent_consent_at` and `parent_phone_verified` on all of them **and mints a
+`parent_portal_tokens` row for each**.
+
+So a parent with children at two centers who consents in Center A's thread silently grants consent at
+Center B, and Center B's send gate (`parentNotifications.ts:174` filters on
+`parent_consent_given = true`) opens for a parent who never agreed to hear from them. Obligation 4's
+tokens are minted across that same boundary.
+
+**Nobody has been affected yet.** Live catalog, 6 August 2026: **zero** parent phone numbers appear
+at more than one center. Same position as obligation 2, real in code and no violation produced.
+Detail in `design/FINDINGS.md` entry 16.
 
 ---
 
