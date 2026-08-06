@@ -3,262 +3,163 @@
 ================================================================
  TutoringHQ · MERGED DESIGN REFERENCE
  File: Merged-Center-Attendance.html
- Center · Attendance and collection
+ Center · Attendance
 
  CONTENTS (2 screens):
-  01. Center Attendance Verified   <-  Screen-Center-Attendance-Verified.html
-  02. Center Collect ForMe   <-  Screen-Center-Collect-ForMe.html
+  01. Center Attendance   <-  Screen-Center-Attendance-Verified.html
+  02. Attendance Payment Default   <-  Screen-InstaPay-Attendance.html
 
 ----------------------------------------------------------------
- HOW TO READ THIS FILE WHEN IMPLEMENTING IT
-----------------------------------------------------------------
- 1. CSS IS SCOPED. Every rule carries a .mgdN prefix so that
-    several screens can share one page without their styles
-    colliding.
-        in this file:   .mgd4 .pins{ ... }
-        in your code:   .pins{ ... }
-    Strip the .mgdN prefix. It is bookkeeping for this reference
-    file only and must never reach the codebase.
-
- 2. ONE SECTION = ONE SCREEN. Each section bar shows its number,
-    its name, and the original screen file it came from. Use that
-    filename as the screen's identity, not the section number.
-
- 3. FRAMES ARE STATES, NOT PAGES. Each phone inside a section is
-    one state of that screen (empty, filled, error, and so on).
-    The caption under or above each phone names the state.
-
- 4. THE TWO LANGUAGES ARE SEPARATE SCREENS. English and Arabic
-    are never a translation overlay. Arabic frames use Eastern
-    Arabic numerals (0-9 written as Arabic-Indic) and the Arabic
-    currency mark. English frames use Western numerals and EGP.
-    Directional icons such as chevrons flip with the language.
-
- 5. SAMPLE DATA IS PLACEHOLDER. Names, amounts, dates and phone
-    numbers are illustrative. Do not treat them as fixtures or
-    seed data.
-
- 6. THIS IS DESIGN, NOT PRODUCTION CODE. Markup here is built to
-    be read, not shipped. Take the layout, spacing, type scale
-    and colour decisions from it. Do not copy the DOM wholesale.
-
- 7. ANY UI OR BRANDING CHANGE BUMPS SW_VERSION in public/sw.js.
+ 1. CSS IS SCOPED with .mgdN. Strip it; it never reaches code.
+ 2. ONE SECTION = ONE SCREEN.
+ 3. FRAMES ARE STATES, not pages.
+ 4. THE TWO LANGUAGES ARE SEPARATE SCREENS.
+ 5. SAMPLE DATA IS PLACEHOLDER.
+ 6. ANY UI CHANGE BUMPS SW_VERSION in public/sw.js.
 ================================================================
 -->
-
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="color-scheme" content="light">
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Center · Attendance and collection · TutoringHQ</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>Center · Attendance</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 html{background:#D8D3C6;color-scheme:light}
-:root{color-scheme:light}
-
-html,body{margin:0;padding:0}
-body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;-webkit-font-smoothing:antialiased}
-.mgd-top{max-width:1180px;margin:0 auto;padding:48px 24px 8px;color:#14181A}
-.mgd-eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#5D635C;font-weight:600}
-.mgd-h1{font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em;margin:12px 0 8px}
-.mgd-lede{font-size:15px;line-height:1.55;color:#5D635C;max-width:82ch;margin:0}
-.mgd-toc{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 0}
-.mgd-toc a{font-size:12px;font-weight:600;color:#0A514A;background:#DFEEEB;border:1px solid rgba(14,107,97,.18);padding:8px 12px;border-radius:999px;text-decoration:none}
-.mgd-sec{max-width:1180px;margin:0 auto;padding:16px 24px 0}
-.mgd-bar{display:flex;align-items:baseline;gap:12px;border-top:1px solid rgba(28,33,30,.16);padding-top:16px;margin-top:32px}
-.mgd-num{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#9A6B1F;font-weight:500}
-.mgd-name{font-size:22px;font-weight:700;color:#14181A;letter-spacing:-.01em}
-.mgd-src{margin-inline-start:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#80827A}
-/* ===== Screen-Center-Attendance-Verified ===== */
+body{margin:0;background:#D8D3C6}
+.mgd-bar{max-width:1180px;margin:0 auto;padding:24px;display:flex;align-items:baseline;gap:12px;border-bottom:1px solid #E2DDD1;font-family:'IBM Plex Sans',sans-serif}
+.mgd-num{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#9A6B1F}
+.mgd-name{font-size:22px;font-weight:700;color:#14181A}
+.mgd-src{margin-inline-start:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#80827A}
+[class^="mgd"]{content-visibility:auto;contain-intrinsic-size:1px 4000px}
 .mgd1 *{box-sizing:border-box}
-.mgd1{margin:0;background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;color:#14181A;-webkit-font-smoothing:antialiased}
-.mgd1 .board{max-width:1180px;margin:0 auto;padding:48px 24px 48px}
-.mgd1 .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#80827A;font-weight:600}
-.mgd1 .pill0{display:inline-block;margin:8px 0;padding:4px 12px;border-radius:999px;background:#DFEEEB;color:#0A514A;font-size:12px;font-weight:600}
-.mgd1 h1.mh{font-size:30px;margin:4px 0 8px;font-weight:700;letter-spacing:-.01em}
-.mgd1 .board>p.lead{margin:0 0 32px;color:#5D635C;font-size:15px;line-height:1.5;max-width:80ch}
-.mgd1 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center}
+.mgd1{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;color:#1b201d;-webkit-font-smoothing:antialiased}
+.mgd1 .board{max-width:1180px;margin:0 auto;padding:48px 24px 90px}
+.mgd1 .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#80827a;font-weight:600}
+.mgd1 .pill0{display:inline-block;margin:10px 0;padding:4px 12px;border-radius:999px;background:#dfeeeb;color:#0a514a;font-size:12px;font-weight:600}
+.mgd1 h1.mh{font-size:30px;margin:6px 0 8px;font-weight:700;letter-spacing:-.01em}
+.mgd1 .board>p.lead{margin:0 0 34px;color:#5d635c;font-size:16px;line-height:1.5;max-width:80ch}
+.mgd1 .phones{display:flex;gap:34px;flex-wrap:wrap;justify-content:center}
 .mgd1 .frame{display:flex;flex-direction:column;align-items:center;gap:12px}
-.mgd1 .cap{font-size:13px;color:#5D635C;font-weight:600}
-.mgd1 .phone{width:340px;background:#14181A;border-radius:44px;padding:12px;box-shadow:0 30px 60px -20px rgba(0,0,0,.4)}
-.mgd1 .screen{background:#ECE8DF;border-radius:34px;height:748px;display:flex;flex-direction:column;overflow:hidden;position:relative}
-.mgd1 .sbar{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:13px;font-weight:600;flex-shrink:0}
-.mgd1 .topbar{display:flex;align-items:center;gap:8px;padding:4px 16px 8px;flex-shrink:0}
-.mgd1 .topbtn{width:40px;height:40px;border-radius:12px;background:#FFFDF8;border:1px solid #E2DDD1;display:flex;align-items:center;justify-content:center;color:#3A3F3A;flex-shrink:0}
+.mgd1 .cap{font-size:13px;color:#5d635c;font-weight:600}
+.mgd1 .phone{width:340px;background:#14181a;border-radius:44px;padding:11px;box-shadow:0 30px 60px -20px rgba(0,0,0,.4)}
+.mgd1 .screen{background:#ece8df;border-radius:34px;height:748px;display:flex;flex-direction:column;overflow:hidden;position:relative}
+.mgd1 .sbar{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:14px;font-weight:600;flex-shrink:0}
+.mgd1 .topbar{display:flex;align-items:center;gap:11px;padding:4px 16px 8px;flex-shrink:0}
+.mgd1 .topbtn{width:40px;height:40px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a;flex-shrink:0}
 .mgd1 .topbtn svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.mgd1 .tt{font-size:17px;font-weight:700;line-height:1.2}
-.mgd1 .ts{font-size:11px;color:#80827A;margin-top:4px}
-.mgd1 .vbadge{margin-inline-start:auto;font-size:11px;font-weight:700;color:#0A514A;background:#DFEEEB;border:1px solid rgba(14,107,97,.22);padding:4px 12px;border-radius:999px;flex-shrink:0}
-.mgd1 .body{flex:1;overflow-y:auto;padding:4px 16px 16px}
-.mgd1 .sum{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:12px;padding:12px 16px;margin-bottom:8px}
-.mgd1 .sumtop{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px}
+.mgd1 .tt{font-size:16.5px;font-weight:700;line-height:1.2}
+.mgd1 .ts{font-size:11.5px;color:#80827a;margin-top:1px}
+.mgd1 .vbadge{margin-inline-start:auto;font-size:10px;font-weight:700;color:#0a514a;background:#dfeeeb;border:1px solid rgba(14,107,97,.22);padding:4px 9px;border-radius:999px;flex-shrink:0}
+.mgd1 .body{flex:1;overflow-y:auto;padding:2px 16px 16px}
+.mgd1 .sum{background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:11px 13px;margin-bottom:10px}
+.mgd1 .sumtop{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:9px}
 .mgd1 .sumn{font-size:15px;font-weight:700}
-.mgd1 .sumt{font-size:11px;color:#80827A}
-.mgd1 .chips{display:flex;gap:4px;flex-wrap:wrap}
-.mgd1 .ch{font-size:11px;font-weight:700;padding:4px 8px;border-radius:999px}
-.mgd1 .cd{background:#DFEEEB;color:#0A514A}
-.mgd1 .cc{background:#F4EBD7;color:#9A6B1F}
-.mgd1 .cv{background:#DFEEEB;color:#0E6B61}
-.mgd1 .ca{background:#ECE8DF;color:#80827A}
-.mgd1 .selall{display:flex;align-items:center;justify-content:space-between;background:#DFEEEB;border:1px solid rgba(14,107,97,.22);border-radius:12px;padding:12px 16px;margin-bottom:8px}
-.mgd1 .selall .st{font-size:13px;font-weight:700;color:#0A514A}
-.mgd1 .selall .ss{font-size:11px;color:#0A514A;opacity:.8;margin-top:4px}
-.mgd1 .selbtn{font-size:12px;font-weight:700;color:#FFFDF8;background:#0E6B61;border-radius:8px;padding:8px 16px;flex-shrink:0}
-.mgd1 .legend{background:#FFFDF8;border:1px dashed #D8D3C6;border-radius:12px;padding:12px 12px;margin-bottom:8px}
-.mgd1 .lgi{display:flex;align-items:center;gap:8px;font-size:11px;color:#5D635C;padding:4px 0;line-height:1.4}
-.mgd1 .lgi b{font-weight:700;color:#14181A}
-.mgd1 .lgd{width:5px;height:5px;border-radius:50%;background:#0E6B61;flex-shrink:0}
-.mgd1 .row{display:flex;align-items:center;gap:8px;background:#FFFDF8;border:1px solid #E2DDD1;border-radius:12px;padding:12px 12px;margin-bottom:8px}
-.mgd1 .row.off{background:#F2EEE5;border-color:#E2DDD1}
-.mgd1 .tick{width:30px;height:30px;border-radius:8px;background:#0E6B61;color:#FFFDF8;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mgd1 .sumt{font-size:11.5px;color:#80827a}
+.mgd1 .chips{display:flex;gap:6px;flex-wrap:wrap}
+.mgd1 .ch{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:999px}
+.mgd1 .cd{background:#dfeeeb;color:#0a514a}
+.mgd1 .cc{background:#f4ebd7;color:#8a5e16}
+.mgd1 .cv{background:#e3ecf6;color:#274b8a}
+.mgd1 .ca{background:#eceae1;color:#80827a}
+.mgd1 .selall{display:flex;align-items:center;justify-content:space-between;background:#dfeeeb;border:1px solid rgba(14,107,97,.22);border-radius:13px;padding:11px 13px;margin-bottom:10px}
+.mgd1 .selall .st{font-size:13.5px;font-weight:700;color:#0a514a}
+.mgd1 .selall .ss{font-size:11px;color:#0a514a;opacity:.8;margin-top:2px}
+.mgd1 .selbtn{font-size:12px;font-weight:700;color:#fffdf8;background:#0e6b61;border-radius:9px;padding:8px 13px;flex-shrink:0}
+.mgd1 .legend{background:#fffdf8;border:1px dashed #d8d2c4;border-radius:12px;padding:9px 12px;margin-bottom:11px}
+.mgd1 .lgi{display:flex;align-items:center;gap:8px;font-size:11px;color:#5d635c;padding:3px 0;line-height:1.4}
+.mgd1 .lgi b{font-weight:700;color:#1b201d}
+.mgd1 .lgd{width:5px;height:5px;border-radius:50%;background:#0e6b61;flex-shrink:0}
+.mgd1 .row{display:flex;align-items:center;gap:10px;background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:10px 12px;margin-bottom:8px}
+.mgd1 .row.off{background:#f4f1ea;border-color:#e6e2d7}
+.mgd1 .tick{width:30px;height:30px;border-radius:9px;background:#0e6b61;color:#fffdf8;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .mgd1 .tick svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
-.mgd1 .tick.empty{background:#FFFDF8;border:1.5px solid #D8D3C6}
+.mgd1 .tick.empty{background:#fffdf8;border:1.5px solid #d5d0c4}
 .mgd1 .rn{flex:1;min-width:0;padding:4px 0}
-.mgd1 .rnm{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:4px}
-.mgd1 .rnm .arrow{width:13px;height:13px;fill:none;stroke:#A09A8E;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
-.mgd1 .rsub{font-size:11px;color:#80827A;margin-top:4px}
-.mgd1 .row.off .rnm{color:#80827A}
-.mgd1 .state{font-size:11px;font-weight:700;padding:8px 12px;border-radius:999px;flex-shrink:0;display:flex;align-items:center;gap:4px}
+.mgd1 .rnm{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:5px}
+.mgd1 .rnm .arrow{width:13px;height:13px;fill:none;stroke:#b6b1a4;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.mgd1 .rsub{font-size:11px;color:#80827a;margin-top:2px}
+.mgd1 .row.off .rnm{color:#80827a}
+.mgd1 .state{font-size:10.5px;font-weight:700;padding:6px 9px;border-radius:999px;flex-shrink:0;display:flex;align-items:center;gap:4px}
 .mgd1 .state svg{width:10px;height:10px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;opacity:.75}
 .mgd1 .state.sw{border:1px solid currentColor}
 .mgd1 .state.flat{opacity:.9}
-.mgd1 .opt{background:#DFEEEB;border:1px solid #DFEEEB;border-radius:12px;padding:12px 12px;font-size:11px;color:#0E6B61;line-height:1.45;margin:4px 0 4px}
-.mgd1 .footer{padding:12px 16px 24px;border-top:1px solid #E2DDD1;background:#ECE8DF;flex-shrink:0}
-.mgd1 .fnote{text-align:center;font-size:11px;color:#80827A;margin-bottom:8px}
-.mgd1 .btn{display:block;width:100%;border:none;border-radius:12px;padding:16px;font-size:15px;font-weight:700;background:#0E6B61;color:#FFFDF8;text-align:center;font-family:inherit}
-.mgd1 .btn2{display:block;width:100%;background:none;border:none;text-align:center;font-size:13px;color:#5D635C;font-weight:600;padding:12px 0 0;font-family:inherit}
+.mgd1 .opt{background:#e3ecf6;border:1px solid #cdddf3;border-radius:12px;padding:10px 12px;font-size:11.5px;color:#274b8a;line-height:1.45;margin:3px 0 4px}
+.mgd1 .footer{padding:11px 16px 17px;border-top:1px solid #e2ddd1;background:#ece8df;flex-shrink:0}
+.mgd1 .fnote{text-align:center;font-size:11px;color:#80827a;margin-bottom:8px}
+.mgd1 .btn{display:block;width:100%;border:none;border-radius:13px;padding:15px;font-size:15px;font-weight:700;background:#0e6b61;color:#fffdf8;text-align:center;font-family:inherit}
+.mgd1 .btn2{display:block;width:100%;background:none;border:none;text-align:center;font-size:13px;color:#5d635c;font-weight:600;padding:10px 0 0;font-family:inherit}
 .mgd1 .scrim{position:absolute;inset:0;background:rgba(20,24,26,.42)}
-.mgd1 .sheet{position:absolute;inset-inline:0;bottom:0;background:#ECE8DF;border-radius:24px 24px 34px 34px;padding:12px 16px 24px}
-.mgd1 .grab{width:38px;height:4px;border-radius:999px;background:#D8D3C6;margin:0 auto 12px}
-.mgd1 .sh{font-size:17px;font-weight:700;margin:0 4px 4px}
-.mgd1 .shs{font-size:12px;color:#80827A;margin:0 4px 12px;line-height:1.45}
-.mgd1 .card{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:12px;padding:4px 16px;margin-bottom:8px}
-.mgd1 .lr{display:flex;align-items:center;justify-content:space-between;padding:12px 0;font-size:13px;border-bottom:1px solid #F0ECE2}
+.mgd1 .sheet{position:absolute;inset-inline:0;bottom:0;background:#ece8df;border-radius:26px 26px 34px 34px;padding:10px 16px 18px}
+.mgd1 .grab{width:38px;height:4px;border-radius:999px;background:#cfcabd;margin:0 auto 13px}
+.mgd1 .sh{font-size:19px;font-weight:700;margin:0 2px 3px}
+.mgd1 .shs{font-size:12px;color:#80827a;margin:0 2px 13px;line-height:1.45}
+.mgd1 .card{background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:4px 14px;margin-bottom:11px}
+.mgd1 .lr{display:flex;align-items:center;justify-content:space-between;padding:9px 0;font-size:13px;border-bottom:1px solid #f0ece2}
 .mgd1 .lr:last-child{border-bottom:none}
-.mgd1 .lk{color:#5D635C}
+.mgd1 .lk{color:#5d635c}
 .mgd1 .lv{font-weight:600;font-variant-numeric:tabular-nums}
-.mgd1 .lr.big .lk{font-weight:700;color:#14181A;font-size:13px}
-.mgd1 .lr.big .lv{font-size:17px;font-weight:700;color:#0A514A}
-.mgd1 .acts{display:flex;gap:8px;margin-bottom:4px}
-.mgd1 .act{flex:1;text-align:center;background:#FFFDF8;border:1px solid #E2DDD1;border-radius:12px;padding:12px 8px;font-size:12px;font-weight:600;color:#0A514A}
-/* ===== Screen-Center-Collect-ForMe ===== */
+.mgd1 .lr.big .lk{font-weight:700;color:#1b201d;font-size:14px}
+.mgd1 .lr.big .lv{font-size:19px;font-weight:700;color:#0a514a}
+.mgd1 .acts{display:flex;gap:9px;margin-bottom:4px}
+.mgd1 .act{flex:1;text-align:center;background:#fffdf8;border:1px solid #e2ddd1;border-radius:12px;padding:12px 8px;font-size:12.5px;font-weight:600;color:#0a514a}
 .mgd2 *{box-sizing:border-box}
-.mgd2{margin:0;background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;color:#14181A;-webkit-font-smoothing:antialiased}
-.mgd2 .board{max-width:1180px;margin:0 auto;padding:48px 24px 48px}
-.mgd2 .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#80827A;font-weight:600}
-.mgd2 .pill{display:inline-block;margin:8px 0;padding:4px 12px;border-radius:999px;background:#DFEEEB;color:#0A514A;font-size:12px;font-weight:600}
-.mgd2 h1.mh{font-size:30px;margin:4px 0 8px;font-weight:700;letter-spacing:-.01em}
-.mgd2 .board>p.lead{margin:0 0 32px;color:#5D635C;font-size:15px;line-height:1.5;max-width:78ch}
-.mgd2 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center}
+.mgd2{background:#D8D3C6;color-scheme:light}
+.mgd2{margin:0;background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',system-ui,sans-serif;color:#14181A;-webkit-font-smoothing:antialiased}
+.mgd2 .board{max-width:1180px;margin:0 auto;padding:48px 24px 96px}
+.mgd2 .masthead{background:#ECE8DF;border:1px solid #E2DDD1;border-radius:24px;box-shadow:0 4px 8px rgba(28,33,30,.06),0 16px 48px rgba(28,33,30,.10);padding:32px 32px 24px}
+.mgd2 .secbar{display:flex;align-items:baseline;border-top:1px solid rgba(28,33,30,.16);padding-top:16px;margin:48px 0 0}
+.mgd2 .secname{font-size:22px;font-weight:700;letter-spacing:-.01em}
+.mgd2 .secnote{margin:8px 0 0;font-size:15px;line-height:1.65;color:#5D635C;max-width:82ch}
+.mgd2 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:32px}
 .mgd2 .frame{display:flex;flex-direction:column;align-items:center;gap:12px}
-.mgd2 .cap{font-size:13px;color:#5D635C;font-weight:600}
-.mgd2 .phone{width:340px;background:#14181A;border-radius:44px;padding:12px;box-shadow:0 30px 60px -20px rgba(0,0,0,.4)}
-.mgd2 .screen{background:#ECE8DF;border-radius:34px;height:748px;display:flex;flex-direction:column;overflow:hidden}
-.mgd2 .sbar{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:13px;font-weight:600;flex-shrink:0}
-.mgd2 .topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 12px;flex-shrink:0}
-.mgd2 .topbtn{width:42px;height:42px;border-radius:12px;background:#FFFDF8;border:1px solid #E2DDD1;display:flex;align-items:center;justify-content:center;color:#3A3F3A;flex-shrink:0}
-.mgd2 .topbtn svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.mgd2 .tt{font-size:17px;font-weight:700;line-height:1.2}
-.mgd2 .ts{font-size:12px;color:#80827A}
-.mgd2 .body{flex:1;overflow-y:auto;padding:4px 16px 16px}
-.mgd2 /* opt-in */
-.hero{background:linear-gradient(150deg,#0E6B61,#0A514A);border-radius:16px;padding:24px;color:#F2EEE5;margin-bottom:12px}
-.mgd2 .hico{width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;margin-bottom:8px}
-.mgd2 .hico svg{width:23px;height:23px;fill:none;stroke:#F2EEE5;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.mgd2 .hero h2{font-size:22px;margin:0 0 4px;font-weight:700;line-height:1.25}
-.mgd2 .hero p{font-size:13px;margin:0;line-height:1.5;opacity:.9}
-.mgd2 .vlist{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:12px;padding:8px 16px;margin-bottom:12px}
-.mgd2 .vitem{display:flex;align-items:flex-start;gap:8px;padding:12px 0;border-bottom:1px solid #F0ECE2}
-.mgd2 .vitem:last-child{border-bottom:none}
-.mgd2 .vck{width:19px;height:19px;border-radius:50%;background:#DFEEEB;color:#0A514A;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:4px}
-.mgd2 .vck svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
-.mgd2 .vtx{font-size:13px;line-height:1.45}
-.mgd2 .soon{margin-inline-start:4px;display:inline-block;font-size:11px;font-weight:600;color:#9A6B1F;background:#F4EBD7;border:1px solid rgba(138,94,22,.25);padding:4px 8px;border-radius:999px;vertical-align:1px}
-.mgd2 .split{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:12px;padding:16px;margin-bottom:12px}
-.mgd2 .split h3{font-size:15px;font-weight:700;margin:0 0 4px}
-.mgd2 .split .sx{font-size:12px;color:#80827A;margin:0 0 8px;line-height:1.45}
-.mgd2 .led{display:flex;align-items:center;justify-content:space-between;padding:8px 0;font-size:13px;border-bottom:1px solid #F0ECE2}
-.mgd2 .led .lk{color:#5D635C}
-.mgd2 .led .lv{font-weight:600;font-variant-numeric:tabular-nums}
-.mgd2 .led.big{border-bottom:none;padding-top:12px}
-.mgd2 .led.big .lk{font-weight:700;color:#14181A;font-size:13px}
-.mgd2 .led.big .lv{font-size:22px;font-weight:700;color:#0A514A}
-.mgd2 .wht{margin-top:8px;background:#F4EBD7;border:1px solid rgba(138,94,22,.22);border-radius:8px;padding:12px 12px;font-size:11px;color:#9A6B1F;line-height:1.45}
-.mgd2 .pfee{background:#DFEEEB;border:1px solid rgba(14,107,97,.2);border-radius:12px;padding:16px;margin-bottom:12px}
-.mgd2 .pfee .pk{font-size:12px;color:#0A514A;font-weight:600;margin-bottom:4px}
-.mgd2 .pfee .pv{font-size:15px;font-weight:700;color:#0A514A}
-.mgd2 .pfee .pn{font-size:11px;color:#0A514A;opacity:.85;margin-top:4px;line-height:1.45}
-.mgd2 .cash{text-align:center;font-size:12px;color:#80827A;margin-bottom:12px;line-height:1.45}
-.mgd2 .cta{display:flex;align-items:center;justify-content:center;gap:8px;background:#0E6B61;color:#FFFDF8;border-radius:12px;padding:16px;font-size:15px;font-weight:700;margin-bottom:8px}
-.mgd2 .cta svg{width:16px;height:16px;fill:none;stroke:#FFFDF8;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.mgd2 .csub{text-align:center;font-size:11px;color:#80827A;margin-bottom:8px}
-.mgd2 .later{text-align:center;font-size:13px;color:#5D635C;font-weight:600;padding-bottom:4px}
-.mgd2 /* manage */
-.bal{background:linear-gradient(150deg,#0E6B61,#0A514A);border-radius:16px;padding:16px;color:#F2EEE5;margin-bottom:12px}
-.mgd2 .bal .hl{font-size:12px;opacity:.9}
-.mgd2 .bal .hn{font-size:30px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
-.mgd2 .bal .hn span{font-size:13px;font-weight:500;opacity:.85}
-.mgd2 .balrow{display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.18)}
-.mgd2 .balrow div{flex:1}
-.mgd2 .balrow .bk{font-size:11px;opacity:.82}
-.mgd2 .balrow .bv{font-size:15px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
-.mgd2 .sec{font-size:15px;font-weight:700;margin:16px 4px 4px}
-.mgd2 .sub{font-size:12px;color:#80827A;margin:0 4px 8px;line-height:1.45}
-.mgd2 .grp{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#FFFDF8;border:1px solid #E2DDD1;border-radius:12px;padding:12px 16px;margin-bottom:8px}
-.mgd2 .gn{font-size:15px;font-weight:600}
-.mgd2 .gs{font-size:11px;color:#80827A;margin-top:4px}
-.mgd2 .tog{width:44px;height:26px;border-radius:999px;background:#E2DDD1;position:relative;flex-shrink:0}
-.mgd2 .tog i{position:absolute;top:3px;inset-inline-start:3px;width:20px;height:20px;border-radius:50%;background:#FFFDF8;box-shadow:0 1px 3px rgba(0,0,0,.2)}
-.mgd2 .tog.on{background:#0E6B61}
-.mgd2 .tog.on i{inset-inline-start:21px}
-.mgd2 .taxrow{display:flex;align-items:center;gap:8px;background:#FFFDF8;border:1px solid #E2DDD1;border-radius:12px;padding:12px 16px;margin-bottom:8px}
-.mgd2 .txn{flex:1;min-width:0}
-.mgd2 .txl{font-size:13px;font-weight:600}
-.mgd2 .txs{font-size:11px;color:#80827A;margin-top:4px}
-.mgd2 .txv{display:flex;align-items:center;gap:4px;font-size:12px;font-weight:700;color:#0A514A;flex-shrink:0}
-.mgd2 .txv svg{width:12px;height:12px;fill:none;stroke:#A09A8E;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
-.mgd2 .scrim{position:absolute;inset:0;background:rgba(20,24,26,.42)}
-.mgd2 .sheet{position:absolute;inset-inline:0;bottom:0;background:#ECE8DF;border-radius:24px 24px 34px 34px;padding:12px 16px 24px}
-.mgd2 .grab{width:38px;height:4px;border-radius:999px;background:#D8D3C6;margin:0 auto 12px}
-.mgd2 .sh{font-size:17px;font-weight:700;margin:0 4px 4px}
-.mgd2 .shs{font-size:12px;color:#80827A;margin:0 4px 12px;line-height:1.45}
-.mgd2 .optrow{display:flex;align-items:center;justify-content:space-between;background:#FFFDF8;border:1.5px solid #E2DDD1;border-radius:12px;padding:12px 16px;margin-bottom:8px}
-.mgd2 .optrow.on{border-color:#0E6B61;background:#FFFDF8;box-shadow:0 0 0 2px rgba(14,107,97,.1)}
-.mgd2 .on1{font-size:13px;font-weight:600}
-.mgd2 .os{font-size:11px;color:#80827A;margin-top:4px;line-height:1.4}
-.mgd2 .radio{width:20px;height:20px;border-radius:50%;border:1.5px solid #D8D3C6;background:#FFFDF8;flex-shrink:0;position:relative}
-.mgd2 .optrow.on .radio{border-color:#0E6B61}
-.mgd2 .optrow.on .radio::after{content:"";position:absolute;inset:4px;border-radius:50%;background:#0E6B61}
-.mgd2 .field{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:12px;padding:12px 16px;margin-bottom:8px}
-.mgd2 .fl{font-size:11px;color:#80827A;margin-bottom:4px}
-.mgd2 .fv{font-size:15px;font-weight:600;font-family:'IBM Plex Mono',monospace}
-.mgd2 .fv.ph{color:#D8D3C6;font-weight:400}
-.mgd2 .btn2{display:block;width:100%;background:none;border:none;text-align:center;font-size:13px;color:#5D635C;font-weight:600;padding:12px 0 0;font-family:inherit}
-.mgd2 .screen{position:relative}
-.mgd2 .footer{padding:12px 16px 24px;border-top:1px solid #E2DDD1;background:#ECE8DF;flex-shrink:0}
-.mgd2 .fnote{text-align:center;font-size:11px;color:#80827A;margin-bottom:8px}
+.mgd2 .cap{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5D635C;text-align:center;max-width:340px;line-height:1.55}
+.mgd2 .phone{width:340px;background:#0A514A;border-radius:44px;padding:12px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 32px 48px rgba(28,33,30,.22)}
+.mgd2 .screen{background:#ECE8DF;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative;font-family:'IBM Plex Sans',system-ui,sans-serif}
+.mgd2 .screen.ar{font-family:'IBM Plex Sans Arabic',system-ui,sans-serif}
+.mgd2 .sbar{display:flex;justify-content:space-between;align-items:center;padding:12px 24px 4px;font-size:13px;font-weight:600;flex-shrink:0}
+.mgd2 .topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 8px;flex-shrink:0}
+.mgd2 .topbtn{width:40px;height:40px;border-radius:12px;background:#FFFDF8;border:1px solid #E2DDD1;display:flex;align-items:center;justify-content:center;color:#3A3F3A;flex-shrink:0}
+.mgd2 .topbtn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.mgd2 .ttl{font-size:17px;font-weight:700;line-height:1.2}
+.mgd2 .tsub{font-size:12px;color:#80827A;margin-top:4px}
+.mgd2 .body{flex:1;overflow:hidden;padding:4px 16px 8px;display:flex;flex-direction:column;gap:12px}
+.mgd2 .card{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:12px;padding:16px}
+.mgd2 .row{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:12px}
+.mgd2 .lbl{font-size:12px;color:#80827A}
+.mgd2 .val{font-size:15px;font-weight:600}
+.mgd2 .big{font-size:30px;font-weight:700;letter-spacing:-.02em}
+.mgd2 .mono{font-family:'IBM Plex Mono',monospace}
+.mgd2 .ar .mono{font-family:'IBM Plex Sans Arabic';font-weight:600}
 .mgd2 .btn{display:block;width:100%;border:none;border-radius:12px;padding:16px;font-size:15px;font-weight:700;background:#0E6B61;color:#FFFDF8;text-align:center;font-family:inherit}
-.mgd2 .arrow{width:12px;height:12px;fill:none;stroke:#A09A8E;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;margin-inline-start:4px;vertical-align:middle}
-</style>
-</head>
-<body>
-<div class="mgd-top">
-  <div class="mgd-eyebrow">TutoringHQ · Merged reference</div>
-  <h1 class="mgd-h1">Center · Attendance and collection</h1>
-  <p class="mgd-lede">Ticking a student present is what bills them. This is that tap and the opt-in behind it.</p>
-  <div class="mgd-toc"><a href="#Merged-Center-Attendance-1">Center Attendance Verified</a><a href="#Merged-Center-Attendance-2">Center Collect ForMe</a></div>
-</div>
-<div class="mgd-sec" id="Merged-Center-Attendance-1">
-  <div class="mgd-bar"><span class="mgd-num">01</span><span class="mgd-name">Center Attendance Verified</span><span class="mgd-src">Screen-Center-Attendance-Verified.html</span></div>
-</div>
-<div class="mgd1">
-<div class="board">
+.mgd2 .btn.ghost{background:#FFFDF8;color:#3A3F3A;border:1px solid #E2DDD1}
+.mgd2 .btn.half{padding:16px 8px}
+.mgd2 .pair{display:flex;gap:12px}
+.mgd2 .pair .btn{flex:1}
+.mgd2 .pill{display:inline-block;font-size:11px;font-weight:600;padding:4px 12px;border-radius:999px}
+.mgd2 .p-mint{background:#DFEEEB;color:#0A514A;border:1px solid #BFE3DD}
+.mgd2 .p-sand{background:#F4EBD7;color:#9A6B1F;border:1px solid #E8DCC0}
+.mgd2 .p-dang{background:#F6E4E0;color:#9C3322;border:1px solid #EDD0C9}
+.mgd2 .p-quiet{background:#F2EEE5;color:#80827A;border:1px solid #E2DDD1}
+.mgd2 .note{display:flex;gap:8px;align-items:flex-start;border-radius:12px;padding:12px;font-size:12px;line-height:1.6}
+.mgd2 .n-mint{background:#DFEEEB;color:#0A514A;border:1px solid #BFE3DD}
+.mgd2 .n-sand{background:#F4EBD7;color:#7A5A1C;border:1px solid #E8DCC0}
+.mgd2 .n-dang{background:#F6E4E0;color:#9C3322;border:1px solid #EDD0C9}
+.mgd2 .note svg{width:16px;height:16px;flex-shrink:0;margin-top:1px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.mgd2 .ar .note{line-height:1.75}
+.mgd2 .foot{padding:12px 16px 16px;border-top:1px solid #E2DDD1;flex-shrink:0;background:#ECE8DF}
+.mgd2 .rule{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:16px;padding:24px 24px;margin-top:32px}
+.mgd2 .rule h3{margin:0 0 12px;font-size:15px;font-weight:700}
+.mgd2 .rule ul{margin:0;padding-inline-start:20px}
+.mgd2 .rule li{font-size:15px;line-height:1.7;color:#3A3F3A;margin-bottom:8px}
+.mgd2 .yes{color:#0A514A;font-weight:600}
+.mgd2 .no{color:#9C3322;font-weight:600}
+</style></head><body>
+<div class="mgd-bar"><span class="mgd-num">01</span><span class="mgd-name">Center Attendance</span><span class="mgd-src">Screen-Center-Attendance-Verified.html</span></div>
+<div class="mgd1"><div class="board">
   <div class="eyebrow">TutoringHQ · Reference Screen</div>
   <div class="pill0">Center attendance · Verified · Draft</div>
   <h1 class="mh">Center attendance, verified</h1>
-  <p class="lead">Attendance is the billing trigger. Every student is digital by default; cash is not a kind of student but a choice made for one session, so the method chip is a switch that flips back just as easily. Three separate tap targets per row: the box marks present or absent, the chip switches method, and the name opens student details. Students covered by a monthly plan or bundle are never charged twice. English and Arabic. Sample data is placeholder.</p>
+  <p class="lead">Attendance is the billing trigger. Every student is InstaPay by default; cash is not a kind of student but a choice made for one session, so the method chip is a switch that flips back just as easily. Three separate tap targets per row: the box marks present or absent, the chip switches method, and the name opens student details. Students covered by a monthly plan or bundle are never charged twice. English and Arabic. Sample data is placeholder.</p>
 
   <div class="phones">
 
@@ -266,31 +167,31 @@ body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10
     <div class="frame">
     <div class="phone"><div class="screen">
       <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
-      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="tt">Physics · Sun 4PM</div><div class="ts">Aly Shady · Room 2</div></div><span class="vbadge">Verified</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="tt">Physics · Sun 4PM</div><div class="ts">Aly Shady · Room 2</div></div></div>
       <div class="body">
         <div class="sum">
           <div class="sumtop"><span class="sumn">7 of 8 present</span><span class="sumt">150 EGP / session</span></div>
-          <div class="chips"><span class="ch cd">5 digital</span><span class="ch cc">1 cash</span><span class="ch cv">1 covered</span><span class="ch ca">1 absent</span></div>
+          <div class="chips"><span class="ch cd">5 InstaPay</span><span class="ch cc">1 cash</span><span class="ch cv">1 covered</span><span class="ch ca">1 absent</span></div>
         </div>
-        <div class="selall"><div><div class="st">Select all</div><div class="ss">Marks the room present and bills digitally</div></div><div class="selbtn">Select all</div></div>
+        <div class="selall"><div><div class="st">Select all</div><div class="ss">Marks the room present and bills InstaPayly</div></div><div class="selbtn">Select all</div></div>
         <div class="legend">
           <div class="lgi"><span class="lgd"></span>Tap the <b>box</b> for present or absent</div>
-          <div class="lgi"><span class="lgd"></span>Tap the <b>chip</b> to switch digital or cash</div>
+          <div class="lgi"><span class="lgd"></span>Tap the <b>chip</b> to switch InstaPay or cash</div>
           <div class="lgi"><span class="lgd"></span>Tap the <b>name</b> for student details</div>
         </div>
 
-        <div class="row"><div class="tick"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">Mariam Hassan<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub">Link sends on end</div></div><span class="state cd sw"><svg viewBox="0 0 24 24"><path d="M7 16V4M7 4L4 7m3-3l3 3M17 8v12m0 0l3-3m-3 3l-3-3"/></svg>Digital</span></div>
-        <div class="row"><div class="tick"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">Youssef Adel<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub">Link sends on end</div></div><span class="state cd sw"><svg viewBox="0 0 24 24"><path d="M7 16V4M7 4L4 7m3-3l3 3M17 8v12m0 0l3-3m-3 3l-3-3"/></svg>Digital</span></div>
-        <div class="row"><div class="tick"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">Selim Tarek<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub">Link sends on end</div></div><span class="state cd sw"><svg viewBox="0 0 24 24"><path d="M7 16V4M7 4L4 7m3-3l3 3M17 8v12m0 0l3-3m-3 3l-3-3"/></svg>Digital</span></div>
+        <div class="row"><div class="tick"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">Mariam Hassan<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub">Link sends on end</div></div><span class="state cd sw"><svg viewBox="0 0 24 24"><path d="M7 16V4M7 4L4 7m3-3l3 3M17 8v12m0 0l3-3m-3 3l-3-3"/></svg>InstaPay</span></div>
+        <div class="row"><div class="tick"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">Youssef Adel<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub">Link sends on end</div></div><span class="state cd sw"><svg viewBox="0 0 24 24"><path d="M7 16V4M7 4L4 7m3-3l3 3M17 8v12m0 0l3-3m-3 3l-3-3"/></svg>InstaPay</span></div>
+        <div class="row"><div class="tick"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">Selim Tarek<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub">Link sends on end</div></div><span class="state cd sw"><svg viewBox="0 0 24 24"><path d="M7 16V4M7 4L4 7m3-3l3 3M17 8v12m0 0l3-3m-3 3l-3-3"/></svg>InstaPay</span></div>
         <div class="row"><div class="tick"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">Nour Ibrahim<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub">Monthly plan · paid to 31/07</div></div><span class="state cv flat">Covered</span></div>
         <div class="row"><div class="tick"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">Omar Khaled<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub">Switched for this session</div></div><span class="state cc sw"><svg viewBox="0 0 24 24"><path d="M7 16V4M7 4L4 7m3-3l3 3M17 8v12m0 0l3-3m-3 3l-3-3"/></svg>Cash</span></div>
-        <div class="row"><div class="tick"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">Habiba Sameh<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub">Link sends on end</div></div><span class="state cd sw"><svg viewBox="0 0 24 24"><path d="M7 16V4M7 4L4 7m3-3l3 3M17 8v12m0 0l3-3m-3 3l-3-3"/></svg>Digital</span></div>
+        <div class="row"><div class="tick"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">Habiba Sameh<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub">Link sends on end</div></div><span class="state cd sw"><svg viewBox="0 0 24 24"><path d="M7 16V4M7 4L4 7m3-3l3 3M17 8v12m0 0l3-3m-3 3l-3-3"/></svg>InstaPay</span></div>
         <div class="row off"><div class="tick empty"></div><div class="rn"><div class="rnm">Karim Fouad<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub">Not marked · not billed</div></div><span class="state ca flat">Absent</span></div>
-        <div class="row"><div class="tick"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">Farida Mostafa<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub">Link sends on end</div></div><span class="state cd sw"><svg viewBox="0 0 24 24"><path d="M7 16V4M7 4L4 7m3-3l3 3M17 8v12m0 0l3-3m-3 3l-3-3"/></svg>Digital</span></div>
+        <div class="row"><div class="tick"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">Farida Mostafa<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="rsub">Link sends on end</div></div><span class="state cd sw"><svg viewBox="0 0 24 24"><path d="M7 16V4M7 4L4 7m3-3l3 3M17 8v12m0 0l3-3m-3 3l-3-3"/></svg>InstaPay</span></div>
 
         <div class="opt">This group bills per session. Groups on a monthly plan or a bundle bill on their cycle date instead, and attendance here just shows status.</div>
       </div>
-      <div class="footer"><div class="fnote">Digital lands in Pending, processed Thursday</div><button class="btn">End session and bill 5</button><button class="btn2">Cancel session</button></div>
+      <div class="footer"><div class="fnote">InstaPay lands in Pending, recorded immediately</div><button class="btn">End session and bill 5</button><button class="btn2">Cancel session</button></div>
     </div></div>
     <div class="cap">EN · in session</div>
     </div>
@@ -299,11 +200,11 @@ body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10
     <div class="frame">
     <div class="phone"><div class="screen">
       <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
-      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="tt">Physics · Sun 4PM</div><div class="ts">Aly Shady · Room 2</div></div><span class="vbadge">Verified</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="tt">Physics · Sun 4PM</div><div class="ts">Aly Shady · Room 2</div></div></div>
       <div class="body" style="filter:blur(1.5px);opacity:.5">
-        <div class="sum"><div class="sumtop"><span class="sumn">7 of 8 present</span><span class="sumt">150 EGP / session</span></div><div class="chips"><span class="ch cd">5 digital</span><span class="ch cc">1 cash</span><span class="ch cv">1 covered</span><span class="ch ca">1 absent</span></div></div>
-        <div class="row"><div class="tick"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">Mariam Hassan</div></div><span class="state cd">Digital</span></div>
-        <div class="row"><div class="tick"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">Youssef Adel</div></div><span class="state cd">Digital</span></div>
+        <div class="sum"><div class="sumtop"><span class="sumn">7 of 8 present</span><span class="sumt">150 EGP / session</span></div><div class="chips"><span class="ch cd">5 InstaPay</span><span class="ch cc">1 cash</span><span class="ch cv">1 covered</span><span class="ch ca">1 absent</span></div></div>
+        <div class="row"><div class="tick"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">Mariam Hassan</div></div><span class="state cd">InstaPay</span></div>
+        <div class="row"><div class="tick"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">Youssef Adel</div></div><span class="state cd">InstaPay</span></div>
       </div>
       <div class="scrim"></div>
       <div class="sheet">
@@ -311,7 +212,7 @@ body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10
         <div class="sh">Mariam Hassan</div>
         <div class="shs">Physics · Sun 4PM · enrolled 14/02/2026</div>
         <div class="card">
-          <div class="lr"><span class="lk">This session</span><span class="lv">Present · Digital</span></div>
+          <div class="lr"><span class="lk">This session</span><span class="lv">Present · InstaPay</span></div>
           <div class="lr"><span class="lk">Outstanding</span><span class="lv">0 EGP</span></div>
           <div class="lr"><span class="lk">Attendance</span><span class="lv">22 of 24</span></div>
           <div class="lr"><span class="lk">Last paid</span><span class="lv">18/07 · 168.75</span></div>
@@ -330,22 +231,22 @@ body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10
     <div class="frame">
     <div class="phone"><div class="screen">
       <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
-      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="tt">Physics · Sun 4PM</div><div class="ts">Aly Shady · Room 2</div></div><span class="vbadge">Verified</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="tt">Physics · Sun 4PM</div><div class="ts">Aly Shady · Room 2</div></div></div>
       <div class="body" style="filter:blur(1.5px);opacity:.5">
-        <div class="sum"><div class="sumtop"><span class="sumn">7 of 8 present</span><span class="sumt">150 EGP / session</span></div><div class="chips"><span class="ch cd">5 digital</span><span class="ch cc">1 cash</span><span class="ch cv">1 covered</span><span class="ch ca">1 absent</span></div></div>
-        <div class="row"><div class="tick"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">Mariam Hassan</div></div><span class="state cd">Digital</span></div>
-        <div class="row"><div class="tick"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">Youssef Adel</div></div><span class="state cd">Digital</span></div>
+        <div class="sum"><div class="sumtop"><span class="sumn">7 of 8 present</span><span class="sumt">150 EGP / session</span></div><div class="chips"><span class="ch cd">5 InstaPay</span><span class="ch cc">1 cash</span><span class="ch cv">1 covered</span><span class="ch ca">1 absent</span></div></div>
+        <div class="row"><div class="tick"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">Mariam Hassan</div></div><span class="state cd">InstaPay</span></div>
+        <div class="row"><div class="tick"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">Youssef Adel</div></div><span class="state cd">InstaPay</span></div>
       </div>
       <div class="scrim"></div>
       <div class="sheet">
         <div class="grab"></div>
         <div class="sh">End session</div>
-        <div class="shs">Payment links go out on WhatsApp now. Nothing is charged to anyone marked cash, covered or absent.</div>
+        <div class="shs">Invoice links go out on WhatsApp now, each carrying the 10 EGP processing fee. Nothing is invoiced to anyone marked cash, covered or absent.</div>
         <div class="card">
-          <div class="lr"><span class="lk">Billing digitally</span><span class="lv">5 students</span></div>
+          <div class="lr"><span class="lk">Billing by InstaPay</span><span class="lv">5 students</span></div>
           <div class="lr"><span class="lk">Tuition</span><span class="lv">750 EGP</span></div>
-          <div class="lr"><span class="lk">Collection fee (10%)</span><span class="lv">−75</span></div>
-          <div class="lr big"><span class="lk">You receive</span><span class="lv">675 EGP</span></div>
+          <div class="lr"><span class="lk">Processing fee · 5 × 10</span><span class="lv">+50</span></div>
+          <div class="lr big"><span class="lk">Parents are invoiced</span><span class="lv">800 EGP</span></div>
         </div>
         <div class="card">
           <div class="lr"><span class="lk">Cash you collect</span><span class="lv">150 EGP</span></div>
@@ -362,31 +263,31 @@ body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10
     <div class="frame">
     <div class="phone"><div class="screen" dir="rtl" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
       <div class="sbar"><span>٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
-      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="tt">فيزياء · الأحد ٤ م</div><div class="ts">علي شادي · قاعة ٢</div></div><span class="vbadge">موثّق</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="tt">فيزياء · الأحد ٤ م</div><div class="ts">علي شادي · قاعة ٢</div></div></div>
       <div class="body">
         <div class="sum">
           <div class="sumtop"><span class="sumn">٧ من ٨ حاضرون</span><span class="sumt">١٥٠ ج.م / حصة</span></div>
-          <div class="chips"><span class="ch cd">٥ رقمي</span><span class="ch cc">١ نقدًا</span><span class="ch cv">١ مغطّى</span><span class="ch ca">١ غائب</span></div>
+          <div class="chips"><span class="ch cd">٥ إنستاباي</span><span class="ch cc">١ نقدًا</span><span class="ch cv">١ مغطّى</span><span class="ch ca">١ غائب</span></div>
         </div>
-        <div class="selall"><div><div class="st">تحديد الكل</div><div class="ss">يسجّل حضور القاعة ويحصّل رقميًا</div></div><div class="selbtn">تحديد الكل</div></div>
+        <div class="selall"><div><div class="st">تحديد الكل</div><div class="ss">يسجّل حضور القاعة ويحصّل إنستابايًا</div></div><div class="selbtn">تحديد الكل</div></div>
         <div class="legend">
           <div class="lgi"><span class="lgd"></span>اضغط <b>المربّع</b> للحضور أو الغياب</div>
-          <div class="lgi"><span class="lgd"></span>اضغط <b>الوسم</b> للتبديل بين الرقمي والنقد</div>
+          <div class="lgi"><span class="lgd"></span>اضغط <b>الوسم</b> للتبديل بين الإنستاباي والنقد</div>
           <div class="lgi"><span class="lgd"></span>اضغط <b>الاسم</b> لتفاصيل الطالب</div>
         </div>
 
-        <div class="row"><div class="tick"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">مريم حسن<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="rsub">يُرسل الرابط عند الإنهاء</div></div><span class="state cd sw"><svg viewBox="0 0 24 24"><path d="M7 16V4M7 4L4 7m3-3l3 3M17 8v12m0 0l3-3m-3 3l-3-3"/></svg>رقمي</span></div>
-        <div class="row"><div class="tick"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">يوسف عادل<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="rsub">يُرسل الرابط عند الإنهاء</div></div><span class="state cd sw"><svg viewBox="0 0 24 24"><path d="M7 16V4M7 4L4 7m3-3l3 3M17 8v12m0 0l3-3m-3 3l-3-3"/></svg>رقمي</span></div>
-        <div class="row"><div class="tick"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">سليم طارق<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="rsub">يُرسل الرابط عند الإنهاء</div></div><span class="state cd sw"><svg viewBox="0 0 24 24"><path d="M7 16V4M7 4L4 7m3-3l3 3M17 8v12m0 0l3-3m-3 3l-3-3"/></svg>رقمي</span></div>
+        <div class="row"><div class="tick"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">مريم حسن<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="rsub">يُرسل الرابط عند الإنهاء</div></div><span class="state cd sw"><svg viewBox="0 0 24 24"><path d="M7 16V4M7 4L4 7m3-3l3 3M17 8v12m0 0l3-3m-3 3l-3-3"/></svg>إنستاباي</span></div>
+        <div class="row"><div class="tick"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">يوسف عادل<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="rsub">يُرسل الرابط عند الإنهاء</div></div><span class="state cd sw"><svg viewBox="0 0 24 24"><path d="M7 16V4M7 4L4 7m3-3l3 3M17 8v12m0 0l3-3m-3 3l-3-3"/></svg>إنستاباي</span></div>
+        <div class="row"><div class="tick"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">سليم طارق<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="rsub">يُرسل الرابط عند الإنهاء</div></div><span class="state cd sw"><svg viewBox="0 0 24 24"><path d="M7 16V4M7 4L4 7m3-3l3 3M17 8v12m0 0l3-3m-3 3l-3-3"/></svg>إنستاباي</span></div>
         <div class="row"><div class="tick"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">نور إبراهيم<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="rsub">اشتراك شهري · مدفوع حتى ٣١/٠٧</div></div><span class="state cv flat">مغطّى</span></div>
         <div class="row"><div class="tick"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">عمر خالد<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="rsub">مُحوَّل لهذه الحصة</div></div><span class="state cc sw"><svg viewBox="0 0 24 24"><path d="M7 16V4M7 4L4 7m3-3l3 3M17 8v12m0 0l3-3m-3 3l-3-3"/></svg>نقدًا</span></div>
-        <div class="row"><div class="tick"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">حبيبة سامح<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="rsub">يُرسل الرابط عند الإنهاء</div></div><span class="state cd sw"><svg viewBox="0 0 24 24"><path d="M7 16V4M7 4L4 7m3-3l3 3M17 8v12m0 0l3-3m-3 3l-3-3"/></svg>رقمي</span></div>
+        <div class="row"><div class="tick"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">حبيبة سامح<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="rsub">يُرسل الرابط عند الإنهاء</div></div><span class="state cd sw"><svg viewBox="0 0 24 24"><path d="M7 16V4M7 4L4 7m3-3l3 3M17 8v12m0 0l3-3m-3 3l-3-3"/></svg>إنستاباي</span></div>
         <div class="row off"><div class="tick empty"></div><div class="rn"><div class="rnm">كريم فؤاد<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="rsub">غير مسجّل · لا تحصيل</div></div><span class="state ca flat">غائب</span></div>
-        <div class="row"><div class="tick"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">فريدة مصطفى<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="rsub">يُرسل الرابط عند الإنهاء</div></div><span class="state cd sw"><svg viewBox="0 0 24 24"><path d="M7 16V4M7 4L4 7m3-3l3 3M17 8v12m0 0l3-3m-3 3l-3-3"/></svg>رقمي</span></div>
+        <div class="row"><div class="tick"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">فريدة مصطفى<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="rsub">يُرسل الرابط عند الإنهاء</div></div><span class="state cd sw"><svg viewBox="0 0 24 24"><path d="M7 16V4M7 4L4 7m3-3l3 3M17 8v12m0 0l3-3m-3 3l-3-3"/></svg>إنستاباي</span></div>
 
         <div class="opt">هذه المجموعة تُحصَّل بالحصة. المجموعات على اشتراك شهري أو باقة تُحصَّل في تاريخ دورتها، والحضور هنا يعرض الحالة فقط.</div>
       </div>
-      <div class="footer"><div class="fnote">الرقمي يدخل قيد الانتظار، ويُعالَج الخميس</div><button class="btn">إنهاء الحصة وتحصيل ٥</button><button class="btn2">إلغاء الحصة</button></div>
+      <div class="footer"><div class="fnote">الإنستاباي يدخل قيد الانتظار، ويُعالَج الخميس</div><button class="btn">إنهاء الحصة وتحصيل ٥</button><button class="btn2">إلغاء الحصة</button></div>
     </div></div>
     <div class="cap">AR · أثناء الحصة</div>
     </div>
@@ -395,11 +296,11 @@ body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10
     <div class="frame">
     <div class="phone"><div class="screen" dir="rtl" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
       <div class="sbar"><span>٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
-      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="tt">فيزياء · الأحد ٤ م</div><div class="ts">علي شادي · قاعة ٢</div></div><span class="vbadge">موثّق</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="tt">فيزياء · الأحد ٤ م</div><div class="ts">علي شادي · قاعة ٢</div></div></div>
       <div class="body" style="filter:blur(1.5px);opacity:.5">
-        <div class="sum"><div class="sumtop"><span class="sumn">٧ من ٨ حاضرون</span><span class="sumt">١٥٠ ج.م / حصة</span></div><div class="chips"><span class="ch cd">٥ رقمي</span><span class="ch cc">١ نقدًا</span><span class="ch cv">١ مغطّى</span><span class="ch ca">١ غائب</span></div></div>
-        <div class="row"><div class="tick"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">مريم حسن</div></div><span class="state cd">رقمي</span></div>
-        <div class="row"><div class="tick"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">يوسف عادل</div></div><span class="state cd">رقمي</span></div>
+        <div class="sum"><div class="sumtop"><span class="sumn">٧ من ٨ حاضرون</span><span class="sumt">١٥٠ ج.م / حصة</span></div><div class="chips"><span class="ch cd">٥ إنستاباي</span><span class="ch cc">١ نقدًا</span><span class="ch cv">١ مغطّى</span><span class="ch ca">١ غائب</span></div></div>
+        <div class="row"><div class="tick"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">مريم حسن</div></div><span class="state cd">إنستاباي</span></div>
+        <div class="row"><div class="tick"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="rn"><div class="rnm">يوسف عادل</div></div><span class="state cd">إنستاباي</span></div>
       </div>
       <div class="scrim"></div>
       <div class="sheet">
@@ -407,7 +308,7 @@ body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10
         <div class="sh">إنهاء الحصة</div>
         <div class="shs">تُرسل روابط الدفع على واتساب الآن. لا يُحصَّل شيء ممن حُدِّد نقدًا أو مغطّى أو غائبًا.</div>
         <div class="card">
-          <div class="lr"><span class="lk">التحصيل الرقمي</span><span class="lv">٥ طلاب</span></div>
+          <div class="lr"><span class="lk">التحصيل الإنستاباي</span><span class="lv">٥ طلاب</span></div>
           <div class="lr"><span class="lk">المصروفات</span><span class="lv">٧٥٠ ج.م</span></div>
           <div class="lr"><span class="lk">رسم التحصيل (١٠٪)</span><span class="lv">−٧٥</span></div>
           <div class="lr big"><span class="lk">تستلم</span><span class="lv">٦٧٥ ج.م</span></div>
@@ -424,197 +325,145 @@ body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10
     </div>
 
   </div>
-</div>
-</div>
-<div class="mgd-sec" id="Merged-Center-Attendance-2">
-  <div class="mgd-bar"><span class="mgd-num">02</span><span class="mgd-name">Center Collect ForMe</span><span class="mgd-src">Screen-Center-Collect-ForMe.html</span></div>
-</div>
+</div></div>
+<div class="mgd-bar"><span class="mgd-num">02</span><span class="mgd-name">Attendance Payment Default</span><span class="mgd-src">Screen-InstaPay-Attendance.html</span></div>
 <div class="mgd2">
 <div class="board">
-  <div class="eyebrow">TutoringHQ · Reference Screen</div>
-  <div class="pill">Center collect for me · Draft</div>
-  <h1 class="mh">Center collect for me</h1>
-  <p class="lead">Online collection extended to centers. The opt-in states plainly what the center keeps: tuition in, one collection fee out, nothing else deducted. They enter their fee and keep 90% of it; parents see one price plus a small processing fee. Ends in verification. English and Arabic. Sample data is placeholder.</p>
-
+  <div class="masthead">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+      <div style="width:24px;height:24px;border-radius:8px;background:linear-gradient(150deg,#0E6B61,#083F39)"></div>
+      <span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5D635C">TutoringHQ &middot; Attendance</span>
+    </div>
+    <h1 style="margin:0 0 12px;font-size:44px;line-height:1.1;font-weight:700;letter-spacing:-.02em">Everyone is InstaPay unless you say otherwise</h1>
+    <p style="margin:0;max-width:80ch;font-size:17px;line-height:1.6;color:#5D635C">Marking the room present sets every student to InstaPay in one action. Tapping a student switches that one to cash. There is no method picker and no extra screen, because the common case should cost nothing.</p>
+  </div>
+  <div class="secbar"><span class="secname">Default InstaPay, tap for cash</span></div>
+  <p class="secnote">The default is the method that generates an invoice, because that is the one the platform needs to know about. Cash is the exception and it takes one tap. A center with InstaPay switched off in settings sees no pills at all and the screen is a plain checklist.</p>
   <div class="phones">
-
-    <!-- EN · OPT-IN -->
     <div class="frame">
-    <div class="phone"><div class="screen">
-      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
-      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="tt">Collect online</div><div class="ts">Nile Prep Academy</div></div></div>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• &#9662; &#9646;</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="ttl">Attendance</div><div class="tsub">Physics · Sun 4 PM · Room 2</div></div></div>
       <div class="body">
-        <div class="hero">
-          <div class="hico"><svg viewBox="0 0 24 24"><path d="M12 2l7 4v5c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
-          <h2>Let parents pay from home</h2>
-          <p>Verify your center and TutoringHQ invoices each parent, collects the payment, and processes the money to your bank.</p>
-        </div>
-        <div class="vlist">
-          <div class="vitem"><div class="vck"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="vtx">We invoice every parent for you</div></div>
-          <div class="vitem"><div class="vck"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="vtx">Card and mobile wallet<span class="soon">InstaPay soon</span></div></div>
-          <div class="vitem"><div class="vck"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="vtx">Processed to your bank every Thursday</div></div>
-          <div class="vitem"><div class="vck"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="vtx">Official tax receipt issued for you</div></div>
-          <div class="vitem"><div class="vck"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="vtx">Payments reconcile themselves, no cash desk</div></div>
-        </div>
-        <div class="split">
-          <h3>What you keep</h3>
-          <p class="sx">On every 1,000 EGP of tuition collected online.</p>
-          <div class="led"><span class="lk">Tuition collected</span><span class="lv">1,000</span></div>
-          <div class="led"><span class="lk">Collection fee (10%)</span><span class="lv">−100</span></div>
-          <div class="led big"><span class="lk">You receive</span><span class="lv">900 EGP</span></div>
-          <div class="wht">One fee, nothing else deducted. You enter your price and keep 90% of it.</div>
-        </div>
-        <div class="pfee">
-          <div class="pk">What the parent pays</div>
-          <div class="pv">Your fee + 7.5% + 7.5 EGP</div>
-          <div class="pn">Shown to them as one price. Your fee stays exactly as you set it.</div>
-        </div>
-        <div class="cash">Cash taken at reception stays entirely yours.</div>
-        <div class="cta">Verify to switch on<svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
-        <div class="csub">About 2 minutes · commercial registration or National ID · secured by Valify</div>
-        <div class="later">Maybe later</div>
+        <div class="card" style="display:flex;justify-content:space-between;align-items:center"><div><div class="val">7 of 8 present</div><div class="lbl" style="margin-top:4px">150 EGP / session</div></div><span class="pill p-quiet">4 InstaPay</span></div>
+        <div class="row"><div style="flex:1"><div class="val">Mariam Hassan</div></div><span class="pill p-mint">InstaPay</span></div>
+        <div class="row"><div style="flex:1"><div class="val">Youssef Adel</div></div><span class="pill p-mint">InstaPay</span></div>
+        <div class="row"><div style="flex:1"><div class="val">Omar Khaled</div></div><span class="pill p-mint">InstaPay</span></div>
+        <div class="row"><div style="flex:1"><div class="val">Sara Ahmed</div></div><span class="pill p-mint">InstaPay</span></div>
+        <div class="note n-mint"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg><span>Everyone is InstaPay. Tap a student if they paid cash.</span></div>
+        <div style="flex:1"></div>
       </div>
+      <div class="foot"><button class="btn">Finish attendance</button></div>
     </div></div>
-    <div class="cap">EN · opt-in</div>
+    <div class="cap">EN &middot; default, nobody tapped</div>
     </div>
-
-    <!-- EN · MANAGE -->
     <div class="frame">
-    <div class="phone"><div class="screen">
-      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
-      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="tt">Online collection</div><div class="ts">Active · verified</div></div></div>
+    <div class="phone"><div dir="rtl" class="screen ar">
+      <div class="sbar"><span>&#1641;:&#1636;&#1633;</span><span style="letter-spacing:2px">&#9646; &#9662; •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="ttl">الحضور</div><div class="tsub">فيزياء · الأحد ٤ م · قاعة ٢</div></div></div>
       <div class="body">
-        <div class="bal">
-          <div class="hl">Available now</div>
-          <div class="hn">12,480 <span>EGP</span></div>
-          <div class="balrow">
-            <div><div class="bk">Pending</div><div class="bv">8,250 EGP</div></div>
-            <div><div class="bk">Next processed</div><div class="bv">Thursday</div></div>
-          </div>
-        </div>
-        <div class="sec">Groups</div>
-        <div class="sub">Every group collects digitally. To take one payment in cash, switch that student while taking attendance.</div>
-        <div class="grp"><div><div class="gn">Physics · Sun 4PM<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="gs">18 students · 150 EGP per session</div></div></div>
-        <div class="grp"><div><div class="gn">Chemistry · Mon 6PM<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="gs">24 students · 180 EGP per session</div></div></div>
-        <div class="grp"><div><div class="gn">Math HL · Tue 5PM<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="gs">12 students · 1,200 EGP monthly</div></div></div>
-        <div class="grp"><div><div class="gn">Biology · Wed 3PM<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="gs">9 students · bundle of 8</div></div></div>
-        <div class="sec">What parents pay</div>
-        <div class="sub">7.5% + 7.5 EGP on top of your tuition, shown to them before they pay. Your price is untouched.</div>
-        <div class="split" style="margin-bottom:4px">
-          <div class="led"><span class="lk">Your fee</span><span class="lv">1,000</span></div>
-          <div class="led"><span class="lk">Platform markup</span><span class="lv">+82.50</span></div>
-          <div class="led big"><span class="lk">Your price to parents</span><span class="lv">1,082.50</span></div>
-        </div>
-        <div class="sec">Tax status</div>
-        <div class="sub">Decides which document we issue you for the collection fee.</div>
-        <div class="taxrow"><div class="txn"><div class="txl">Your registration</div><div class="txs">Registered · tax card on file</div></div><div class="txv">e-invoice<svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div></div>
+        <div class="card" style="display:flex;justify-content:space-between;align-items:center"><div><div class="val">٧ من ٨ حاضر</div><div class="lbl" style="margin-top:4px">١٥٠ ج.م / حصة</div></div><span class="pill p-quiet">٤ إنستاباي</span></div>
+        <div class="row"><div style="flex:1"><div class="val">مريم حسن</div></div><span class="pill p-mint">إنستاباي</span></div>
+        <div class="row"><div style="flex:1"><div class="val">يوسف عادل</div></div><span class="pill p-mint">إنستاباي</span></div>
+        <div class="row"><div style="flex:1"><div class="val">عمر خالد</div></div><span class="pill p-mint">إنستاباي</span></div>
+        <div class="row"><div style="flex:1"><div class="val">سارة أحمد</div></div><span class="pill p-mint">إنستاباي</span></div>
+        <div class="note n-mint"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg><span>الكل إنستاباي. دوس على الطالب لو دفع كاش.</span></div>
+        <div style="flex:1"></div>
       </div>
-      <div class="footer"><div class="fnote">Processed to CIB ····4821 every Thursday</div><button class="btn">Withdraw 12,480 EGP</button></div>
+      <div class="foot"><button class="btn">خلّص التحضير</button></div>
     </div></div>
-    <div class="cap">EN · after activation</div>
+    <div class="cap">AR &middot; الوضع الافتراضي</div>
     </div>
-
-    <!-- EN · TAX STATUS SHEET -->
     <div class="frame">
-    <div class="phone"><div class="screen">
-      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
-      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="tt">Online collection</div><div class="ts">Active · verified</div></div></div>
-      <div class="body" style="filter:blur(1.5px);opacity:.5">
-        <div class="sec">Tax status</div>
-        <div class="taxrow"><div class="txn"><div class="txl">Your registration</div><div class="txs">Registered</div></div><div class="txv">e-invoice</div></div>
-      </div>
-      <div class="scrim"></div>
-      <div class="sheet">
-        <div class="grab"></div>
-        <div class="sh">Tax status</div>
-        <div class="shs">This only affects the document we issue you for our collection fee. It does not change what you are charged.</div>
-        <div class="optrow on"><div><div class="on1">Registered</div><div class="os">You have a tax card. We issue you an e-invoice.</div></div><div class="radio"></div></div>
-        <div class="optrow"><div><div class="on1">Not registered</div><div class="os">No tax card. We issue you an e-receipt.</div></div><div class="radio"></div></div>
-        <div class="field"><div class="fl">Tax card number</div><div class="fv" dir="ltr">123-456-789</div></div>
-        <div class="wht">You can change this at any time. If you register later, add your tax card here and we switch you to e-invoices from the next document.</div>
-        <button class="btn" style="margin-top:11px">Save</button>
-        <button class="btn2">Cancel</button>
-      </div>
-    </div></div>
-    <div class="cap">EN · registered or not</div>
-    </div>
-
-    <!-- AR · OPT-IN -->
-    <div class="frame">
-    <div class="phone"><div class="screen" dir="rtl" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
-      <div class="sbar"><span>٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
-      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="tt">التحصيل أونلاين</div><div class="ts">أكاديمية النيل</div></div></div>
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• &#9662; &#9646;</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="ttl">Attendance</div><div class="tsub">Physics · Sun 4 PM · Room 2</div></div></div>
       <div class="body">
-        <div class="hero">
-          <div class="hico"><svg viewBox="0 0 24 24"><path d="M12 2l7 4v5c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
-          <h2>دع أولياء الأمور يدفعون من المنزل</h2>
-          <p>وثّق سنترك و TutoringHQ يرسل الفاتورة لكل ولي أمر، ويحصّل الدفعة، ويحوّل الأموال إلى بنكك.</p>
-        </div>
-        <div class="vlist">
-          <div class="vitem"><div class="vck"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="vtx">نرسل الفاتورة لكل ولي أمر عنك</div></div>
-          <div class="vitem"><div class="vck"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="vtx">بالبطاقة والمحفظة<span class="soon">إنستاباي قريبًا</span></div></div>
-          <div class="vitem"><div class="vck"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="vtx">تُعالَج إلى بنكك كل خميس</div></div>
-          <div class="vitem"><div class="vck"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="vtx">نُصدر الإيصال الضريبي الرسمي عنك</div></div>
-          <div class="vitem"><div class="vck"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div><div class="vtx">المدفوعات تُطابَق تلقائيًا، بلا خزينة</div></div>
-        </div>
-        <div class="split">
-          <h3>ما الذي تحصل عليه</h3>
-          <p class="sx">على كل ١٬٠٠٠ ج.م مصروفات تُحصَّل أونلاين.</p>
-          <div class="led"><span class="lk">المصروفات المُحصّلة</span><span class="lv">١٬٠٠٠</span></div>
-          <div class="led"><span class="lk">رسم التحصيل (١٠٪)</span><span class="lv">−١٠٠</span></div>
-          <div class="led big"><span class="lk">تستلم</span><span class="lv">٩٠٠ ج.م</span></div>
-          <div class="wht">رسم واحد، ولا يُخصم شيء غيره. أنت تحدّد سعرك وتحتفظ بـ ٩٠٪ منه.</div>
-        </div>
-        <div class="pfee">
-          <div class="pk">ما يدفعه ولي الأمر</div>
-          <div class="pv">سعرك + ٧٫٥٪ + ٧٫٥ ج.م</div>
-          <div class="pn">يظهر له كسعر واحد. سعرك يبقى كما حدّدته تمامًا.</div>
-        </div>
-        <div class="cash">النقد الذي تستلمه في الاستقبال يبقى لك بالكامل.</div>
-        <div class="cta">وثّق للتفعيل<svg viewBox="0 0 24 24" style="transform:scaleX(-1)"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
-        <div class="csub">نحو دقيقتين · السجل التجاري أو الرقم القومي · مؤمّن عبر Valify</div>
-        <div class="later">لاحقًا ربما</div>
+        <div class="card" style="display:flex;justify-content:space-between;align-items:center"><div><div class="val">7 of 8 present</div><div class="lbl" style="margin-top:4px">150 EGP / session</div></div><span class="pill p-quiet">3 InstaPay · 1 cash</span></div>
+        <div class="row"><div style="flex:1"><div class="val">Mariam Hassan</div></div><span class="pill p-mint">InstaPay</span></div>
+        <div class="row"><div style="flex:1"><div class="val">Youssef Adel</div></div><span class="pill p-mint">InstaPay</span></div>
+        <div class="row"><div style="flex:1"><div class="val">Omar Khaled</div></div><span class="pill p-sand">Cash</span></div>
+        <div class="row"><div style="flex:1"><div class="val">Sara Ahmed</div></div><span class="pill p-mint">InstaPay</span></div>
+        <div class="note n-mint"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg><span>Everyone is InstaPay. Tap a student if they paid cash.</span></div>
+        <div style="flex:1"></div>
       </div>
+      <div class="foot"><button class="btn">Finish attendance</button></div>
     </div></div>
-    <div class="cap">AR · التفعيل</div>
+    <div class="cap">EN &middot; one student switched to cash</div>
     </div>
-
-    <!-- AR · MANAGE -->
     <div class="frame">
-    <div class="phone"><div class="screen" dir="rtl" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
-      <div class="sbar"><span>٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
-      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="tt">التحصيل أونلاين</div><div class="ts">مُفعّل · موثّق</div></div></div>
+    <div class="phone"><div dir="rtl" class="screen ar">
+      <div class="sbar"><span>&#1641;:&#1636;&#1633;</span><span style="letter-spacing:2px">&#9646; &#9662; •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="ttl">الحضور</div><div class="tsub">فيزياء · الأحد ٤ م · قاعة ٢</div></div></div>
       <div class="body">
-        <div class="bal">
-          <div class="hl">المتاح الآن</div>
-          <div class="hn">١٢٬٤٨٠ <span>ج.م</span></div>
-          <div class="balrow">
-            <div><div class="bk">قيد الانتظار</div><div class="bv">٨٬٢٥٠ ج.م</div></div>
-            <div><div class="bk">المعالجة القادمة</div><div class="bv">الخميس</div></div>
-          </div>
-        </div>
-        <div class="sec">المجموعات</div>
-        <div class="sub">كل المجموعات تُحصّل رقميًا. لتحصيل دفعة نقدًا، حوّل الطالب أثناء تسجيل الحضور.</div>
-        <div class="grp"><div><div class="gn">فيزياء · الأحد ٤ م<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="gs">١٨ طالبًا · ١٥٠ ج.م للحصة</div></div></div>
-        <div class="grp"><div><div class="gn">كيمياء · الاثنين ٦ م<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="gs">٢٤ طالبًا · ١٨٠ ج.م للحصة</div></div></div>
-        <div class="grp"><div><div class="gn">رياضيات HL · الثلاثاء ٥ م<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="gs">١٢ طالبًا · ١٬٢٠٠ ج.م شهريًا</div></div></div>
-        <div class="grp"><div><div class="gn">أحياء · الأربعاء ٣ م<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="gs">٩ طلاب · باقة من ٨</div></div></div>
-        <div class="sec">ما يدفعه أولياء الأمور</div>
-        <div class="sub">٧٫٥٪ + ٧٫٥ ج.م فوق مصروفاتك، تظهر لهم قبل الدفع. سعرك لا يتغيّر.</div>
-        <div class="split" style="margin-bottom:4px">
-          <div class="led"><span class="lk">سعرك</span><span class="lv">١٬٠٠٠</span></div>
-          <div class="led"><span class="lk">هامش المنصة</span><span class="lv">+٨٢٫٥٠</span></div>
-          <div class="led big"><span class="lk">سعرك لولي الأمر</span><span class="lv">١٬٠٨٢٫٥٠</span></div>
-        </div>
-        <div class="sec">الحالة الضريبية</div>
-        <div class="sub">تحدّد المستند الذي نُصدره لك عن رسم التحصيل.</div>
-        <div class="taxrow"><div class="txn"><div class="txl">تسجيلك</div><div class="txs">مسجّل · البطاقة الضريبية محفوظة</div></div><div class="txv">فاتورة إلكترونية<svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div></div>
+        <div class="card" style="display:flex;justify-content:space-between;align-items:center"><div><div class="val">٧ من ٨ حاضر</div><div class="lbl" style="margin-top:4px">١٥٠ ج.م / حصة</div></div><span class="pill p-quiet">٣ إنستاباي · ١ كاش</span></div>
+        <div class="row"><div style="flex:1"><div class="val">مريم حسن</div></div><span class="pill p-mint">إنستاباي</span></div>
+        <div class="row"><div style="flex:1"><div class="val">يوسف عادل</div></div><span class="pill p-mint">إنستاباي</span></div>
+        <div class="row"><div style="flex:1"><div class="val">عمر خالد</div></div><span class="pill p-sand">كاش</span></div>
+        <div class="row"><div style="flex:1"><div class="val">سارة أحمد</div></div><span class="pill p-mint">إنستاباي</span></div>
+        <div class="note n-mint"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg><span>الكل إنستاباي. دوس على الطالب لو دفع كاش.</span></div>
+        <div style="flex:1"></div>
       </div>
-      <div class="footer"><div class="fnote">تُعالَج إلى CIB ····٤٨٢١ كل خميس</div><button class="btn">سحب ١٢٬٤٨٠ ج.م</button></div>
+      <div class="foot"><button class="btn">خلّص التحضير</button></div>
     </div></div>
-    <div class="cap">AR · بعد التفعيل</div>
+    <div class="cap">AR &middot; طالب واحد اتحوّل كاش</div>
     </div>
-
+  </div>
+  <div class="secbar"><span class="secname">After the session, the switch only runs one way</span></div>
+  <p class="secnote">Cash can still become InstaPay, because no fee has been charged yet and the parent simply gets an invoice. InstaPay cannot become cash, because the parent has already been invoiced for the 10 EGP processing fee and paid it. Reversing would let a center pocket a fee the parent funded. The screen says why rather than greying a button silently, or staff read the block as a bug.</p>
+  <div class="phones">
+    <div class="frame">
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• &#9662; &#9646;</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="ttl">After the session</div><div class="tsub">Physics · Sun 4 PM</div></div></div>
+      <div class="body">
+        <div class="card" style="display:flex;align-items:center;gap:12px"><div style="flex:1"><div class="val">Omar Khaled</div><div class="lbl" style="margin-top:4px">Recorded as cash</div></div><span class="pill p-sand">Cash</span></div>
+        <div class="note n-mint"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg><span>Cash can still be changed to InstaPay. The parent gets an invoice carrying the 10 EGP processing fee.</span></div>
+        <div style="flex:1"></div>
+      </div>
+      <div class="foot"><button class="btn">Change to InstaPay</button></div>
+    </div></div>
+    <div class="cap">EN &middot; cash, still convertible</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="rtl" class="screen ar">
+      <div class="sbar"><span>&#1641;:&#1636;&#1633;</span><span style="letter-spacing:2px">&#9646; &#9662; •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="ttl">بعد الحصة</div><div class="tsub">فيزياء · الأحد ٤ م</div></div></div>
+      <div class="body">
+        <div class="card" style="display:flex;align-items:center;gap:12px"><div style="flex:1"><div class="val">عمر خالد</div><div class="lbl" style="margin-top:4px">مسجّل كاش</div></div><span class="pill p-sand">كاش</span></div>
+        <div class="note n-mint"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg><span>الكاش ينفع يتحوّل لإنستاباي. هيتبعت لولي الأمر فاتورة عليها ١٠ ج.م رسوم معالجة.</span></div>
+        <div style="flex:1"></div>
+      </div>
+      <div class="foot"><button class="btn">حوّله لإنستاباي</button></div>
+    </div></div>
+    <div class="cap">AR &middot; كاش، لسه ينفع يتحوّل</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• &#9662; &#9646;</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="ttl">After the session</div><div class="tsub">Physics · Sun 4 PM</div></div></div>
+      <div class="body">
+        <div class="card" style="display:flex;align-items:center;gap:12px"><div style="flex:1"><div class="val">Mariam Hassan</div><div class="lbl" style="margin-top:4px">Recorded as InstaPay</div></div><span class="pill p-mint">InstaPay</span></div>
+        <div class="note n-sand"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span>The parent already received an invoice carrying the 10 EGP processing fee and paid it. Changing to cash is blocked because that fee has been paid.</span></div>
+        <div style="flex:1"></div>
+      </div>
+      <div class="foot"><button class="btn ghost" style="opacity:.45">Cannot change to cash</button></div>
+    </div></div>
+    <div class="cap">EN &middot; InstaPay, locked and explained</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="rtl" class="screen ar">
+      <div class="sbar"><span>&#1641;:&#1636;&#1633;</span><span style="letter-spacing:2px">&#9646; &#9662; •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="ttl">بعد الحصة</div><div class="tsub">فيزياء · الأحد ٤ م</div></div></div>
+      <div class="body">
+        <div class="card" style="display:flex;align-items:center;gap:12px"><div style="flex:1"><div class="val">مريم حسن</div><div class="lbl" style="margin-top:4px">مسجّل إنستاباي</div></div><span class="pill p-mint">إنستاباي</span></div>
+        <div class="note n-sand"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span>ولي الأمر خد فاتورة فيها ١٠ ج.م رسوم معالجة ودفعها. التحويل لكاش مقفول عشان الرسوم اتدفعت فعلاً.</span></div>
+        <div style="flex:1"></div>
+      </div>
+      <div class="foot"><button class="btn ghost" style="opacity:.45">التحويل لكاش مش متاح</button></div>
+    </div></div>
+    <div class="cap">AR &middot; إنستاباي، مقفول ومكتوب ليه</div>
+    </div>
   </div>
 </div>
 </div>

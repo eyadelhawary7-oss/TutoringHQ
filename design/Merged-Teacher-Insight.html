@@ -7,182 +7,118 @@
 
  CONTENTS (2 screens):
   01. Teacher Analytics   <-  Screen-Teacher-Analytics.html
-  02. Teacher Referrals   <-  Screen-Teacher-Referrals.html
+  02. Referral Program   <-  Screen-Referral-Program.html
 
 ----------------------------------------------------------------
- HOW TO READ THIS FILE WHEN IMPLEMENTING IT
-----------------------------------------------------------------
- 1. CSS IS SCOPED. Every rule carries a .mgdN prefix so that
-    several screens can share one page without their styles
-    colliding.
-        in this file:   .mgd4 .pins{ ... }
-        in your code:   .pins{ ... }
-    Strip the .mgdN prefix. It is bookkeeping for this reference
-    file only and must never reach the codebase.
-
- 2. ONE SECTION = ONE SCREEN. Each section bar shows its number,
-    its name, and the original screen file it came from. Use that
-    filename as the screen's identity, not the section number.
-
- 3. FRAMES ARE STATES, NOT PAGES. Each phone inside a section is
-    one state of that screen (empty, filled, error, and so on).
-    The caption under or above each phone names the state.
-
- 4. THE TWO LANGUAGES ARE SEPARATE SCREENS. English and Arabic
-    are never a translation overlay. Arabic frames use Eastern
-    Arabic numerals (0-9 written as Arabic-Indic) and the Arabic
-    currency mark. English frames use Western numerals and EGP.
-    Directional icons such as chevrons flip with the language.
-
- 5. SAMPLE DATA IS PLACEHOLDER. Names, amounts, dates and phone
-    numbers are illustrative. Do not treat them as fixtures or
-    seed data.
-
- 6. THIS IS DESIGN, NOT PRODUCTION CODE. Markup here is built to
-    be read, not shipped. Take the layout, spacing, type scale
-    and colour decisions from it. Do not copy the DOM wholesale.
-
- 7. ANY UI OR BRANDING CHANGE BUMPS SW_VERSION in public/sw.js.
+ 1. CSS IS SCOPED with .mgdN. Strip it; it never reaches code.
+ 2. ONE SECTION = ONE SCREEN.
+ 3. FRAMES ARE STATES, not pages.
+ 4. THE TWO LANGUAGES ARE SEPARATE SCREENS.
+ 5. SAMPLE DATA IS PLACEHOLDER.
+ 6. ANY UI CHANGE BUMPS SW_VERSION in public/sw.js.
 ================================================================
 -->
-
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="color-scheme" content="light">
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Teacher · Insight · TutoringHQ</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>Teacher · Insight</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 html{background:#D8D3C6;color-scheme:light}
-:root{color-scheme:light}
-
-html,body{margin:0;padding:0}
-body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;-webkit-font-smoothing:antialiased}
-.mgd-top{max-width:1180px;margin:0 auto;padding:48px 24px 8px;color:#14181A}
-.mgd-eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#5D635C;font-weight:600}
-.mgd-h1{font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em;margin:12px 0 8px}
-.mgd-lede{font-size:15px;line-height:1.55;color:#5D635C;max-width:82ch;margin:0}
-.mgd-toc{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 0}
-.mgd-toc a{font-size:12px;font-weight:600;color:#0A514A;background:#DFEEEB;border:1px solid rgba(14,107,97,.18);padding:8px 12px;border-radius:999px;text-decoration:none}
-.mgd-sec{max-width:1180px;margin:0 auto;padding:16px 24px 0}
-.mgd-bar{display:flex;align-items:baseline;gap:12px;border-top:1px solid rgba(28,33,30,.16);padding-top:16px;margin-top:32px}
-.mgd-num{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#9A6B1F;font-weight:500}
-.mgd-name{font-size:22px;font-weight:700;color:#14181A;letter-spacing:-.01em}
-.mgd-src{margin-inline-start:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#80827A}
-/* ===== Screen-Teacher-Analytics ===== */
+body{margin:0;background:#D8D3C6}
+.mgd-bar{max-width:1180px;margin:0 auto;padding:24px;display:flex;align-items:baseline;gap:12px;border-bottom:1px solid #E2DDD1;font-family:'IBM Plex Sans',sans-serif}
+.mgd-num{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#9A6B1F}
+.mgd-name{font-size:22px;font-weight:700;color:#14181A}
+.mgd-src{margin-inline-start:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#80827A}
+[class^="mgd"]{content-visibility:auto;contain-intrinsic-size:1px 4000px}
 .mgd1 *{box-sizing:border-box}
-.mgd1{margin:0;background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#14181A}
+.mgd1{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
 .mgd1 svg{display:block;flex-shrink:0}
-.mgd1 .phone{width:340px;background:#14181A;border-radius:44px;padding:12px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
-.mgd1 .screen{background:#ECE8DF;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
-.mgd1 .sbar{display:flex;justify-content:space-between;align-items:center;padding:16px 24px 8px;font-size:13px;font-weight:600}
-.mgd1 .appbar{display:flex;align-items:center;gap:8px;padding:8px 16px 12px}
-.mgd1 .iconbtn{width:40px;height:40px;border-radius:12px;background:#FFFDF8;border:1px solid #E2DDD1;display:flex;align-items:center;justify-content:center;color:#3A3F3A;flex-shrink:0}
-.mgd1 .ttl{font-size:17px;font-weight:700}
+.mgd1 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd1 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
+.mgd1 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 22px 6px;font-size:13px;font-weight:600}
+.mgd1 .appbar{display:flex;align-items:center;gap:11px;padding:6px 16px 10px}
+.mgd1 .iconbtn{width:40px;height:40px;border-radius:11px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a;flex-shrink:0}
+.mgd1 .ttl{font-size:19px;font-weight:700}
 .mgd1 .globe{margin-inline-start:auto}
-.mgd1 .body{flex:1;overflow-y:auto;padding:8px 16px 24px}
+.mgd1 .body{flex:1;overflow-y:auto;padding:6px 16px 22px}
 .mgd1 .body>*{flex-shrink:0}
-.mgd1 .intro{font-size:12px;color:#5D635C;line-height:1.5;margin:4px 4px 12px}
-.mgd1 .gate{background:linear-gradient(160deg,#0A514A,#083F39);border-radius:16px;padding:24px 24px;color:#DFEEEB;margin-bottom:16px;position:relative;overflow:hidden}
-.mgd1 .gate .lk{width:38px;height:38px;border-radius:12px;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;margin-bottom:12px}
-.mgd1 .gpill{position:absolute;top:16px;inset-inline-end:16px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:#9A6B1F;color:#fff;padding:4px 12px;border-radius:999px}
-.mgd1 .gate h3{margin:0 0 4px;font-size:17px;font-weight:700;color:#fff}
-.mgd1 .gate p{margin:0 0 12px;font-size:12px;line-height:1.5;color:#BFE3DD;max-width:34ch}
-.mgd1 .gbtn{display:inline-flex;align-items:center;gap:4px;background:#fff;color:#0A514A;font-size:13px;font-weight:700;padding:12px 16px;border-radius:12px}
-.mgd1 .plab{font-size:11px;font-weight:700;color:#80827A;letter-spacing:.06em;text-transform:uppercase;margin:4px 4px 8px}
-.mgd1 .pcard{background:#FFFDF8;border:1px solid #ECE8DF;border-radius:16px;padding:16px 16px;margin-bottom:8px;position:relative}
-.mgd1 .pcard .pt{font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px}
-.mgd1 .pcard .pi{width:30px;height:30px;border-radius:8px;background:#F2EEE5;color:#A09A8E;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.mgd1 .ghost{margin-top:12px;height:40px;border-radius:8px;background:repeating-linear-gradient(100deg,#F2EEE5,#F2EEE5 12px,#F2EEE5 12px,#F2EEE5 24px);display:flex;align-items:center;justify-content:center}
-.mgd1 .collab{font-size:11px;font-weight:600;color:#A09A8E;background:#FFFDF8;padding:4px 12px;border-radius:999px;border:1px solid #ECE8DF}
-.mgd1 .board{max-width:820px;margin:0 auto;padding:48px 32px 48px}
-.mgd1 .masthead{background:#ECE8DF;border:1px solid #E2DDD1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:48px 48px 48px}
-.mgd1 .phones{display:flex;gap:24px;flex-wrap:wrap;justify-content:center;margin-top:32px}
-.mgd1 .frame{display:flex;flex-direction:column;align-items:center;gap:12px}
-.mgd1 .cap{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5D635C}
-.mgd1 .tabbar{display:flex;background:#FFFDF8;border-top:1px solid #E2DDD1;padding:8px 4px 12px;flex-shrink:0}
-.mgd1 .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:#A09A8E;font-size:11px;font-weight:600;text-decoration:none}
+.mgd1 .intro{font-size:12.5px;color:#5d635c;line-height:1.5;margin:2px 2px 14px}
+.mgd1 .gate{background:linear-gradient(160deg,#0d4f48,#0a3a34);border-radius:18px;padding:20px 18px;color:#eaf3f1;margin-bottom:16px;position:relative;overflow:hidden}
+.mgd1 .gate .lk{width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;margin-bottom:13px}
+.mgd1 .gpill{position:absolute;top:16px;inset-inline-end:16px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:#9a6b1f;color:#fff;padding:4px 9px;border-radius:999px}
+.mgd1 .gate h3{margin:0 0 5px;font-size:16.5px;font-weight:700;color:#fff}
+.mgd1 .gate p{margin:0 0 15px;font-size:12.5px;line-height:1.5;color:#cfe3df;max-width:34ch}
+.mgd1 .gbtn{display:inline-flex;align-items:center;gap:7px;background:#fff;color:#0a514a;font-size:13px;font-weight:700;padding:11px 16px;border-radius:11px}
+.mgd1 .plab{font-size:11px;font-weight:700;color:#80827a;letter-spacing:.06em;text-transform:uppercase;margin:6px 2px 10px}
+.mgd1 .pcard{background:#fffdf8;border:1px solid #efe9dc;border-radius:16px;padding:15px 15px;margin-bottom:11px;position:relative}
+.mgd1 .pcard .pt{font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:9px}
+.mgd1 .pcard .pi{width:30px;height:30px;border-radius:9px;background:#f2eee5;color:#a6a79d;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mgd1 .ghost{margin-top:13px;height:40px;border-radius:9px;background:repeating-linear-gradient(100deg,#f2eee5,#f2eee5 12px,#f6f2ea 12px,#f6f2ea 24px);display:flex;align-items:center;justify-content:center}
+.mgd1 .collab{font-size:10.5px;font-weight:600;color:#a6a79d;background:#fffdf8;padding:4px 10px;border-radius:999px;border:1px solid #eae4d7}
+.mgd1 .board{max-width:820px;margin:0 auto;padding:56px 28px 96px}
+.mgd1 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
+.mgd1 .phones{display:flex;gap:30px;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.mgd1 .frame{display:flex;flex-direction:column;align-items:center;gap:13px}
+.mgd1 .cap{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5d635c}
+.mgd1 .tabbar{display:flex;background:#fffdf8;border-top:1px solid #e2ddd1;padding:8px 4px 11px;flex-shrink:0}
+.mgd1 .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:#9a9c92;font-size:9.5px;font-weight:600;text-decoration:none}
 .mgd1 .tab svg{width:23px;height:23px}
-.mgd1 .tab.on{color:#0E6B61}
-/* ===== Screen-Teacher-Referrals ===== */
+.mgd1 .tab.on{color:#0a6b60}
 .mgd2 *{box-sizing:border-box}
-.mgd2{margin:0;background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#14181A}
-.mgd2 .num,.mgd2 .money{font-variant-numeric:tabular-nums}
-.mgd2 .mono{font-family:'IBM Plex Mono',monospace}
-.mgd2 svg{display:block;flex-shrink:0}
-.mgd2 .phone{width:340px;background:#14181A;border-radius:44px;padding:12px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
-.mgd2 .screen{background:#ECE8DF;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
-.mgd2 .sbar{display:flex;justify-content:space-between;align-items:center;padding:16px 24px 8px;font-size:13px;font-weight:600}
-.mgd2 .appbar{display:flex;align-items:center;gap:8px;padding:8px 16px 8px}
-.mgd2 .iconbtn{width:40px;height:40px;border-radius:12px;background:#FFFDF8;border:1px solid #E2DDD1;display:flex;align-items:center;justify-content:center;color:#3A3F3A;flex-shrink:0}
-.mgd2 .ttl{font-size:17px;font-weight:700}
-.mgd2 .globe{margin-inline-start:auto}
-.mgd2 .body{flex:1;overflow-y:auto;padding:4px 16px 16px;display:flex;flex-direction:column;gap:12px}
-.mgd2 .body>*{flex-shrink:0}
-.mgd2 .sec{font-size:13px;font-weight:600;color:#80827A;margin:4px 4px -2px;display:flex;align-items:center;justify-content:space-between}
-.mgd2 .card{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:16px;padding:16px}
-.mgd2 .badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 12px;border-radius:999px}
-.mgd2 .ok{background:#DFEEEB;color:#0E6B61}
-.mgd2 .hero{background:linear-gradient(150deg,#0E6B61,#083F39);color:#F2EEE5;border-radius:16px;padding:16px}
-.mgd2 .herov{font-size:30px;font-weight:700;line-height:1;margin-top:4px}
-.mgd2 .herosplit{display:flex;gap:8px;margin-top:12px}
-.mgd2 .hs{flex:1;background:rgba(255,255,255,.10);border-radius:12px;padding:12px}
-.mgd2 .hsl{font-size:11px;opacity:.82;letter-spacing:.03em}
-.mgd2 .hsv{font-size:15px;font-weight:700;margin-top:4px}
-.mgd2 .btn-light{width:100%;height:44px;background:#F2EEE5;color:#0A514A;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;font-weight:700;border:none;margin-top:12px}
-.mgd2 .btn-ghost{width:100%;height:44px;background:rgba(255,255,255,.13);color:#F2EEE5;border:1px solid rgba(255,255,255,.30);border-radius:12px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;font-weight:600;margin-top:8px}
-.mgd2 .lockrow{width:100%;min-height:44px;background:rgba(255,255,255,.07);color:#BFE3DD;border:1px dashed rgba(255,255,255,.34);border-radius:12px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;font-weight:600;margin-top:8px;padding:8px}
-.mgd2 .herohint{display:flex;align-items:flex-start;gap:4px;margin-top:8px;font-size:11px;line-height:1.45;opacity:.92}
-.mgd2 .steps{display:flex;align-items:stretch;gap:4px}
-.mgd2 .step{flex:1;border-radius:12px;padding:12px 8px;text-align:center}
-.mgd2 .step .sp{font-size:22px;font-weight:700;line-height:1}
-.mgd2 .step .sw{font-size:11px;margin-top:4px;opacity:.9}
-.mgd2 .s25{background:#DFEEEB;color:#0A514A}
-.mgd2 .s10{background:#F4EBD7;color:#9A6B1F}
-.mgd2 .s5{background:#F2EEE5;color:#80827A}
-.mgd2 .arrow{display:flex;align-items:center;color:#D8D3C6}
-.mgd2 .refcard{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:16px;padding:16px}
-.mgd2 .refcard.soon{border-color:rgba(156,51,34,.35)}
-.mgd2 .rtop{display:flex;align-items:center;gap:8px}
-.mgd2 .av{width:38px;height:38px;border-radius:50%;background:#DFEEEB;color:#0A514A;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0}
-.mgd2 .rn{font-size:15px;font-weight:600;line-height:1.15}
-.mgd2 .rmeta{font-size:11px;color:#80827A;margin-top:4px}
-.mgd2 .pct{font-size:12px;font-weight:700;padding:4px 12px;border-radius:999px;flex-shrink:0}
-.mgd2 .p25{background:#DFEEEB;color:#0A514A}
-.mgd2 .p10{background:#F4EBD7;color:#9A6B1F}
-.mgd2 .p5{background:#F2EEE5;color:#80827A}
-.mgd2 .earn{font-size:13px;margin-top:8px;display:flex;align-items:center;justify-content:space-between}
-.mgd2 .earn b{font-size:15px;color:#0A514A}
-.mgd2 .prog{height:6px;background:#F2EEE5;border-radius:999px;overflow:hidden;margin-top:8px}
-.mgd2 .progfill{height:100%;border-radius:999px;background:#0E6B61}
-.mgd2 .cd{font-size:11px;font-weight:600;color:#5D635C;margin-top:4px;display:flex;align-items:center;gap:4px}
-.mgd2 .cd.warn{color:#9C3322}
-.mgd2 .kb{color:#A09A8E}
-.mgd2 .tabbar{display:flex;background:#FFFDF8;border-top:1px solid #E2DDD1;padding:8px 4px 12px;flex-shrink:0}
-.mgd2 .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:#A09A8E;font-size:11px;font-weight:600;text-decoration:none}
-.mgd2 .tab svg{width:22px;height:22px}
-.mgd2 .tab.on{color:#0E6B61}
-.mgd2 .board{max-width:1560px;margin:0 auto;padding:48px 32px 48px}
-.mgd2 .masthead{background:#ECE8DF;border:1px solid #E2DDD1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:48px 48px 48px;max-width:900px}
-.mgd2 .phones{display:flex;gap:24px;flex-wrap:wrap;justify-content:center;margin-top:32px}
+.mgd2{background:#D8D3C6;color-scheme:light}
+.mgd2{margin:0;background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',system-ui,sans-serif;color:#14181A;-webkit-font-smoothing:antialiased}
+.mgd2 .board{max-width:1180px;margin:0 auto;padding:48px 24px 96px}
+.mgd2 .masthead{background:#ECE8DF;border:1px solid #E2DDD1;border-radius:24px;box-shadow:0 4px 8px rgba(28,33,30,.06),0 16px 48px rgba(28,33,30,.10);padding:32px 32px 24px}
+.mgd2 .secbar{display:flex;align-items:baseline;border-top:1px solid rgba(28,33,30,.16);padding-top:16px;margin:48px 0 0}
+.mgd2 .secname{font-size:22px;font-weight:700;letter-spacing:-.01em}
+.mgd2 .secnote{margin:8px 0 0;font-size:15px;line-height:1.65;color:#5D635C;max-width:82ch}
+.mgd2 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:32px}
 .mgd2 .frame{display:flex;flex-direction:column;align-items:center;gap:12px}
-.mgd2 .cap{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5D635C}
-</style>
-</head>
-<body>
-<div class="mgd-top">
-  <div class="mgd-eyebrow">TutoringHQ · Merged reference</div>
-  <h1 class="mgd-h1">Teacher · Insight</h1>
-  <p class="mgd-lede">Analytics and referrals.</p>
-  <div class="mgd-toc"><a href="#Merged-Teacher-Insight-1">Teacher Analytics</a><a href="#Merged-Teacher-Insight-2">Teacher Referrals</a></div>
-</div>
-<div class="mgd-sec" id="Merged-Teacher-Insight-1">
-  <div class="mgd-bar"><span class="mgd-num">01</span><span class="mgd-name">Teacher Analytics</span><span class="mgd-src">Screen-Teacher-Analytics.html</span></div>
-</div>
-<div class="mgd1">
-<div class="board">
+.mgd2 .cap{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5D635C;text-align:center;max-width:340px;line-height:1.55}
+.mgd2 .phone{width:340px;background:#0A514A;border-radius:44px;padding:12px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 32px 48px rgba(28,33,30,.22)}
+.mgd2 .screen{background:#ECE8DF;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative;font-family:'IBM Plex Sans',system-ui,sans-serif}
+.mgd2 .screen.ar{font-family:'IBM Plex Sans Arabic',system-ui,sans-serif}
+.mgd2 .sbar{display:flex;justify-content:space-between;align-items:center;padding:12px 24px 4px;font-size:13px;font-weight:600;flex-shrink:0}
+.mgd2 .topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 8px;flex-shrink:0}
+.mgd2 .topbtn{width:40px;height:40px;border-radius:12px;background:#FFFDF8;border:1px solid #E2DDD1;display:flex;align-items:center;justify-content:center;color:#3A3F3A;flex-shrink:0}
+.mgd2 .topbtn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.mgd2 .ttl{font-size:17px;font-weight:700;line-height:1.2}
+.mgd2 .tsub{font-size:12px;color:#80827A;margin-top:4px}
+.mgd2 .body{flex:1;overflow:hidden;padding:4px 16px 8px;display:flex;flex-direction:column;gap:12px}
+.mgd2 .card{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:12px;padding:16px}
+.mgd2 .row{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:12px}
+.mgd2 .lbl{font-size:12px;color:#80827A}
+.mgd2 .val{font-size:15px;font-weight:600}
+.mgd2 .big{font-size:30px;font-weight:700;letter-spacing:-.02em}
+.mgd2 .mono{font-family:'IBM Plex Mono',monospace}
+.mgd2 .ar .mono{font-family:'IBM Plex Sans Arabic';font-weight:600}
+.mgd2 .btn{display:block;width:100%;border:none;border-radius:12px;padding:16px;font-size:15px;font-weight:700;background:#0E6B61;color:#FFFDF8;text-align:center;font-family:inherit}
+.mgd2 .btn.ghost{background:#FFFDF8;color:#3A3F3A;border:1px solid #E2DDD1}
+.mgd2 .btn.half{padding:16px 8px}
+.mgd2 .pair{display:flex;gap:12px}
+.mgd2 .pair .btn{flex:1}
+.mgd2 .pill{display:inline-block;font-size:11px;font-weight:600;padding:4px 12px;border-radius:999px}
+.mgd2 .p-mint{background:#DFEEEB;color:#0A514A;border:1px solid #BFE3DD}
+.mgd2 .p-sand{background:#F4EBD7;color:#9A6B1F;border:1px solid #E8DCC0}
+.mgd2 .p-dang{background:#F6E4E0;color:#9C3322;border:1px solid #EDD0C9}
+.mgd2 .p-quiet{background:#F2EEE5;color:#80827A;border:1px solid #E2DDD1}
+.mgd2 .note{display:flex;gap:8px;align-items:flex-start;border-radius:12px;padding:12px;font-size:12px;line-height:1.6}
+.mgd2 .n-mint{background:#DFEEEB;color:#0A514A;border:1px solid #BFE3DD}
+.mgd2 .n-sand{background:#F4EBD7;color:#7A5A1C;border:1px solid #E8DCC0}
+.mgd2 .n-dang{background:#F6E4E0;color:#9C3322;border:1px solid #EDD0C9}
+.mgd2 .note svg{width:16px;height:16px;flex-shrink:0;margin-top:1px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.mgd2 .ar .note{line-height:1.75}
+.mgd2 .foot{padding:12px 16px 16px;border-top:1px solid #E2DDD1;flex-shrink:0;background:#ECE8DF}
+.mgd2 .rule{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:16px;padding:24px 24px;margin-top:32px}
+.mgd2 .rule h3{margin:0 0 12px;font-size:15px;font-weight:700}
+.mgd2 .rule ul{margin:0;padding-inline-start:20px}
+.mgd2 .rule li{font-size:15px;line-height:1.7;color:#3A3F3A;margin-bottom:8px}
+.mgd2 .yes{color:#0A514A;font-weight:600}
+.mgd2 .no{color:#9C3322;font-weight:600}
+</style></head><body>
+<div class="mgd-bar"><span class="mgd-num">01</span><span class="mgd-name">Teacher Analytics</span><span class="mgd-src">Screen-Teacher-Analytics.html</span></div>
+<div class="mgd1"><div class="board">
   <div class="masthead">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39)"></div><span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Reference Screen</span><span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#8a5e16;background:#f4ebd7;border:1px solid #e6d3a9;padding:5px 11px;border-radius:999px">Teacher · Analytics (locked)</span></div>
     <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">Analytics</h1>
@@ -241,272 +177,162 @@ body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10
     </div></div></div>
 
   </div>
-</div>
-</div>
-<div class="mgd-sec" id="Merged-Teacher-Insight-2">
-  <div class="mgd-bar"><span class="mgd-num">02</span><span class="mgd-name">Teacher Referrals</span><span class="mgd-src">Screen-Teacher-Referrals.html</span></div>
-</div>
+</div></div>
+<div class="mgd-bar"><span class="mgd-num">02</span><span class="mgd-name">Referral Program</span><span class="mgd-src">Screen-Referral-Program.html</span></div>
 <div class="mgd2">
 <div class="board">
   <div class="masthead">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39)"></div><span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Reference Screen</span><span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#6f4e12;background:#f4ebd7;border:1px solid #e6d3a9;padding:5px 11px;border-radius:999px">Teacher · Referrals · Draft</span></div>
-    <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">Teacher referrals</h1>
-    <p style="margin:0;max-width:82ch;font-size:17px;line-height:1.55;color:#5d635c">Same recurring model as centers: each teacher you refer earns you a share of their subscription that steps down over time (25% then 10% then 5%). The screen shows recurring income this month, a projection, the rate-decay timeline, a share link, and each referral's rate, monthly pay and days-to-drop. <b>Payout depends on verification:</b> verified teachers can withdraw to their bank OR spend earnings as in-app credit; unverified teachers can only spend earnings as in-app credit (toward invoices and subscription), with withdrawal locked until they verify. Both states shown, English and Arabic. Design only; draft pending legal review.</p>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+      <div style="width:24px;height:24px;border-radius:8px;background:linear-gradient(150deg,#0E6B61,#083F39)"></div>
+      <span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5D635C">TutoringHQ &middot; Referrals</span>
+    </div>
+    <h1 style="margin:0 0 12px;font-size:44px;line-height:1.1;font-weight:700;letter-spacing:-.02em">Earn credit, not cash</h1>
+    <p style="margin:0;max-width:80ch;font-size:17px;line-height:1.6;color:#5D635C">A center or teacher who refers another earns a share of what that account pays, every month it pays. The reward lands as platform credit after the settlement period and is applied to their own invoices automatically. It is never withdrawn as cash, which is what stops anyone farming fake signups.</p>
   </div>
+  <div class="secbar"><span class="secname">The dashboard</span></div>
+  <p class="secnote">The hero states both sides of the deal in one line. The link carries the account’s own name so it can be shared as-is. Two numbers only, referrals and balance, because a third would dilute both.</p>
   <div class="phones">
-
-    <!-- EN · VERIFIED -->
-    <div class="frame"><span class="cap">EN · verified · withdraw or credit</span>
+    <div class="frame">
     <div class="phone"><div dir="ltr" class="screen">
-      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• &#9662; &#9646;</span></div>
-      <div class="appbar"><div class="iconbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ttl">Referrals</div><div class="iconbtn globe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div></div>
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• &#9662; &#9646;</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="ttl">Referrals</div></div></div>
       <div class="body">
-        <div class="hero">
-          <div style="font-size:12px;opacity:.85">Recurring this month</div>
-          <div class="herov num">775 <span style="font-size:15px;opacity:.85;font-weight:600">EGP</span></div>
-          <div class="herosplit">
-            <div class="hs"><div class="hsl">Next month (est.)</div><div class="hsv num" style="display:flex;align-items:center;gap:4px">625 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#f4c9c0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l10 10M17 17H9M17 17V9"/></svg></div></div>
-            <div class="hs"><div class="hsl">Lifetime earned</div><div class="hsv num">3,200</div></div>
-          </div>
-          <button class="btn-light"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/></svg>Withdraw · 900 available</button>
-          <button class="btn-ghost"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>Use as in-app credit</button>
-          <div class="herohint"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#cde7dd" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="margin-top:1px"><path d="M20 6L9 17l-5-5"/></svg><div>Identity verified · withdraw to your bank or spend it as credit on invoices and your subscription</div></div>
+        <div style="background:linear-gradient(150deg,#0E6B61,#083F39);border-radius:16px;padding:24px 16px;text-align:center;color:#FFFDF8">
+          <div style="font-size:17px;font-weight:700;line-height:1.3">Refer a center, earn every month they pay</div>
+          <div style="font-size:12px;opacity:.85;margin-top:8px;line-height:1.6">25% the first month, 10% months 2 to 6, then 5%. Every month they pay.</div>
         </div>
-
-        <div class="sec">Your cut per teacher you refer <span style="color:#0a514a">recurring</span></div>
-        <div class="card">
-          <div class="steps">
-            <div class="step s25"><div class="sp">25%</div><div class="sw">month 1</div></div>
-            <div class="arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
-            <div class="step s10"><div class="sp">10%</div><div class="sw">months 2–6</div></div>
-            <div class="arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
-            <div class="step s5"><div class="sp">5%</div><div class="sw">month 7+</div></div>
-          </div>
-          <div style="font-size:11px;color:#80827a;margin-top:11px;display:flex;align-items:center;gap:6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0a514a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.4H22l-6 4.6 2.3 7.4-6.3-4.6L5.7 21 8 14 2 9.4h7.6z"/></svg>New referrals start fresh at 25%. Refer more to keep the top rate flowing.</div>
+        <div class="card" style="display:flex;align-items:center;gap:12px;padding:12px 16px"><div style="flex:1"><div class="lbl">Your link</div><div class="mono" style="font-size:13px;font-weight:600;margin-top:4px">tutoringhq.app/r/nileprep</div></div><span class="pill p-mint">Copy</span></div>
+        <div class="pair">
+          <div class="card" style="flex:1;text-align:center;padding:12px"><div class="lbl">Total referrals</div><div class="mono" style="font-size:22px;font-weight:700;margin-top:4px">7</div></div>
+          <div class="card" style="flex:1;text-align:center;padding:12px"><div class="lbl">Your balance</div><div class="mono" style="font-size:22px;font-weight:700;margin-top:4px;color:#0A514A">1,840 EGP</div></div>
         </div>
-
-        <div class="card" style="background:linear-gradient(150deg,#0f766b,#0a514a);border:none;color:#eef6f4;display:flex;align-items:center;gap:12px">
-          <div style="flex:1"><div style="font-size:14px;font-weight:600">Share your link</div><div style="font-size:11px;opacity:.85">Code <span class="mono" dir="ltr">ALY653</span></div></div>
-          <button style="background:#eef6f4;color:#0a514a;border:none;border-radius:10px;padding:9px 13px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7a8.5 8.5 0 0 1 3.8-11.3 8.38 8.38 0 0 1 12.3 7.5z"/></svg>Share</button>
-        </div>
-
-        <div class="sec">Your referrals <span style="color:#5d635c">4 earning</span></div>
-        <div class="refcard soon">
-          <div class="rtop"><div class="av">MA</div><div style="flex:1"><div class="rn">Mona Adel</div><div class="rmeta num">Pro · 999 EGP/mo</div></div><span class="pct p25">25%</span></div>
-          <div class="earn"><span style="color:#80827a">You earn</span><b class="num">250 EGP/mo</b></div>
-          <div class="prog"><div class="progfill" style="width:94%;background:#9c3322"></div></div>
-          <div class="cd warn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Drops to 10% in 6 days</div>
-        </div>
-        <div class="refcard">
-          <div class="rtop"><div class="av">KF</div><div style="flex:1"><div class="rn">Karim Fouad</div><div class="rmeta num">Pro · 999 EGP/mo</div></div><span class="pct p25">25%</span></div>
-          <div class="earn"><span style="color:#80827a">You earn</span><b class="num">250 EGP/mo</b></div>
-          <div class="prog"><div class="progfill" style="width:32%"></div></div>
-          <div class="cd"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Drops to 10% in 18 days</div>
-        </div>
-        <div class="refcard">
-          <div class="rtop"><div class="av" style="background:#f4ebd7;color:#9a6b1f">SH</div><div style="flex:1"><div class="rn">Sara Hany</div><div class="rmeta num">Scale · 2,499 EGP/mo</div></div><span class="pct p10">10%</span></div>
-          <div class="earn"><span style="color:#80827a">You earn</span><b class="num">250 EGP/mo</b></div>
-          <div class="prog"><div class="progfill" style="width:55%;background:#9a6b1f"></div></div>
-          <div class="cd"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Drops to 5% in 41 days</div>
-        </div>
-        <div class="refcard">
-          <div class="rtop"><div class="av" style="background:#f2eee5;color:#80827a">ON</div><div style="flex:1"><div class="rn">Omar Nabil</div><div class="rmeta num">Standard · 499 EGP/mo</div></div><span class="pct p5">5%</span></div>
-          <div class="earn"><span style="color:#80827a">You earn</span><b class="num">25 EGP/mo</b></div>
-          <div class="cd"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Ongoing floor rate</div>
-        </div>
+        <div style="display:flex;align-items:baseline;margin-top:4px"><span style="font-size:15px;font-weight:700">My referrals</span><span style="margin-inline-start:auto;font-size:12px;color:#0E6B61;font-weight:600">See all</span></div>
+        <div class="row"><div style="flex:1"><div class="val">Giza Science Hub</div></div><span class="pill p-mint">Paying</span></div>
+        <div class="row"><div style="flex:1"><div class="val">Maadi Academy</div></div><span class="pill p-sand">On trial</span></div>
+        <div class="row"><div style="flex:1"><div class="val">October Center</div></div><span class="pill p-quiet">Signed up</span></div>
+        <div style="flex:1"></div>
       </div>
-      <nav class="tabbar"><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.4 12 4l8 7.4"/><path d="M6 10.2V20h12v-9.8"/><path d="M10 20v-5h4v5"/></svg><span>Home</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2.4"/><path d="M8 3.5v3M16 3.5v3M4 9.6h16"/></svg><span>Schedule</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V5.5a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1V20"/><path d="M14 20V9.5h4a1 1 0 0 1 1 1V20"/><path d="M3.5 20h17"/><path d="M8 8.5h.01M11 8.5h.01M8 12h.01M11 12h.01M8 15.5h.01M11 15.5h.01"/></svg><span>Centers</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="10" rx="2"/><circle cx="12" cy="12" r="2.2"/><path d="M6.4 9.6h.01M17.6 14.4h.01"/></svg><span>Income</span></a><a class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>More</span></a></nav>
-    </div></div></div>
-
-    <!-- EN · UNVERIFIED -->
-    <div class="frame"><span class="cap">EN · unverified · credit only</span>
+      <div class="foot"><button class="btn ghost">How it works</button></div>
+    </div></div>
+    <div class="cap">EN &middot; the dashboard</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="rtl" class="screen ar">
+      <div class="sbar"><span>&#1641;:&#1636;&#1633;</span><span style="letter-spacing:2px">&#9646; &#9662; •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="ttl">الإحالات</div></div></div>
+      <div class="body">
+        <div style="background:linear-gradient(150deg,#0E6B61,#083F39);border-radius:16px;padding:24px 16px;text-align:center;color:#FFFDF8">
+          <div style="font-size:17px;font-weight:700;line-height:1.3">اِدعي سنتر، وخد نسبة كل شهر يدفع فيه</div>
+          <div style="font-size:12px;opacity:.85;margin-top:8px;line-height:1.6">أول شهر ٢٥٪، من الشهر ٢ للـ ٦ ١٠٪، وبعدها ٥٪. كل شهر يدفع فيه.</div>
+        </div>
+        <div class="card" style="display:flex;align-items:center;gap:12px;padding:12px 16px"><div style="flex:1"><div class="lbl">الرابط بتاعك</div><div class="mono" style="font-size:13px;font-weight:600;margin-top:4px">tutoringhq.app/r/nileprep</div></div><span class="pill p-mint">انسخ</span></div>
+        <div class="pair">
+          <div class="card" style="flex:1;text-align:center;padding:12px"><div class="lbl">إجمالي الإحالات</div><div class="mono" style="font-size:22px;font-weight:700;margin-top:4px">٧</div></div>
+          <div class="card" style="flex:1;text-align:center;padding:12px"><div class="lbl">رصيدك</div><div class="mono" style="font-size:22px;font-weight:700;margin-top:4px;color:#0A514A">١٬٨٤٠ ج.م</div></div>
+        </div>
+        <div style="display:flex;align-items:baseline;margin-top:4px"><span style="font-size:15px;font-weight:700">إحالاتي</span><span style="margin-inline-start:auto;font-size:12px;color:#0E6B61;font-weight:600">شوف الكل</span></div>
+        <div class="row"><div style="flex:1"><div class="val">مركز الجيزة العلمي</div></div><span class="pill p-mint">بيدفع</span></div>
+        <div class="row"><div style="flex:1"><div class="val">أكاديمية المعادي</div></div><span class="pill p-sand">تجربة</span></div>
+        <div class="row"><div style="flex:1"><div class="val">سنتر أكتوبر</div></div><span class="pill p-quiet">سجّل</span></div>
+        <div style="flex:1"></div>
+      </div>
+      <div class="foot"><button class="btn ghost">إزاي بتشتغل؟</button></div>
+    </div></div>
+    <div class="cap">AR &middot; الصفحة الرئيسية</div>
+    </div>
+  </div>
+  <div class="secbar"><span class="secname">How it works, as a sheet</span></div>
+  <p class="secnote">A bottom sheet rather than a page, so the person stays where they were. It separates this year from lifetime, and it states the lock plainly: the balance pays platform invoices and cannot be taken as cash. Saying that here, rather than at the moment someone tries to withdraw, is the difference between a rule and a disappointment.</p>
+  <div class="phones">
+    <div class="frame">
     <div class="phone"><div dir="ltr" class="screen">
-      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• &#9662; &#9646;</span></div>
-      <div class="appbar"><div class="iconbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ttl">Referrals</div><div class="iconbtn globe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div></div>
-      <div class="body">
-        <div class="hero">
-          <div style="font-size:12px;opacity:.85">Recurring this month</div>
-          <div class="herov num">775 <span style="font-size:15px;opacity:.85;font-weight:600">EGP</span></div>
-          <div class="herosplit">
-            <div class="hs"><div class="hsl">Next month (est.)</div><div class="hsv num" style="display:flex;align-items:center;gap:4px">625 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#f4c9c0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l10 10M17 17H9M17 17V9"/></svg></div></div>
-            <div class="hs"><div class="hsl">Credit balance</div><div class="hsv num">900</div></div>
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• &#9662; &#9646;</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="ttl">Referrals</div></div></div>
+      <div class="body" style="justify-content:flex-end;padding-bottom:0">
+        <div style="background:#FFFDF8;border:1px solid #E2DDD1;border-radius:24px 24px 0 0;padding:24px 16px;margin:0 -16px">
+          <div style="font-size:17px;font-weight:700;margin-bottom:16px">How it works</div>
+          <div style="display:flex;gap:12px;align-items:flex-start;padding:8px 0"><span class="mono" style="font-size:11px;color:#9A6B1F;font-weight:600;flex-shrink:0">1</span><span style="font-size:13px;line-height:1.6">Send your link to another center</span></div>
+          <div style="display:flex;gap:12px;align-items:flex-start;padding:8px 0"><span class="mono" style="font-size:11px;color:#9A6B1F;font-weight:600;flex-shrink:0">2</span><span style="font-size:13px;line-height:1.6">When they sign up and pay their first invoice</span></div>
+          <div style="display:flex;gap:12px;align-items:flex-start;padding:8px 0"><span class="mono" style="font-size:11px;color:#9A6B1F;font-weight:600;flex-shrink:0">3</span><span style="font-size:13px;line-height:1.6">The reward lands in your balance after the settlement period</span></div>
+          <div style="border-top:1px solid #F0ECE2;margin-top:12px;padding-top:12px">
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0ECE2"><span style="font-size:13px;color:#5D635C">This year’s referrals</span><span class="mono" style="font-size:13px;font-weight:600">7</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0ECE2"><span style="font-size:13px;color:#5D635C">This year’s rewards</span><span class="mono" style="font-size:13px;font-weight:600">1,840 EGP</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0"><span style="font-size:13px;color:#5D635C">Total lifetime rewards</span><span class="mono" style="font-size:13px;font-weight:600">3,200 EGP</span></div>
           </div>
-          <button class="btn-light"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>Use as in-app credit · 900</button>
-          <div class="lockrow"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>Withdraw to bank · Verify to unlock</div>
-          <div class="herohint"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#cde7dd" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="margin-top:1px"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg><div>Not verified yet. Spend earnings now as credit on invoices and your subscription. Verify your ID to withdraw to your bank.</div></div>
-        </div>
-
-        <div class="sec">Your cut per teacher you refer <span style="color:#0a514a">recurring</span></div>
-        <div class="card">
-          <div class="steps">
-            <div class="step s25"><div class="sp">25%</div><div class="sw">month 1</div></div>
-            <div class="arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
-            <div class="step s10"><div class="sp">10%</div><div class="sw">months 2–6</div></div>
-            <div class="arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
-            <div class="step s5"><div class="sp">5%</div><div class="sw">month 7+</div></div>
-          </div>
-          <div style="font-size:11px;color:#80827a;margin-top:11px;display:flex;align-items:center;gap:6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0a514a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.4H22l-6 4.6 2.3 7.4-6.3-4.6L5.7 21 8 14 2 9.4h7.6z"/></svg>New referrals start fresh at 25%. Refer more to keep the top rate flowing.</div>
-        </div>
-
-        <div class="card" style="background:linear-gradient(150deg,#0f766b,#0a514a);border:none;color:#eef6f4;display:flex;align-items:center;gap:12px">
-          <div style="flex:1"><div style="font-size:14px;font-weight:600">Share your link</div><div style="font-size:11px;opacity:.85">Code <span class="mono" dir="ltr">ALY653</span></div></div>
-          <button style="background:#eef6f4;color:#0a514a;border:none;border-radius:10px;padding:9px 13px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7a8.5 8.5 0 0 1 3.8-11.3 8.38 8.38 0 0 1 12.3 7.5z"/></svg>Share</button>
-        </div>
-
-        <div class="sec">Your referrals <span style="color:#5d635c">4 earning</span></div>
-        <div class="refcard soon">
-          <div class="rtop"><div class="av">MA</div><div style="flex:1"><div class="rn">Mona Adel</div><div class="rmeta num">Pro · 999 EGP/mo</div></div><span class="pct p25">25%</span></div>
-          <div class="earn"><span style="color:#80827a">You earn</span><b class="num">250 EGP/mo</b></div>
-          <div class="prog"><div class="progfill" style="width:94%;background:#9c3322"></div></div>
-          <div class="cd warn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Drops to 10% in 6 days</div>
-        </div>
-        <div class="refcard">
-          <div class="rtop"><div class="av">KF</div><div style="flex:1"><div class="rn">Karim Fouad</div><div class="rmeta num">Pro · 999 EGP/mo</div></div><span class="pct p25">25%</span></div>
-          <div class="earn"><span style="color:#80827a">You earn</span><b class="num">250 EGP/mo</b></div>
-          <div class="prog"><div class="progfill" style="width:32%"></div></div>
-          <div class="cd"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Drops to 10% in 18 days</div>
-        </div>
-        <div class="refcard">
-          <div class="rtop"><div class="av" style="background:#f4ebd7;color:#9a6b1f">SH</div><div style="flex:1"><div class="rn">Sara Hany</div><div class="rmeta num">Scale · 2,499 EGP/mo</div></div><span class="pct p10">10%</span></div>
-          <div class="earn"><span style="color:#80827a">You earn</span><b class="num">250 EGP/mo</b></div>
-          <div class="prog"><div class="progfill" style="width:55%;background:#9a6b1f"></div></div>
-          <div class="cd"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Drops to 5% in 41 days</div>
-        </div>
-        <div class="refcard">
-          <div class="rtop"><div class="av" style="background:#f2eee5;color:#80827a">ON</div><div style="flex:1"><div class="rn">Omar Nabil</div><div class="rmeta num">Standard · 499 EGP/mo</div></div><span class="pct p5">5%</span></div>
-          <div class="earn"><span style="color:#80827a">You earn</span><b class="num">25 EGP/mo</b></div>
-          <div class="cd"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Ongoing floor rate</div>
+          <div class="note n-sand" style="margin-top:16px"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span>This balance is applied to your platform invoices automatically. It cannot be withdrawn as cash.</span></div>
+          <button class="btn" style="margin-top:16px">Got it</button>
         </div>
       </div>
-      <nav class="tabbar"><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.4 12 4l8 7.4"/><path d="M6 10.2V20h12v-9.8"/><path d="M10 20v-5h4v5"/></svg><span>Home</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2.4"/><path d="M8 3.5v3M16 3.5v3M4 9.6h16"/></svg><span>Schedule</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V5.5a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1V20"/><path d="M14 20V9.5h4a1 1 0 0 1 1 1V20"/><path d="M3.5 20h17"/><path d="M8 8.5h.01M11 8.5h.01M8 12h.01M11 12h.01M8 15.5h.01M11 15.5h.01"/></svg><span>Centers</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="10" rx="2"/><circle cx="12" cy="12" r="2.2"/><path d="M6.4 9.6h.01M17.6 14.4h.01"/></svg><span>Income</span></a><a class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>More</span></a></nav>
-    </div></div></div>
-
-    <!-- AR · VERIFIED -->
-    <div class="frame"><span class="cap">AR · verified · withdraw or credit</span>
-    <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
-      <div class="sbar"><span class="num">&#1641;:&#1636;&#1633;</span><span style="letter-spacing:2px">&#9646; &#9662; •••</span></div>
-      <div class="appbar"><div class="iconbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div><div class="ttl">الإحالات</div><div class="iconbtn globe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div></div>
-      <div class="body">
-        <div class="hero">
-          <div style="font-size:12px;opacity:.85">الدخل المتكرر هذا الشهر</div>
-          <div class="herov num">٧٧٥ <span style="font-size:15px;opacity:.85;font-weight:600">ج.م</span></div>
-          <div class="herosplit">
-            <div class="hs"><div class="hsl">الشهر القادم (تقديري)</div><div class="hsv num" style="display:flex;align-items:center;gap:4px">٦٢٥ <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#f4c9c0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l10 10M17 17H9M17 17V9"/></svg></div></div>
-            <div class="hs"><div class="hsl">إجمالي ما ربحته</div><div class="hsv num">٣٬٢٠٠</div></div>
+    </div></div>
+    <div class="cap">EN &middot; the sheet, with the lock stated</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="rtl" class="screen ar">
+      <div class="sbar"><span>&#1641;:&#1636;&#1633;</span><span style="letter-spacing:2px">&#9646; &#9662; •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="ttl">الإحالات</div></div></div>
+      <div class="body" style="justify-content:flex-end;padding-bottom:0">
+        <div style="background:#FFFDF8;border:1px solid #E2DDD1;border-radius:24px 24px 0 0;padding:24px 16px;margin:0 -16px">
+          <div style="font-size:17px;font-weight:700;margin-bottom:16px">إزاي بتشتغل؟</div>
+          <div style="display:flex;gap:12px;align-items:flex-start;padding:8px 0"><span class="mono" style="font-size:11px;color:#9A6B1F;font-weight:600;flex-shrink:0">1</span><span style="font-size:13px;line-height:1.6">ابعت الرابط لصاحب سنتر</span></div>
+          <div style="display:flex;gap:12px;align-items:flex-start;padding:8px 0"><span class="mono" style="font-size:11px;color:#9A6B1F;font-weight:600;flex-shrink:0">2</span><span style="font-size:13px;line-height:1.6">لما يسجّل ويدفع أول فاتورة</span></div>
+          <div style="display:flex;gap:12px;align-items:flex-start;padding:8px 0"><span class="mono" style="font-size:11px;color:#9A6B1F;font-weight:600;flex-shrink:0">3</span><span style="font-size:13px;line-height:1.6">المكافأة بتضاف لرصيدك بعد فترة التسوية</span></div>
+          <div style="border-top:1px solid #F0ECE2;margin-top:12px;padding-top:12px">
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0ECE2"><span style="font-size:13px;color:#5D635C">إحالات السنة دي</span><span class="mono" style="font-size:13px;font-weight:600">٧</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #F0ECE2"><span style="font-size:13px;color:#5D635C">مكافآت السنة دي</span><span class="mono" style="font-size:13px;font-weight:600">١٬٨٤٠ ج.م</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0"><span style="font-size:13px;color:#5D635C">إجمالي المكافآت</span><span class="mono" style="font-size:13px;font-weight:600">٣٬٢٠٠ ج.م</span></div>
           </div>
-          <button class="btn-light"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/></svg>سحب · ٩٠٠ متاح</button>
-          <button class="btn-ghost"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>استخدمه كرصيد داخل التطبيق</button>
-          <div class="herohint"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#cde7dd" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="margin-top:1px"><path d="M20 6L9 17l-5-5"/></svg><div>هويتك موثّقة · اسحب إلى بنكك أو استخدمه كرصيد على الفواتير والاشتراك</div></div>
-        </div>
-
-        <div class="sec">نسبتك عن كل معلّم تُحيله <span style="color:#0a514a">متكررة</span></div>
-        <div class="card">
-          <div class="steps">
-            <div class="step s25"><div class="sp">٢٥٪</div><div class="sw">شهر ١</div></div>
-            <div class="arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></div>
-            <div class="step s10"><div class="sp">١٠٪</div><div class="sw">أشهر ٢–٦</div></div>
-            <div class="arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></div>
-            <div class="step s5"><div class="sp">٥٪</div><div class="sw">شهر ٧+</div></div>
-          </div>
-          <div style="font-size:11px;color:#80827a;margin-top:11px;display:flex;align-items:center;gap:6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0a514a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.4H22l-6 4.6 2.3 7.4-6.3-4.6L5.7 21 8 14 2 9.4h7.6z"/></svg>الإحالات الجديدة تبدأ من ٢٥٪. أحِل المزيد لتُبقي أعلى نسبة مستمرة.</div>
-        </div>
-
-        <div class="card" style="background:linear-gradient(150deg,#0f766b,#0a514a);border:none;color:#eef6f4;display:flex;align-items:center;gap:12px">
-          <div style="flex:1"><div style="font-size:14px;font-weight:600">شارك رابطك</div><div style="font-size:11px;opacity:.85">الكود <span class="mono" dir="ltr">ALY653</span></div></div>
-          <button style="background:#eef6f4;color:#0a514a;border:none;border-radius:10px;padding:9px 13px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7a8.5 8.5 0 0 1 3.8-11.3 8.38 8.38 0 0 1 12.3 7.5z"/></svg>مشاركة</button>
-        </div>
-
-        <div class="sec">إحالاتك <span style="color:#5d635c">٤ تدرّ دخلًا</span></div>
-        <div class="refcard soon">
-          <div class="rtop"><div class="av">MA</div><div style="flex:1"><div class="rn">منى عادل</div><div class="rmeta num">Pro · ٩٩٩ ج.م/شهر</div></div><span class="pct p25">٢٥٪</span></div>
-          <div class="earn"><span style="color:#80827a">تكسب</span><b class="num">٢٥٠ ج.م/شهر</b></div>
-          <div class="prog"><div class="progfill" style="width:94%;background:#9c3322"></div></div>
-          <div class="cd warn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>تنخفض إلى ١٠٪ خلال ٦ أيام</div>
-        </div>
-        <div class="refcard">
-          <div class="rtop"><div class="av">KF</div><div style="flex:1"><div class="rn">كريم فؤاد</div><div class="rmeta num">Pro · ٩٩٩ ج.م/شهر</div></div><span class="pct p25">٢٥٪</span></div>
-          <div class="earn"><span style="color:#80827a">تكسب</span><b class="num">٢٥٠ ج.م/شهر</b></div>
-          <div class="prog"><div class="progfill" style="width:32%"></div></div>
-          <div class="cd"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>تنخفض إلى ١٠٪ خلال ١٨ يومًا</div>
-        </div>
-        <div class="refcard">
-          <div class="rtop"><div class="av" style="background:#f4ebd7;color:#9a6b1f">SH</div><div style="flex:1"><div class="rn">سارة هاني</div><div class="rmeta num">Scale · ٢٬٤٩٩ ج.م/شهر</div></div><span class="pct p10">١٠٪</span></div>
-          <div class="earn"><span style="color:#80827a">تكسب</span><b class="num">٢٥٠ ج.م/شهر</b></div>
-          <div class="prog"><div class="progfill" style="width:55%;background:#9a6b1f"></div></div>
-          <div class="cd"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>تنخفض إلى ٥٪ خلال ٤١ يومًا</div>
-        </div>
-        <div class="refcard">
-          <div class="rtop"><div class="av" style="background:#f2eee5;color:#80827a">ON</div><div style="flex:1"><div class="rn">عمر نبيل</div><div class="rmeta num">Standard · ٤٩٩ ج.م/شهر</div></div><span class="pct p5">٥٪</span></div>
-          <div class="earn"><span style="color:#80827a">تكسب</span><b class="num">٢٥ ج.م/شهر</b></div>
-          <div class="cd"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>النسبة الأساسية المستمرة</div>
+          <div class="note n-sand" style="margin-top:16px"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span>الرصيد ده بيتخصم من فواتير المنصة بتاعتك أوتوماتيك. مابيتسحبش كاش.</span></div>
+          <button class="btn" style="margin-top:16px">تمام</button>
         </div>
       </div>
-      <nav class="tabbar"><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.4 12 4l8 7.4"/><path d="M6 10.2V20h12v-9.8"/><path d="M10 20v-5h4v5"/></svg><span>الرئيسية</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2.4"/><path d="M8 3.5v3M16 3.5v3M4 9.6h16"/></svg><span>الجدول</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V5.5a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1V20"/><path d="M14 20V9.5h4a1 1 0 0 1 1 1V20"/><path d="M3.5 20h17"/><path d="M8 8.5h.01M11 8.5h.01M8 12h.01M11 12h.01M8 15.5h.01M11 15.5h.01"/></svg><span>المراكز</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="10" rx="2"/><circle cx="12" cy="12" r="2.2"/><path d="M6.4 9.6h.01M17.6 14.4h.01"/></svg><span>الدخل</span></a><a class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>المزيد</span></a></nav>
-    </div></div></div>
-
-    <!-- AR · UNVERIFIED -->
-    <div class="frame"><span class="cap">AR · unverified · credit only</span>
-    <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
-      <div class="sbar"><span class="num">&#1641;:&#1636;&#1633;</span><span style="letter-spacing:2px">&#9646; &#9662; •••</span></div>
-      <div class="appbar"><div class="iconbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div><div class="ttl">الإحالات</div><div class="iconbtn globe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div></div>
-      <div class="body">
-        <div class="hero">
-          <div style="font-size:12px;opacity:.85">الدخل المتكرر هذا الشهر</div>
-          <div class="herov num">٧٧٥ <span style="font-size:15px;opacity:.85;font-weight:600">ج.م</span></div>
-          <div class="herosplit">
-            <div class="hs"><div class="hsl">الشهر القادم (تقديري)</div><div class="hsv num" style="display:flex;align-items:center;gap:4px">٦٢٥ <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#f4c9c0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l10 10M17 17H9M17 17V9"/></svg></div></div>
-            <div class="hs"><div class="hsl">رصيدك</div><div class="hsv num">٩٠٠</div></div>
-          </div>
-          <button class="btn-light"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>استخدمه كرصيد · ٩٠٠</button>
-          <div class="lockrow"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>السحب إلى البنك · وثّق لفتحه</div>
-          <div class="herohint"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#cde7dd" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="margin-top:1px"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg><div>لست موثّقًا بعد. استخدم أرباحك الآن كرصيد على الفواتير والاشتراك. وثّق هويتك للسحب إلى بنكك.</div></div>
-        </div>
-
-        <div class="sec">نسبتك عن كل معلّم تُحيله <span style="color:#0a514a">متكررة</span></div>
-        <div class="card">
-          <div class="steps">
-            <div class="step s25"><div class="sp">٢٥٪</div><div class="sw">شهر ١</div></div>
-            <div class="arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></div>
-            <div class="step s10"><div class="sp">١٠٪</div><div class="sw">أشهر ٢–٦</div></div>
-            <div class="arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></div>
-            <div class="step s5"><div class="sp">٥٪</div><div class="sw">شهر ٧+</div></div>
-          </div>
-          <div style="font-size:11px;color:#80827a;margin-top:11px;display:flex;align-items:center;gap:6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0a514a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.4H22l-6 4.6 2.3 7.4-6.3-4.6L5.7 21 8 14 2 9.4h7.6z"/></svg>الإحالات الجديدة تبدأ من ٢٥٪. أحِل المزيد لتُبقي أعلى نسبة مستمرة.</div>
-        </div>
-
-        <div class="card" style="background:linear-gradient(150deg,#0f766b,#0a514a);border:none;color:#eef6f4;display:flex;align-items:center;gap:12px">
-          <div style="flex:1"><div style="font-size:14px;font-weight:600">شارك رابطك</div><div style="font-size:11px;opacity:.85">الكود <span class="mono" dir="ltr">ALY653</span></div></div>
-          <button style="background:#eef6f4;color:#0a514a;border:none;border-radius:10px;padding:9px 13px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-8.5 8.5 8.5 8.5 0 0 1-3.8-.9L3 21l1.9-5.7a8.5 8.5 0 0 1 3.8-11.3 8.38 8.38 0 0 1 12.3 7.5z"/></svg>مشاركة</button>
-        </div>
-
-        <div class="sec">إحالاتك <span style="color:#5d635c">٤ تدرّ دخلًا</span></div>
-        <div class="refcard soon">
-          <div class="rtop"><div class="av">MA</div><div style="flex:1"><div class="rn">منى عادل</div><div class="rmeta num">Pro · ٩٩٩ ج.م/شهر</div></div><span class="pct p25">٢٥٪</span></div>
-          <div class="earn"><span style="color:#80827a">تكسب</span><b class="num">٢٥٠ ج.م/شهر</b></div>
-          <div class="prog"><div class="progfill" style="width:94%;background:#9c3322"></div></div>
-          <div class="cd warn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>تنخفض إلى ١٠٪ خلال ٦ أيام</div>
-        </div>
-        <div class="refcard">
-          <div class="rtop"><div class="av">KF</div><div style="flex:1"><div class="rn">كريم فؤاد</div><div class="rmeta num">Pro · ٩٩٩ ج.م/شهر</div></div><span class="pct p25">٢٥٪</span></div>
-          <div class="earn"><span style="color:#80827a">تكسب</span><b class="num">٢٥٠ ج.م/شهر</b></div>
-          <div class="prog"><div class="progfill" style="width:32%"></div></div>
-          <div class="cd"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>تنخفض إلى ١٠٪ خلال ١٨ يومًا</div>
-        </div>
-        <div class="refcard">
-          <div class="rtop"><div class="av" style="background:#f4ebd7;color:#9a6b1f">SH</div><div style="flex:1"><div class="rn">سارة هاني</div><div class="rmeta num">Scale · ٢٬٤٩٩ ج.م/شهر</div></div><span class="pct p10">١٠٪</span></div>
-          <div class="earn"><span style="color:#80827a">تكسب</span><b class="num">٢٥٠ ج.م/شهر</b></div>
-          <div class="prog"><div class="progfill" style="width:55%;background:#9a6b1f"></div></div>
-          <div class="cd"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>تنخفض إلى ٥٪ خلال ٤١ يومًا</div>
-        </div>
-        <div class="refcard">
-          <div class="rtop"><div class="av" style="background:#f2eee5;color:#80827a">ON</div><div style="flex:1"><div class="rn">عمر نبيل</div><div class="rmeta num">Standard · ٤٩٩ ج.م/شهر</div></div><span class="pct p5">٥٪</span></div>
-          <div class="earn"><span style="color:#80827a">تكسب</span><b class="num">٢٥ ج.م/شهر</b></div>
-          <div class="cd"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>النسبة الأساسية المستمرة</div>
-        </div>
+    </div></div>
+    <div class="cap">AR &middot; الشرح، والقفل مكتوب بوضوح</div>
+    </div>
+  </div>
+  <div class="secbar"><span class="secname">Tracking, and why the funnel is visible</span></div>
+  <p class="secnote">The filter chips mirror the real backend states. Exposing them means a referrer can see exactly where their referral stopped and nudge them, rather than asking support why a reward has not arrived. Each row carries the plan value excluding VAT, the rate that applies this month, and what that produces. Signed up earns nothing; paying is the trigger.</p>
+  <div class="phones">
+    <div class="frame">
+    <div class="phone"><div dir="ltr" class="screen">
+      <div class="sbar"><span>9:41</span><span style="letter-spacing:2px">••• &#9662; &#9646;</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div><div class="ttl">My referrals</div></div></div>
+      <div class="body" style="overflow-y:auto">
+        <div style="white-space:nowrap;overflow:hidden"><span class="pill p-mint" style="margin-inline-end:8px">All</span><span class="pill p-quiet" style="margin-inline-end:8px">Signed up</span><span class="pill p-quiet" style="margin-inline-end:8px">On trial</span><span class="pill p-quiet" style="margin-inline-end:8px">Paying</span></div>
+        <div class="card" style="padding:12px 16px"><div style="display:flex;align-items:center;gap:8px"><div style="flex:1"><div class="val">Giza Science Hub</div><div class="lbl" style="margin-top:4px">month 3</div></div><span class="pill p-mint">Paying</span></div><div style="display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid #F0ECE2"><div style="flex:1"><div class="lbl" style="font-size:11px">Plan ex-VAT</div><div class="mono" style="font-size:13px;font-weight:600;margin-top:4px">7,016</div></div><div style="flex:1"><div class="lbl" style="font-size:11px">Your rate</div><div class="mono" style="font-size:13px;font-weight:600;margin-top:4px">10%</div></div><div style="flex:1"><div class="lbl" style="font-size:11px">This month</div><div class="mono" style="font-size:13px;font-weight:700;margin-top:4px;color:#0A514A">701.60</div></div></div></div>
+        <div class="card" style="padding:12px 16px"><div style="display:flex;align-items:center;gap:8px"><div style="flex:1"><div class="val">Al Nour School</div><div class="lbl" style="margin-top:4px">month 7</div></div><span class="pill p-mint">Paying</span></div><div style="display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid #F0ECE2"><div style="flex:1"><div class="lbl" style="font-size:11px">Plan ex-VAT</div><div class="mono" style="font-size:13px;font-weight:600;margin-top:4px">11,403</div></div><div style="flex:1"><div class="lbl" style="font-size:11px">Your rate</div><div class="mono" style="font-size:13px;font-weight:600;margin-top:4px">5%</div></div><div style="flex:1"><div class="lbl" style="font-size:11px">This month</div><div class="mono" style="font-size:13px;font-weight:700;margin-top:4px;color:#0A514A">570.15</div></div></div></div>
+        <div class="card" style="padding:12px 16px"><div style="display:flex;align-items:center;gap:8px"><div style="flex:1"><div class="val">Maadi Academy</div><div class="lbl" style="margin-top:4px">5 days left</div></div><span class="pill p-sand">On trial</span></div><div style="display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid #F0ECE2"><div style="flex:1"><div class="lbl" style="font-size:11px">Plan ex-VAT</div><div class="mono" style="font-size:13px;font-weight:600;margin-top:4px">3,946</div></div><div style="flex:1"><div class="lbl" style="font-size:11px">Your rate</div><div class="mono" style="font-size:13px;font-weight:600;margin-top:4px">—</div></div><div style="flex:1"><div class="lbl" style="font-size:11px">This month</div><div class="mono" style="font-size:13px;font-weight:700;margin-top:4px;color:#0A514A">—</div></div></div></div>
+        <div class="card" style="padding:12px 16px"><div style="display:flex;align-items:center;gap:8px"><div style="flex:1"><div class="val">October Center</div><div class="lbl" style="margin-top:4px">not paid yet</div></div><span class="pill p-quiet">Signed up</span></div><div style="display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid #F0ECE2"><div style="flex:1"><div class="lbl" style="font-size:11px">Plan ex-VAT</div><div class="mono" style="font-size:13px;font-weight:600;margin-top:4px">—</div></div><div style="flex:1"><div class="lbl" style="font-size:11px">Your rate</div><div class="mono" style="font-size:13px;font-weight:600;margin-top:4px">—</div></div><div style="flex:1"><div class="lbl" style="font-size:11px">This month</div><div class="mono" style="font-size:13px;font-weight:700;margin-top:4px;color:#0A514A">—</div></div></div></div>
+        <div class="note n-mint"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg><span>Your share is calculated on the plan value excluding VAT. 25% the first month, 10% months 2 to 6, then 5% for as long as they keep paying.</span></div>
       </div>
-      <nav class="tabbar"><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.4 12 4l8 7.4"/><path d="M6 10.2V20h12v-9.8"/><path d="M10 20v-5h4v5"/></svg><span>الرئيسية</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2.4"/><path d="M8 3.5v3M16 3.5v3M4 9.6h16"/></svg><span>الجدول</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V5.5a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1V20"/><path d="M14 20V9.5h4a1 1 0 0 1 1 1V20"/><path d="M3.5 20h17"/><path d="M8 8.5h.01M11 8.5h.01M8 12h.01M11 12h.01M8 15.5h.01M11 15.5h.01"/></svg><span>المراكز</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="10" rx="2"/><circle cx="12" cy="12" r="2.2"/><path d="M6.4 9.6h.01M17.6 14.4h.01"/></svg><span>الدخل</span></a><a class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>المزيد</span></a></nav>
-    </div></div></div>
-
+    </div></div>
+    <div class="cap">EN &middot; every referral shows the plan it earns from</div>
+    </div>
+    <div class="frame">
+    <div class="phone"><div dir="rtl" class="screen ar">
+      <div class="sbar"><span>&#1641;:&#1636;&#1633;</span><span style="letter-spacing:2px">&#9646; &#9662; •••</span></div>
+      <div class="topbar"><div class="topbtn"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div><div class="ttl">إحالاتي</div></div></div>
+      <div class="body" style="overflow-y:auto">
+        <div style="white-space:nowrap;overflow:hidden"><span class="pill p-mint" style="margin-inline-end:8px">الكل</span><span class="pill p-quiet" style="margin-inline-end:8px">سجّل</span><span class="pill p-quiet" style="margin-inline-end:8px">تجربة</span><span class="pill p-quiet" style="margin-inline-end:8px">بيدفع</span></div>
+        <div class="card" style="padding:12px 16px"><div style="display:flex;align-items:center;gap:8px"><div style="flex:1"><div class="val">مركز الجيزة العلمي</div><div class="lbl" style="margin-top:4px">الشهر ٣</div></div><span class="pill p-mint">بيدفع</span></div><div style="display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid #F0ECE2"><div style="flex:1"><div class="lbl" style="font-size:11px">الخطة بدون ض.ق.م</div><div class="mono" style="font-size:13px;font-weight:600;margin-top:4px">٧٬٠١٦</div></div><div style="flex:1"><div class="lbl" style="font-size:11px">نسبتك</div><div class="mono" style="font-size:13px;font-weight:600;margin-top:4px">١٠٪</div></div><div style="flex:1"><div class="lbl" style="font-size:11px">الشهر ده</div><div class="mono" style="font-size:13px;font-weight:700;margin-top:4px;color:#0A514A">٧٠١٫٦٠</div></div></div></div>
+        <div class="card" style="padding:12px 16px"><div style="display:flex;align-items:center;gap:8px"><div style="flex:1"><div class="val">مدرسة النور</div><div class="lbl" style="margin-top:4px">الشهر ٧</div></div><span class="pill p-mint">بيدفع</span></div><div style="display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid #F0ECE2"><div style="flex:1"><div class="lbl" style="font-size:11px">الخطة بدون ض.ق.م</div><div class="mono" style="font-size:13px;font-weight:600;margin-top:4px">١١٬٤٠٣</div></div><div style="flex:1"><div class="lbl" style="font-size:11px">نسبتك</div><div class="mono" style="font-size:13px;font-weight:600;margin-top:4px">٥٪</div></div><div style="flex:1"><div class="lbl" style="font-size:11px">الشهر ده</div><div class="mono" style="font-size:13px;font-weight:700;margin-top:4px;color:#0A514A">٥٧٠٫١٥</div></div></div></div>
+        <div class="card" style="padding:12px 16px"><div style="display:flex;align-items:center;gap:8px"><div style="flex:1"><div class="val">أكاديمية المعادي</div><div class="lbl" style="margin-top:4px">باقي ٥ أيام</div></div><span class="pill p-sand">تجربة</span></div><div style="display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid #F0ECE2"><div style="flex:1"><div class="lbl" style="font-size:11px">الخطة بدون ض.ق.م</div><div class="mono" style="font-size:13px;font-weight:600;margin-top:4px">٣٬٩٤٦</div></div><div style="flex:1"><div class="lbl" style="font-size:11px">نسبتك</div><div class="mono" style="font-size:13px;font-weight:600;margin-top:4px">—</div></div><div style="flex:1"><div class="lbl" style="font-size:11px">الشهر ده</div><div class="mono" style="font-size:13px;font-weight:700;margin-top:4px;color:#0A514A">—</div></div></div></div>
+        <div class="card" style="padding:12px 16px"><div style="display:flex;align-items:center;gap:8px"><div style="flex:1"><div class="val">سنتر أكتوبر</div><div class="lbl" style="margin-top:4px">لسه ما دفعش</div></div><span class="pill p-quiet">سجّل</span></div><div style="display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid #F0ECE2"><div style="flex:1"><div class="lbl" style="font-size:11px">الخطة بدون ض.ق.م</div><div class="mono" style="font-size:13px;font-weight:600;margin-top:4px">—</div></div><div style="flex:1"><div class="lbl" style="font-size:11px">نسبتك</div><div class="mono" style="font-size:13px;font-weight:600;margin-top:4px">—</div></div><div style="flex:1"><div class="lbl" style="font-size:11px">الشهر ده</div><div class="mono" style="font-size:13px;font-weight:700;margin-top:4px;color:#0A514A">—</div></div></div></div>
+        <div class="note n-mint"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg><span>نسبتك بتتحسب على قيمة الخطة بدون ضريبة القيمة المضافة. ٢٥٪ أول شهر، ١٠٪ من ٢ لـ ٦، وبعدها ٥٪ طول ما بيدفع.</span></div>
+      </div>
+    </div></div>
+    <div class="cap">AR &middot; كل إحالة وقيمة خطتها</div>
+    </div>
+  </div>
+  <div class="rule">
+    <h3>Rules</h3>
+    <ul>
+      <li><span class="yes">The reward is credit, not cash.</span> It is applied to the referrer’s own platform invoices automatically. That is what stops fake signups being profitable, and it avoids gateway fees and VAT on money that never moves.</li>
+      <li><span class="yes">Paying is the trigger, not signing up.</span> A referral that signs up and never pays earns nothing, and the screen says so before anyone asks.</li>
+      <li><span class="yes">State the lock before it bites.</span> The sheet says the balance cannot be withdrawn. Discovering that at the moment of trying is how a reward becomes a complaint.</li>
+      <li><span class="yes">Expose the funnel.</span> A referrer who can see their referral is stuck on trial will nudge them. One who cannot will contact support.</li>
+      <li><span class="no">Do not show a third metric on the dashboard.</span> Referrals and balance are the two that matter; anything else competes with the link.</li>
+      <li><span class="no">Do not pay before settlement.</span> Credit lands after the settlement window, not at the moment of payment, because a refund inside that window would leave credit already spent.</li>
+    </ul>
   </div>
 </div>
 </div>

@@ -5,529 +5,407 @@
  File: Merged-Admin-Money.html
  Admin · Money
 
- CONTENTS (7 screens):
+ CONTENTS (6 screens):
   01. Admin Fee Collection   <-  Screen-Admin-Fee-Collection.html
   02. Admin Settlement   <-  Screen-Admin-Settlement.html
   03. Admin Finance Health   <-  Screen-Admin-Finance-Health.html
   04. Admin Receipts   <-  Screen-Admin-Receipts.html
-  05. Admin Withdrawals Analytics   <-  Screen-Admin-Withdrawals-Analytics.html
-  06. Admin Unpaid Recovery   <-  Screen-Admin-Unpaid-Recovery.html
-  07. Admin Billing Pricing   <-  Screen-Admin-Billing-Pricing.html
+  05. Admin Unpaid Recovery   <-  Screen-Admin-Unpaid-Recovery.html
+  06. Admin Billing Pricing   <-  Screen-Admin-Billing-Pricing.html
 
 ----------------------------------------------------------------
- HOW TO READ THIS FILE WHEN IMPLEMENTING IT
-----------------------------------------------------------------
- 1. CSS IS SCOPED. Every rule carries a .mgdN prefix so that
-    several screens can share one page without their styles
-    colliding.
-        in this file:   .mgd4 .pins{ ... }
-        in your code:   .pins{ ... }
-    Strip the .mgdN prefix. It is bookkeeping for this reference
-    file only and must never reach the codebase.
-
- 2. ONE SECTION = ONE SCREEN. Each section bar shows its number,
-    its name, and the original screen file it came from. Use that
-    filename as the screen's identity, not the section number.
-
- 3. FRAMES ARE STATES, NOT PAGES. Each phone inside a section is
-    one state of that screen (empty, filled, error, and so on).
-    The caption under or above each phone names the state.
-
- 4. THE TWO LANGUAGES ARE SEPARATE SCREENS. English and Arabic
-    are never a translation overlay. Arabic frames use Eastern
-    Arabic numerals (0-9 written as Arabic-Indic) and the Arabic
-    currency mark. English frames use Western numerals and EGP.
-    Directional icons such as chevrons flip with the language.
-
- 5. SAMPLE DATA IS PLACEHOLDER. Names, amounts, dates and phone
-    numbers are illustrative. Do not treat them as fixtures or
-    seed data.
-
- 6. THIS IS DESIGN, NOT PRODUCTION CODE. Markup here is built to
-    be read, not shipped. Take the layout, spacing, type scale
-    and colour decisions from it. Do not copy the DOM wholesale.
-
- 7. ANY UI OR BRANDING CHANGE BUMPS SW_VERSION in public/sw.js.
+ 1. CSS IS SCOPED with .mgdN. Strip it; it never reaches code.
+ 2. ONE SECTION = ONE SCREEN.
+ 3. FRAMES ARE STATES, not pages.
+ 4. THE TWO LANGUAGES ARE SEPARATE SCREENS.
+ 5. SAMPLE DATA IS PLACEHOLDER.
+ 6. ANY UI CHANGE BUMPS SW_VERSION in public/sw.js.
 ================================================================
 -->
-
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="color-scheme" content="light">
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Admin · Money · TutoringHQ</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>Admin · Money</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 html{background:#D8D3C6;color-scheme:light}
-:root{color-scheme:light}
-
-html,body{margin:0;padding:0}
-body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;-webkit-font-smoothing:antialiased}
-.mgd-top{max-width:1180px;margin:0 auto;padding:48px 24px 8px;color:#14181A}
-.mgd-eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#5D635C;font-weight:600}
-.mgd-h1{font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em;margin:12px 0 8px}
-.mgd-lede{font-size:15px;line-height:1.55;color:#5D635C;max-width:82ch;margin:0}
-.mgd-toc{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 0}
-.mgd-toc a{font-size:12px;font-weight:600;color:#0A514A;background:#DFEEEB;border:1px solid rgba(14,107,97,.18);padding:8px 12px;border-radius:999px;text-decoration:none}
-.mgd-sec{max-width:1180px;margin:0 auto;padding:16px 24px 0}
-.mgd-bar{display:flex;align-items:baseline;gap:12px;border-top:1px solid rgba(28,33,30,.16);padding-top:16px;margin-top:32px}
-.mgd-num{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#9A6B1F;font-weight:500}
-.mgd-name{font-size:22px;font-weight:700;color:#14181A;letter-spacing:-.01em}
-.mgd-src{margin-inline-start:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#80827A}
-/* ===== Screen-Admin-Fee-Collection ===== */
+body{margin:0;background:#D8D3C6}
+.mgd-bar{max-width:1180px;margin:0 auto;padding:24px;display:flex;align-items:baseline;gap:12px;border-bottom:1px solid #E2DDD1;font-family:'IBM Plex Sans',sans-serif}
+.mgd-num{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#9A6B1F}
+.mgd-name{font-size:22px;font-weight:700;color:#14181A}
+.mgd-src{margin-inline-start:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#80827A}
+[class^="mgd"]{content-visibility:auto;contain-intrinsic-size:1px 4000px}
 .mgd1 *{box-sizing:border-box}
-.mgd1{margin:0;background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;color:#14181A;-webkit-font-smoothing:antialiased}
-.mgd1 .board{max-width:1180px;margin:0 auto;padding:48px 24px 48px}
-.mgd1 .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#80827A;font-weight:600}
-.mgd1 .pill0{display:inline-block;margin:8px 0;padding:4px 12px;border-radius:999px;background:#F4EBD7;color:#9A6B1F;font-size:12px;font-weight:600}
-.mgd1 h1.mh{font-size:30px;margin:4px 0 8px;font-weight:700;letter-spacing:-.01em}
-.mgd1 .board>p.lead{margin:0 0 32px;color:#5D635C;font-size:15px;line-height:1.5;max-width:80ch}
-.mgd1 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center}
+.mgd1{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;color:#1b201d;-webkit-font-smoothing:antialiased}
+.mgd1 .board{max-width:1180px;margin:0 auto;padding:48px 24px 90px}
+.mgd1 .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#80827a;font-weight:600}
+.mgd1 .pill0{display:inline-block;margin:10px 0;padding:4px 12px;border-radius:999px;background:#f0e6d2;color:#8a5e16;font-size:12px;font-weight:600}
+.mgd1 h1.mh{font-size:30px;margin:6px 0 8px;font-weight:700;letter-spacing:-.01em}
+.mgd1 .board>p.lead{margin:0 0 34px;color:#5d635c;font-size:16px;line-height:1.5;max-width:80ch}
+.mgd1 .phones{display:flex;gap:34px;flex-wrap:wrap;justify-content:center}
 .mgd1 .frame{display:flex;flex-direction:column;align-items:center;gap:12px}
-.mgd1 .cap{font-size:13px;color:#5D635C;font-weight:600}
-.mgd1 .phone{width:340px;background:#14181A;border-radius:44px;padding:12px;box-shadow:0 30px 60px -20px rgba(0,0,0,.4)}
-.mgd1 .screen{background:#ECE8DF;border-radius:34px;height:748px;display:flex;flex-direction:column;overflow:hidden}
-.mgd1 .sbar{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:13px;font-weight:600;flex-shrink:0}
-.mgd1 .topbar{display:flex;align-items:center;gap:8px;padding:4px 16px 8px;flex-shrink:0}
-.mgd1 .tt{font-size:17px;font-weight:700;line-height:1.2}
-.mgd1 .ts{font-size:11px;color:#80827A;margin-top:4px}
-.mgd1 .ibadge{margin-inline-start:auto;font-size:11px;font-weight:700;color:#9A6B1F;background:#F4EBD7;padding:4px 12px;border-radius:999px;flex-shrink:0}
-.mgd1 .tabs{display:flex;background:#F2EEE5;border:1px solid #E2DDD1;border-radius:12px;padding:4px;margin:0 16px 12px;flex-shrink:0}
-.mgd1 .tabs div{flex:1;text-align:center;padding:12px 4px;border-radius:8px;font-size:12px;font-weight:600;color:#5D635C}
-.mgd1 .tabs div.on{background:#FFFDF8;color:#9A6B1F;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.mgd1 .cap{font-size:13px;color:#5d635c;font-weight:600}
+.mgd1 .phone{width:340px;background:#14181a;border-radius:44px;padding:11px;box-shadow:0 30px 60px -20px rgba(0,0,0,.4)}
+.mgd1 .screen{background:#ece8df;border-radius:34px;height:748px;display:flex;flex-direction:column;overflow:hidden}
+.mgd1 .sbar{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:14px;font-weight:600;flex-shrink:0}
+.mgd1 .topbar{display:flex;align-items:center;gap:11px;padding:4px 16px 6px;flex-shrink:0}
+.mgd1 .tt{font-size:19px;font-weight:700;line-height:1.2}
+.mgd1 .ts{font-size:11.5px;color:#80827a;margin-top:2px}
+.mgd1 .ibadge{margin-inline-start:auto;font-size:10px;font-weight:700;color:#8a5e16;background:#f0e6d2;padding:4px 9px;border-radius:999px;flex-shrink:0}
+.mgd1 .tabs{display:flex;background:#f2eee5;border:1px solid #e2ddd1;border-radius:12px;padding:4px;margin:0 16px 12px;flex-shrink:0}
+.mgd1 .tabs div{flex:1;text-align:center;padding:9px 4px;border-radius:9px;font-size:12.5px;font-weight:600;color:#5d635c}
+.mgd1 .tabs div.on{background:#fffdf8;color:#8a5e16;box-shadow:0 1px 3px rgba(0,0,0,.08)}
 .mgd1 .body{flex:1;overflow-y:auto;padding:0 16px 16px}
-.mgd1 .hero{background:linear-gradient(150deg,#3A3F3A,#14181A);border-radius:16px;padding:16px;color:#F2EEE5;margin-bottom:12px}
+.mgd1 .hero{background:linear-gradient(150deg,#2a2f2c,#14181a);border-radius:16px;padding:15px;color:#f0ede6;margin-bottom:12px}
 .mgd1 .hl{font-size:12px;opacity:.85}
-.mgd1 .hn{font-size:30px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
+.mgd1 .hn{font-size:28px;font-weight:700;margin-top:3px;font-variant-numeric:tabular-nums}
 .mgd1 .hn span{font-size:13px;font-weight:500;opacity:.8}
-.mgd1 .hsub{font-size:11px;opacity:.75;margin-top:4px}
-.mgd1 .flow{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:16px;padding:4px 16px;margin-bottom:12px}
-.mgd1 .fr{display:flex;align-items:center;justify-content:space-between;padding:12px 0;font-size:13px;border-bottom:1px solid #F0ECE2;gap:8px}
+.mgd1 .hsub{font-size:11px;opacity:.75;margin-top:7px}
+.mgd1 .flow{background:#fffdf8;border:1px solid #e2ddd1;border-radius:16px;padding:4px 14px;margin-bottom:12px}
+.mgd1 .fr{display:flex;align-items:center;justify-content:space-between;padding:11px 0;font-size:13px;border-bottom:1px solid #f0ece2;gap:10px}
 .mgd1 .fr:last-child{border-bottom:none}
-.mgd1 .fk{color:#5D635C;display:flex;align-items:center;gap:8px;min-width:0}
-.mgd1 .sw{width:8px;height:8px;border-radius:4px;flex-shrink:0}
+.mgd1 .fk{color:#5d635c;display:flex;align-items:center;gap:8px;min-width:0}
+.mgd1 .sw{width:8px;height:8px;border-radius:3px;flex-shrink:0}
 .mgd1 .fv{font-weight:600;font-variant-numeric:tabular-nums;flex-shrink:0}
-.mgd1 .fv.neg{color:#9C3322}
-.mgd1 .fr.head{border-bottom:1.5px solid #E2DDD1}
-.mgd1 .fr.head .fk{font-weight:700;color:#14181A}
+.mgd1 .fv.neg{color:#9c3322}
+.mgd1 .fr.head{border-bottom:1.5px solid #e2ddd1}
+.mgd1 .fr.head .fk{font-weight:700;color:#1b201d}
 .mgd1 .fr.head .fv{font-size:15px;font-weight:700}
-.mgd1 .fr.sum{border-top:1.5px solid #E2DDD1;border-bottom:none}
-.mgd1 .fr.sum .fk{font-weight:700;color:#14181A;font-size:13px}
-.mgd1 .fr.sum .fv{font-size:17px;font-weight:700;color:#0A514A}
-.mgd1 .fr.ind .fk{padding-inline-start:16px;font-size:12px}
-.mgd1 .sec{font-size:11px;font-weight:700;letter-spacing:.04em;color:#80827A;margin:16px 4px 8px}
-.mgd1 .split{display:flex;height:10px;border-radius:999px;overflow:hidden;margin-bottom:8px}
+.mgd1 .fr.sum{border-top:1.5px solid #e2ddd1;border-bottom:none}
+.mgd1 .fr.sum .fk{font-weight:700;color:#1b201d;font-size:14px}
+.mgd1 .fr.sum .fv{font-size:19px;font-weight:700;color:#0a514a}
+.mgd1 .fr.ind .fk{padding-inline-start:16px;font-size:12.5px}
+.mgd1 .sec{font-size:11.5px;font-weight:700;letter-spacing:.04em;color:#80827a;margin:16px 3px 8px}
+.mgd1 .split{display:flex;height:10px;border-radius:999px;overflow:hidden;margin-bottom:9px}
 .mgd1 .split i{display:block;height:100%}
 .mgd1 .leg{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:4px}
-.mgd1 .lg{display:flex;align-items:center;gap:4px;font-size:11px;color:#5D635C}
-.mgd1 .kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.mgd1 .kpi{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:12px;padding:12px 16px}
-.mgd1 .kl{font-size:11px;color:#80827A}
-.mgd1 .kv{font-size:17px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
-.mgd1 .kv.good{color:#0E6B61}
-.mgd1 .kv.warn{color:#9A6B1F}
-.mgd1 .fsel{display:flex;gap:4px;margin-bottom:8px}
-.mgd1 .fs{flex:1;text-align:center;padding:8px 4px;border-radius:8px;font-size:11px;font-weight:700;background:#F2EEE5;color:#5D635C;border:1px solid #E2DDD1}
-.mgd1 .fs.on{background:#14181A;color:#F2EEE5;border-color:#14181A}
-.mgd1 .glabel{font-size:11px;font-weight:700;letter-spacing:.04em;color:#80827A;margin:0 4px 8px}
-.mgd1 .srow{display:flex;align-items:center;gap:8px;background:#FFFDF8;border:1px solid #E2DDD1;border-radius:12px;padding:12px 12px;margin-bottom:4px}
-.mgd1 .av{width:34px;height:34px;border-radius:8px;background:#F2EEE5;color:#5D635C;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
-.mgd1 .av.ctr{background:#DFEEEB;color:#0A514A}
+.mgd1 .lg{display:flex;align-items:center;gap:6px;font-size:11.5px;color:#5d635c}
+.mgd1 .kpis{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.mgd1 .kpi{background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:12px 13px}
+.mgd1 .kl{font-size:11px;color:#80827a}
+.mgd1 .kv{font-size:18px;font-weight:700;margin-top:3px;font-variant-numeric:tabular-nums}
+.mgd1 .kv.good{color:#1a6d4d}
+.mgd1 .kv.warn{color:#8a5e16}
+.mgd1 .fsel{display:flex;gap:7px;margin-bottom:11px}
+.mgd1 .fs{flex:1;text-align:center;padding:8px 4px;border-radius:10px;font-size:11.5px;font-weight:700;background:#f2eee5;color:#5d635c;border:1px solid #e2ddd1}
+.mgd1 .fs.on{background:#14181a;color:#f0ede6;border-color:#14181a}
+.mgd1 .glabel{font-size:10.5px;font-weight:700;letter-spacing:.04em;color:#80827a;margin:0 3px 8px}
+.mgd1 .srow{display:flex;align-items:center;gap:10px;background:#fffdf8;border:1px solid #e2ddd1;border-radius:13px;padding:10px 12px;margin-bottom:7px}
+.mgd1 .av{width:34px;height:34px;border-radius:10px;background:#f2eee5;color:#5d635c;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.mgd1 .av.ctr{background:#dfeeeb;color:#0a514a}
 .mgd1 .sl{flex:1;min-width:0}
-.mgd1 .snm{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mgd1 .ss{font-size:11px;color:#80827A;margin-top:4px}
+.mgd1 .snm{font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mgd1 .ss{font-size:10.5px;color:#80827a;margin-top:2px}
 .mgd1 .tri{text-align:end;flex-shrink:0}
-.mgd1 .tv{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
-.mgd1 .tl{font-size:11px;color:#80827A;margin-top:4px}
-.mgd1 .drow{display:flex;align-items:center;justify-content:space-between;padding:12px 0;font-size:13px;border-bottom:1px solid #F0ECE2}
+.mgd1 .tv{font-size:13.5px;font-weight:700;font-variant-numeric:tabular-nums}
+.mgd1 .tl{font-size:9.5px;color:#80827a;margin-top:1px}
+.mgd1 .drow{display:flex;align-items:center;justify-content:space-between;padding:11px 0;font-size:13px;border-bottom:1px solid #f0ece2}
 .mgd1 .drow:last-child{border-bottom:none}
-.mgd1 .dk{color:#5D635C}
+.mgd1 .dk{color:#5d635c}
 .mgd1 .dv{font-weight:700;font-variant-numeric:tabular-nums}
-.mgd1 .dv.ok{color:#0E6B61}
-.mgd1 .dv.warn{color:#9A6B1F}
-.mgd1 .dv.bad{color:#9C3322}
-.mgd1 .note{background:#DFEEEB;border:1px solid #DFEEEB;border-radius:12px;padding:12px 12px;font-size:11px;color:#0E6B61;line-height:1.45;margin-top:12px}
-.mgd1 .arrow{width:12px;height:12px;fill:none;stroke:#A09A8E;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;margin-inline-start:4px;vertical-align:middle}
-.mgd1 .tabbar{display:flex;background:#FFFDF8;border-top:1px solid #E2DDD1;padding:8px 4px 12px;flex-shrink:0}
-.mgd1 .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:#A09A8E;font-size:11px;font-weight:600;text-decoration:none}
+.mgd1 .dv.ok{color:#1a6d4d}
+.mgd1 .dv.warn{color:#8a5e16}
+.mgd1 .dv.bad{color:#9c3322}
+.mgd1 .note{background:#e3ecf6;border:1px solid #cdddf3;border-radius:12px;padding:10px 12px;font-size:11px;color:#274b8a;line-height:1.45;margin-top:12px}
+.mgd1 .arrow{width:12px;height:12px;fill:none;stroke:#b6b1a4;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;margin-inline-start:5px;vertical-align:middle}
+.mgd1 .tabbar{display:flex;background:#fffdf8;border-top:1px solid #e2ddd1;padding:8px 4px 11px;flex-shrink:0}
+.mgd1 .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:#9a9c92;font-size:9.5px;font-weight:600;text-decoration:none}
 .mgd1 .tab svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-.mgd1 .tab.on{color:#9A6B1F}
-/* ===== Screen-Admin-Settlement ===== */
+.mgd1 .tab.on{color:#8a5e16}
 .mgd2 *{box-sizing:border-box}
-.mgd2{margin:0;background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#14181A}
+.mgd2{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
 .mgd2 .num{font-variant-numeric:tabular-nums}
 .mgd2 .mono{font-family:'IBM Plex Mono',monospace}
 .mgd2 svg{display:block;flex-shrink:0}
-.mgd2 .phone{width:340px;background:#14181A;border-radius:44px;padding:12px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
-.mgd2 .screen{background:#ECE8DF;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
-.mgd2 .sbar{display:flex;justify-content:space-between;align-items:center;padding:16px 24px 8px;font-size:13px;font-weight:600}
-.mgd2 .topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 8px}
-.mgd2 .topbtn{width:42px;height:42px;border-radius:12px;background:#FFFDF8;border:1px solid #E2DDD1;display:flex;align-items:center;justify-content:center;color:#3A3F3A}
-.mgd2 .ttl{font-size:17px;font-weight:600}
-.mgd2 .draft{margin-inline-start:auto;font-size:11px;font-weight:600;color:#9A6B1F;background:#F4EBD7;padding:4px 12px;border-radius:999px}
-.mgd2 .body{flex:1;overflow-y:auto;padding:8px 16px 24px;display:flex;flex-direction:column;gap:12px}
+.mgd2 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd2 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
+.mgd2 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:13px;font-weight:600}
+.mgd2 .topbar{display:flex;align-items:center;gap:12px;padding:6px 16px 8px}
+.mgd2 .topbtn{width:42px;height:42px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a}
+.mgd2 .ttl{font-size:19px;font-weight:600}
+.mgd2 .draft{margin-inline-start:auto;font-size:10px;font-weight:600;color:#8a5e16;background:#f4ebd7;padding:4px 9px;border-radius:999px}
+.mgd2 .body{flex:1;overflow-y:auto;padding:8px 16px 20px;display:flex;flex-direction:column;gap:14px}
 .mgd2 .body>*{flex-shrink:0}
-.mgd2 .cyc{display:flex;align-items:center;gap:8px;background:#FFFDF8;border:1px solid #E2DDD1;border-radius:12px;padding:12px 16px}
-.mgd2 .cadge{font-size:11px;font-weight:600;color:#0A514A;background:#DFEEEB;padding:4px 12px;border-radius:999px}
-.mgd2 .cyt{font-size:12px;color:#5D635C}
-.mgd2 .cyt b{color:#14181A}
-.mgd2 .flow{background:linear-gradient(155deg,#0E6B61,#0A514A);border-radius:16px;padding:16px;color:#F2EEE5}
+.mgd2 .cyc{display:flex;align-items:center;gap:8px;background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:12px 14px}
+.mgd2 .cadge{font-size:11px;font-weight:600;color:#0a514a;background:#dfeeeb;padding:4px 9px;border-radius:999px}
+.mgd2 .cyt{font-size:12.5px;color:#5d635c}
+.mgd2 .cyt b{color:#1b201d}
+.mgd2 .flow{background:linear-gradient(155deg,#0f766b,#0a514a);border-radius:20px;padding:16px;color:#eef6f4}
 .mgd2 .fl0{font-size:12px;opacity:.85}
-.mgd2 .flr{display:flex;justify-content:space-between;align-items:center;padding:12px 0;font-size:13px;border-top:1px solid rgba(238,246,244,.16)}
+.mgd2 .flr{display:flex;justify-content:space-between;align-items:center;padding:9px 0;font-size:13.5px;border-top:1px solid rgba(238,246,244,.16)}
 .mgd2 .flr:first-of-type{border-top:none}
 .mgd2 .flk{opacity:.9}
 .mgd2 .flv{font-weight:600;font-variant-numeric:tabular-nums}
-.mgd2 .flkeep{border-top:1px solid rgba(238,246,244,.35);margin-top:4px;padding-top:12px;font-weight:700}
-.mgd2 .kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.mgd2 .kpi{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:12px;padding:16px}
-.mgd2 .kl{font-size:11px;color:#80827A}
-.mgd2 .kv{font-size:17px;font-weight:700;margin-top:4px}
-.mgd2 .glabel{font-size:12px;font-weight:600;letter-spacing:.02em;color:#80827A;margin:4px 4px -6px}
-.mgd2 .group{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:16px;overflow:hidden}
-.mgd2 .srow{display:flex;align-items:center;gap:12px;padding:12px 16px;border-top:1px solid #F0ECE2}
+.mgd2 .flkeep{border-top:1px solid rgba(238,246,244,.35);margin-top:4px;padding-top:11px;font-weight:700}
+.mgd2 .kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mgd2 .kpi{background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:13px}
+.mgd2 .kl{font-size:11.5px;color:#80827a}
+.mgd2 .kv{font-size:19px;font-weight:700;margin-top:3px}
+.mgd2 .glabel{font-size:12px;font-weight:600;letter-spacing:.02em;color:#80827a;margin:2px 4px -6px}
+.mgd2 .group{background:#fffdf8;border:1px solid #e2ddd1;border-radius:16px;overflow:hidden}
+.mgd2 .srow{display:flex;align-items:center;gap:12px;padding:12px 14px;border-top:1px solid #f0ece2}
 .mgd2 .srow:first-child{border-top:none}
-.mgd2 .av{width:34px;height:34px;border-radius:50%;background:#F4EBD7;color:#9A6B1F;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0}
+.mgd2 .av{width:34px;height:34px;border-radius:50%;background:#f4ebd7;color:#9a6b1f;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0}
 .mgd2 .sl{flex:1}
-.mgd2 .snm{font-size:13px;font-weight:500}
-.mgd2 .ss{font-size:11px;color:#80827A;margin-top:4px}
-.mgd2 .meth{font-size:11px;font-weight:600;padding:4px 8px;border-radius:999px;white-space:nowrap}
-.mgd2 .mbank{background:#DFEEEB;color:#0E6B61}
-.mgd2 .mwallet{background:#DFEEEB;color:#0E6B61}
-.mgd2 .mroll{background:#F2EEE5;color:#80827A}
-.mgd2 .netv{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;text-align:end}
-.mgd2 .foot{display:flex;justify-content:space-between;font-size:12px;color:#5D635C;padding:0 4px}
-.mgd2 .run{background:#0E6B61;color:#fff;text-align:center;font-size:15px;font-weight:600;padding:16px;border-radius:12px}
-.mgd2 .note{background:#DFEEEB;border:1px solid #DFEEEB;border-radius:12px;padding:12px 16px;font-size:12px;color:#0E6B61;line-height:1.5}
-.mgd2 .board{max-width:1480px;margin:0 auto;padding:48px 32px 48px}
-.mgd2 .masthead{background:#ECE8DF;border:1px solid #E2DDD1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:48px 48px 48px}
-.mgd2 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:32px}
-.mgd2 .frame{display:flex;flex-direction:column;align-items:center;gap:12px}
-.mgd2 .cap{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5D635C}
-.mgd2 .tabbar{display:flex;background:#FFFDF8;border-top:1px solid #E2DDD1;padding:8px 4px 12px;flex-shrink:0}
-.mgd2 .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:#A09A8E;font-size:11px;font-weight:600;text-decoration:none}
+.mgd2 .snm{font-size:14px;font-weight:500}
+.mgd2 .ss{font-size:11px;color:#80827a;margin-top:2px}
+.mgd2 .meth{font-size:10px;font-weight:600;padding:3px 8px;border-radius:999px;white-space:nowrap}
+.mgd2 .mbank{background:#e4f0e9;color:#1a6d4d}
+.mgd2 .mwallet{background:#e3ecf6;color:#2563eb}
+.mgd2 .mroll{background:#f2eee5;color:#80827a}
+.mgd2 .netv{font-size:13.5px;font-weight:600;font-variant-numeric:tabular-nums;text-align:end}
+.mgd2 .foot{display:flex;justify-content:space-between;font-size:12.5px;color:#5d635c;padding:0 4px}
+.mgd2 .run{background:#0e6b61;color:#fff;text-align:center;font-size:15px;font-weight:600;padding:15px;border-radius:14px}
+.mgd2 .note{background:#e3ecf6;border:1px solid #cdddf3;border-radius:14px;padding:12px 14px;font-size:12px;color:#274b8a;line-height:1.5}
+.mgd2 .board{max-width:1480px;margin:0 auto;padding:56px 28px 96px}
+.mgd2 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
+.mgd2 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.mgd2 .frame{display:flex;flex-direction:column;align-items:center;gap:14px}
+.mgd2 .cap{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5d635c}
+.mgd2 .tabbar{display:flex;background:#fffdf8;border-top:1px solid #e2ddd1;padding:8px 4px 11px;flex-shrink:0}
+.mgd2 .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:#9a9c92;font-size:9.5px;font-weight:600;text-decoration:none}
 .mgd2 .tab svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-.mgd2 .tab.on{color:#9A6B1F}
-/* ===== Screen-Admin-Finance-Health ===== */
+.mgd2 .tab.on{color:#8a5e16}
 .mgd3 *{box-sizing:border-box}
-.mgd3{margin:0;background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#14181A}
+.mgd3{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
 .mgd3 .num{font-variant-numeric:tabular-nums}
 .mgd3 .mono{font-family:'IBM Plex Mono',monospace}
 .mgd3 svg{display:block;flex-shrink:0}
-.mgd3 .phone{width:340px;background:#14181A;border-radius:44px;padding:12px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
-.mgd3 .screen{background:#ECE8DF;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
-.mgd3 .sbar{display:flex;justify-content:space-between;align-items:center;padding:16px 24px 8px;font-size:13px;font-weight:600}
-.mgd3 .topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 8px}
-.mgd3 .topbtn{width:42px;height:42px;border-radius:12px;background:#FFFDF8;border:1px solid #E2DDD1;display:flex;align-items:center;justify-content:center;color:#3A3F3A}
-.mgd3 .ttl{font-size:17px;font-weight:600}
-.mgd3 .pill{font-size:12px;font-weight:600;color:#5D635C;background:#FFFDF8;border:1px solid #E2DDD1;border-radius:999px;padding:8px 12px;display:inline-flex;align-items:center;gap:4px}
-.mgd3 .body{flex:1;overflow-y:auto;padding:8px 16px 24px;display:flex;flex-direction:column;gap:16px}
+.mgd3 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd3 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
+.mgd3 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:13px;font-weight:600}
+.mgd3 .topbar{display:flex;align-items:center;gap:12px;padding:6px 16px 8px}
+.mgd3 .topbtn{width:42px;height:42px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a}
+.mgd3 .ttl{font-size:19px;font-weight:600}
+.mgd3 .pill{font-size:12.5px;font-weight:600;color:#5d635c;background:#fffdf8;border:1px solid #e2ddd1;border-radius:999px;padding:8px 12px;display:inline-flex;align-items:center;gap:5px}
+.mgd3 .body{flex:1;overflow-y:auto;padding:6px 16px 20px;display:flex;flex-direction:column;gap:16px}
 .mgd3 .body>*{flex-shrink:0}
-.mgd3 .hero{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:16px;padding:16px}
-.mgd3 .hero .lab{font-size:12px;color:#80827A}
-.mgd3 .hrow{display:flex;align-items:flex-end;gap:8px;margin-top:4px}
+.mgd3 .hero{background:#fffdf8;border:1px solid #e2ddd1;border-radius:18px;padding:16px}
+.mgd3 .hero .lab{font-size:12.5px;color:#80827a}
+.mgd3 .hrow{display:flex;align-items:flex-end;gap:10px;margin-top:4px}
 .mgd3 .hero .big{font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1}
-.mgd3 .trend{font-size:12px;font-weight:600;padding:4px 8px;border-radius:999px;background:#DFEEEB;color:#0E6B61;display:inline-flex;align-items:center;gap:4px;margin-bottom:4px}
-.mgd3 .kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.mgd3 .kpi{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:16px;padding:16px 16px}
-.mgd3 .kpi .v{font-size:22px;font-weight:700;letter-spacing:-.01em}
-.mgd3 .kpi .l{font-size:12px;color:#80827A;margin-top:4px}
-.mgd3 .glabel{font-size:12px;font-weight:600;letter-spacing:.02em;color:#80827A;margin:4px 4px -6px}
-.mgd3 .card{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:16px;padding:16px 16px 12px}
-.mgd3 .chart{display:flex;align-items:flex-end;gap:8px;height:96px}
-.mgd3 .cbar{flex:1;background:#DFEEEB;border-radius:4px 4px 0 0;position:relative}
-.mgd3 .cbar.on{background:#0E6B61}
-.mgd3 .clabels{display:flex;gap:8px;margin-top:8px}
-.mgd3 .clabels span{flex:1;text-align:center;font-size:11px;color:#80827A}
-.mgd3 .rm{display:flex;align-items:center;gap:8px;margin-top:12px}
+.mgd3 .trend{font-size:12px;font-weight:600;padding:3px 8px;border-radius:999px;background:#e4f0e9;color:#1a6d4d;display:inline-flex;align-items:center;gap:3px;margin-bottom:2px}
+.mgd3 .kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mgd3 .kpi{background:#fffdf8;border:1px solid #e2ddd1;border-radius:16px;padding:13px 14px}
+.mgd3 .kpi .v{font-size:20px;font-weight:700;letter-spacing:-.01em}
+.mgd3 .kpi .l{font-size:12px;color:#80827a;margin-top:2px}
+.mgd3 .glabel{font-size:12px;font-weight:600;letter-spacing:.02em;color:#80827a;margin:2px 4px -6px}
+.mgd3 .card{background:#fffdf8;border:1px solid #e2ddd1;border-radius:16px;padding:16px 14px 12px}
+.mgd3 .chart{display:flex;align-items:flex-end;gap:9px;height:96px}
+.mgd3 .cbar{flex:1;background:#dfeeeb;border-radius:6px 6px 0 0;position:relative}
+.mgd3 .cbar.on{background:#0e6b61}
+.mgd3 .clabels{display:flex;gap:9px;margin-top:8px}
+.mgd3 .clabels span{flex:1;text-align:center;font-size:10.5px;color:#80827a}
+.mgd3 .rm{display:flex;align-items:center;gap:10px;margin-top:12px}
 .mgd3 .rm:first-child{margin-top:0}
 .mgd3 .rm .k{font-size:13px;width:74px;flex-shrink:0}
-.mgd3 .bar{flex:1;height:7px;border-radius:999px;background:#F0ECE2;overflow:hidden}
+.mgd3 .bar{flex:1;height:7px;border-radius:999px;background:#f0ece2;overflow:hidden}
 .mgd3 .bf{height:100%;border-radius:999px}
-.mgd3 .rm .val{font-size:12px;font-weight:600;width:64px;text-align:end;flex-shrink:0}
-.mgd3 .group{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:16px;overflow:hidden}
-.mgd3 .srow{display:flex;align-items:center;gap:12px;padding:16px 16px;border-top:1px solid #F0ECE2}
+.mgd3 .rm .val{font-size:12.5px;font-weight:600;width:64px;text-align:end;flex-shrink:0}
+.mgd3 .group{background:#fffdf8;border:1px solid #e2ddd1;border-radius:16px;overflow:hidden}
+.mgd3 .srow{display:flex;align-items:center;gap:12px;padding:13px 14px;border-top:1px solid #f0ece2}
 .mgd3 .srow:first-child{border-top:none}
-.mgd3 .slabel{flex:1;font-size:15px;font-weight:500}
-.mgd3 .sval{font-size:12px;color:#80827A}
+.mgd3 .slabel{flex:1;font-size:14.5px;font-weight:500}
+.mgd3 .sval{font-size:12.5px;color:#80827a}
 .mgd3 .dot{width:8px;height:8px;border-radius:50%;display:inline-block}
-.mgd3 .op{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:#0E6B61}
-.mgd3 .chev{color:#D8D3C6}
-.mgd3 .banner{background:#DFEEEB;border:1px solid #BFE3DD;border-radius:16px;padding:16px;display:flex;align-items:center;gap:12px}
-.mgd3 .bic{width:36px;height:36px;border-radius:50%;background:#0E6B61;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.mgd3 .k3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
-.mgd3 .kc{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:12px;padding:12px 8px;text-align:center}
-.mgd3 .kc .v{font-size:17px;font-weight:700;letter-spacing:-.01em}
-.mgd3 .kc .l{font-size:11px;color:#80827A;margin-top:4px}
-.mgd3 .inc{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:12px;padding:16px 16px;display:flex;align-items:center;gap:12px}
-.mgd3 .rez{font-size:11px;font-weight:600;padding:4px 12px;border-radius:999px;background:#DFEEEB;color:#0E6B61}
-.mgd3 .board{max-width:1480px;margin:0 auto;padding:48px 32px 48px}
-.mgd3 .masthead{background:#ECE8DF;border:1px solid #E2DDD1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:48px 48px 48px}
-.mgd3 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:32px}
-.mgd3 .frame{display:flex;flex-direction:column;align-items:center;gap:12px}
-.mgd3 .tabbar{display:flex;background:#FFFDF8;border-top:1px solid #E2DDD1;padding:8px 4px 12px;flex-shrink:0}
-.mgd3 .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:#A09A8E;font-size:11px;font-weight:600;text-decoration:none}
+.mgd3 .op{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#1a6d4d}
+.mgd3 .chev{color:#c3c4ba}
+.mgd3 .banner{background:#e4f0e9;border:1px solid #bfe0cf;border-radius:16px;padding:15px;display:flex;align-items:center;gap:12px}
+.mgd3 .bic{width:36px;height:36px;border-radius:50%;background:#1a6d4d;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mgd3 .k3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.mgd3 .kc{background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:12px 8px;text-align:center}
+.mgd3 .kc .v{font-size:18px;font-weight:700;letter-spacing:-.01em}
+.mgd3 .kc .l{font-size:11px;color:#80827a;margin-top:2px}
+.mgd3 .inc{background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:13px 14px;display:flex;align-items:center;gap:12px}
+.mgd3 .rez{font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:#e4f0e9;color:#1a6d4d}
+.mgd3 .board{max-width:1480px;margin:0 auto;padding:56px 28px 96px}
+.mgd3 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
+.mgd3 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.mgd3 .frame{display:flex;flex-direction:column;align-items:center;gap:14px}
+.mgd3 .tabbar{display:flex;background:#fffdf8;border-top:1px solid #e2ddd1;padding:8px 4px 11px;flex-shrink:0}
+.mgd3 .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:#9a9c92;font-size:9.5px;font-weight:600;text-decoration:none}
 .mgd3 .tab svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-.mgd3 .tab.on{color:#9A6B1F}
-/* ===== Screen-Admin-Receipts ===== */
+.mgd3 .tab.on{color:#8a5e16}
 .mgd4 *{box-sizing:border-box}
-.mgd4{margin:0;background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#14181A}
+.mgd4{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
 .mgd4 .num{font-variant-numeric:tabular-nums}
 .mgd4 .mono{font-family:'IBM Plex Mono',monospace}
 .mgd4 svg{display:block;flex-shrink:0}
-.mgd4 .phone{width:340px;background:#14181A;border-radius:44px;padding:12px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
-.mgd4 .screen{background:#ECE8DF;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
-.mgd4 .sbar{display:flex;justify-content:space-between;align-items:center;padding:16px 24px 8px;font-size:13px;font-weight:600}
-.mgd4 .topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 8px}
-.mgd4 .topbtn{width:42px;height:42px;border-radius:12px;background:#FFFDF8;border:1px solid #E2DDD1;display:flex;align-items:center;justify-content:center;color:#3A3F3A}
-.mgd4 .ttl{font-size:17px;font-weight:600}
-.mgd4 .body{flex:1;overflow-y:auto;padding:8px 16px 24px;display:flex;flex-direction:column;gap:12px}
+.mgd4 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd4 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
+.mgd4 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:13px;font-weight:600}
+.mgd4 .topbar{display:flex;align-items:center;gap:12px;padding:6px 16px 8px}
+.mgd4 .topbtn{width:42px;height:42px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a}
+.mgd4 .ttl{font-size:19px;font-weight:600}
+.mgd4 .body{flex:1;overflow-y:auto;padding:8px 16px 20px;display:flex;flex-direction:column;gap:14px}
 .mgd4 .body>*{flex-shrink:0}
-.mgd4 .k3{display:flex;background:#FFFDF8;border:1px solid #E2DDD1;border-radius:16px;padding:16px}
+.mgd4 .k3{display:flex;background:#fffdf8;border:1px solid #e2ddd1;border-radius:16px;padding:15px}
 .mgd4 .kc{flex:1;text-align:center}
-.mgd4 .kc+.kc{border-inline-start:1px solid #ECE8DF}
-.mgd4 .kcl{font-size:11px;color:#80827A}
-.mgd4 .kcv{font-size:17px;font-weight:700;margin-top:4px}
+.mgd4 .kc+.kc{border-inline-start:1px solid #eee7d9}
+.mgd4 .kcl{font-size:11px;color:#80827a}
+.mgd4 .kcv{font-size:18px;font-weight:700;margin-top:3px}
 .mgd4 .fpills{display:flex;gap:8px;overflow-x:auto}
-.mgd4 .fp{font-size:12px;font-weight:600;color:#5D635C;background:#FFFDF8;border:1px solid #E2DDD1;border-radius:999px;padding:8px 16px;white-space:nowrap}
-.mgd4 .fp.on{background:#0E6B61;color:#fff;border-color:#0E6B61}
-.mgd4 .glabel{font-size:12px;font-weight:600;letter-spacing:.02em;color:#80827A;margin:4px 4px -6px}
-.mgd4 .group{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:16px;overflow:hidden}
-.mgd4 .rrow{display:flex;align-items:center;gap:8px;padding:16px 16px;border-top:1px solid #F0ECE2}
+.mgd4 .fp{font-size:12.5px;font-weight:600;color:#5d635c;background:#fffdf8;border:1px solid #e2ddd1;border-radius:999px;padding:7px 13px;white-space:nowrap}
+.mgd4 .fp.on{background:#0e6b61;color:#fff;border-color:#0e6b61}
+.mgd4 .glabel{font-size:12px;font-weight:600;letter-spacing:.02em;color:#80827a;margin:2px 4px -6px}
+.mgd4 .group{background:#fffdf8;border:1px solid #e2ddd1;border-radius:16px;overflow:hidden}
+.mgd4 .rrow{display:flex;align-items:center;gap:11px;padding:13px 14px;border-top:1px solid #f0ece2}
 .mgd4 .rrow:first-child{border-top:none}
-.mgd4 .ric{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.mgd4 .ric.fee{background:#DFEEEB;color:#0E6B61}
-.mgd4 .ric.wd{background:#F4EBD7;color:#9A6B1F}
-.mgd4 .rref{font-size:11px;color:#80827A;font-family:'IBM Plex Mono',monospace}
-.mgd4 .rnm{font-size:13px;font-weight:600;margin-top:4px}
-.mgd4 .ramt{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
-.mgd4 .rdt{font-size:11px;color:#80827A;margin-top:4px}
-.mgd4 .board{max-width:820px;margin:0 auto;padding:48px 32px 48px}
-.mgd4 .masthead{background:#ECE8DF;border:1px solid #E2DDD1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:48px 48px 48px}
-.mgd4 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:32px}
-.mgd4 .frame{display:flex;flex-direction:column;align-items:center;gap:12px}
-.mgd4 .cap{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5D635C}
-.mgd4 .tabbar{display:flex;background:#FFFDF8;border-top:1px solid #E2DDD1;padding:8px 4px 12px;flex-shrink:0}
-.mgd4 .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:#A09A8E;font-size:11px;font-weight:600;text-decoration:none}
+.mgd4 .ric{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mgd4 .ric.fee{background:#e4f0e9;color:#1a6d4d}
+.mgd4 .ric.wd{background:#f4ebd7;color:#9a6b1f}
+.mgd4 .rref{font-size:11px;color:#80827a;font-family:'IBM Plex Mono',monospace}
+.mgd4 .rnm{font-size:14px;font-weight:600;margin-top:1px}
+.mgd4 .ramt{font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+.mgd4 .rdt{font-size:11px;color:#80827a;margin-top:1px}
+.mgd4 .board{max-width:820px;margin:0 auto;padding:56px 28px 96px}
+.mgd4 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
+.mgd4 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.mgd4 .frame{display:flex;flex-direction:column;align-items:center;gap:14px}
+.mgd4 .cap{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5d635c}
+.mgd4 .tabbar{display:flex;background:#fffdf8;border-top:1px solid #e2ddd1;padding:8px 4px 11px;flex-shrink:0}
+.mgd4 .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:#9a9c92;font-size:9.5px;font-weight:600;text-decoration:none}
 .mgd4 .tab svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-.mgd4 .tab.on{color:#9A6B1F}
-/* ===== Screen-Admin-Withdrawals-Analytics ===== */
+.mgd4 .tab.on{color:#8a5e16}
 .mgd5 *{box-sizing:border-box}
-.mgd5{margin:0;background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#14181A}
-.mgd5 .num{font-variant-numeric:tabular-nums}
-.mgd5 .mono{font-family:'IBM Plex Mono',monospace}
-.mgd5 svg{display:block;flex-shrink:0}
-.mgd5 .phone{width:340px;background:#14181A;border-radius:44px;padding:12px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
-.mgd5 .screen{background:#ECE8DF;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
-.mgd5 .sbar{display:flex;justify-content:space-between;align-items:center;padding:16px 24px 8px;font-size:13px;font-weight:600}
-.mgd5 .topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 8px}
-.mgd5 .topbtn{width:42px;height:42px;border-radius:12px;background:#FFFDF8;border:1px solid #E2DDD1;display:flex;align-items:center;justify-content:center;color:#3A3F3A}
-.mgd5 .ttl{font-size:17px;font-weight:600}
-.mgd5 .pill{font-size:12px;font-weight:600;color:#5D635C;background:#FFFDF8;border:1px solid #E2DDD1;border-radius:999px;padding:8px 12px;display:inline-flex;align-items:center;gap:4px}
-.mgd5 .body{flex:1;overflow-y:auto;padding:8px 16px 24px;display:flex;flex-direction:column;gap:16px}
-.mgd5 .body>*{flex-shrink:0}
-.mgd5 .sum{background:#DFEEEB;border:1px solid #BFE3DD;border-radius:16px;padding:16px}
-.mgd5 .sum .lab{font-size:12px;color:#0A514A}
-.mgd5 .sum .big{font-size:22px;font-weight:700;letter-spacing:-.01em;margin-top:4px}
-.mgd5 .sum .sub{font-size:12px;color:#5D635C;margin-top:4px}
-.mgd5 .fpills{display:flex;gap:8px;overflow-x:auto}
-.mgd5 .fp{font-size:13px;font-weight:600;padding:8px 16px;border-radius:999px;background:#FFFDF8;border:1px solid #E2DDD1;color:#5D635C;white-space:nowrap}
-.mgd5 .fp.on{background:#0E6B61;border-color:#0E6B61;color:#fff}
-.mgd5 .group{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:16px;overflow:hidden}
-.mgd5 .srow{display:flex;align-items:center;gap:12px;padding:16px 16px;border-top:1px solid #F0ECE2}
-.mgd5 .srow:first-child{border-top:none}
-.mgd5 .srow.ex{flex-direction:column;align-items:stretch;background:#FFFDF8}
-.mgd5 .rowtop{display:flex;align-items:center;gap:12px;width:100%}
-.mgd5 .av{width:40px;height:40px;border-radius:12px;background:#DFEEEB;color:#0A514A;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;flex-shrink:0}
-.mgd5 .av.t{border-radius:50%;background:#F4EBD7;color:#9A6B1F}
-.mgd5 .nm{font-size:15px;font-weight:600}
-.mgd5 .mt{font-size:12px;color:#80827A;margin-top:4px}
-.mgd5 .rt{text-align:end;flex-shrink:0}
-.mgd5 .amt{font-size:15px;font-weight:700}
-.mgd5 .bg{font-size:11px;font-weight:600;padding:4px 12px;border-radius:999px;display:inline-block;margin-top:4px}
-.mgd5 .bpend{background:#F2EEE5;color:#5D635C}
-.mgd5 .chips{display:flex;gap:8px;margin-top:12px}
-.mgd5 .chip-a{flex:1;background:#0E6B61;color:#fff;font-weight:600;font-size:13px;padding:12px;border-radius:12px;text-align:center;white-space:nowrap}
-.mgd5 .chip{flex:1;background:#FFFDF8;border:1px solid #E2DDD1;color:#3A3F3A;font-weight:600;font-size:13px;padding:12px;border-radius:12px;text-align:center;white-space:nowrap}
-.mgd5 .kebab{width:44px;flex-shrink:0;border:1px solid #E2DDD1;border-radius:12px;background:#FFFDF8;display:flex;align-items:center;justify-content:center;color:#5D635C}
-.mgd5 .glabel{font-size:12px;font-weight:600;letter-spacing:.02em;color:#80827A;margin:4px 4px -6px}
-.mgd5 .kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.mgd5 .kpi{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:16px;padding:16px 16px}
-.mgd5 .kpi .v{font-size:22px;font-weight:700;letter-spacing:-.01em}
-.mgd5 .kpi .l{font-size:12px;color:#80827A;margin-top:4px}
-.mgd5 .card{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:16px;padding:16px 16px 12px}
-.mgd5 .chart{display:flex;align-items:flex-end;gap:8px;height:96px}
-.mgd5 .cbar{flex:1;background:#DFEEEB;border-radius:4px 4px 0 0}
-.mgd5 .cbar.on{background:#0E6B61}
-.mgd5 .clabels{display:flex;gap:8px;margin-top:8px}
-.mgd5 .clabels span{flex:1;text-align:center;font-size:11px;color:#80827A}
-.mgd5 .rm{display:flex;align-items:center;gap:8px;margin-top:12px}
-.mgd5 .rm:first-child{margin-top:0}
-.mgd5 .rm .k{font-size:13px;width:118px;flex-shrink:0}
-.mgd5 .bar{flex:1;height:7px;border-radius:999px;background:#F0ECE2;overflow:hidden}
-.mgd5 .bf{height:100%;border-radius:999px;background:#0E6B61}
-.mgd5 .rm .val{font-size:12px;font-weight:600;width:42px;text-align:end;flex-shrink:0}
-.mgd5 .board{max-width:1480px;margin:0 auto;padding:48px 32px 48px}
-.mgd5 .masthead{background:#ECE8DF;border:1px solid #E2DDD1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:48px 48px 48px}
-.mgd5 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:32px}
+.mgd5{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;color:#1b201d;-webkit-font-smoothing:antialiased}
+.mgd5 .board{max-width:1180px;margin:0 auto;padding:48px 24px 90px}
+.mgd5 .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#80827a;font-weight:600}
+.mgd5 .pill0{display:inline-block;margin:10px 0;padding:4px 12px;border-radius:999px;background:#f0e6d2;color:#8a5e16;font-size:12px;font-weight:600}
+.mgd5 h1.mh{font-size:30px;margin:6px 0 8px;font-weight:700;letter-spacing:-.01em}
+.mgd5 .board>p.lead{margin:0 0 34px;color:#5d635c;font-size:16px;line-height:1.5;max-width:80ch}
+.mgd5 .phones{display:flex;gap:34px;flex-wrap:wrap;justify-content:center}
 .mgd5 .frame{display:flex;flex-direction:column;align-items:center;gap:12px}
-.mgd5 .tabbar{display:flex;background:#FFFDF8;border-top:1px solid #E2DDD1;padding:8px 4px 12px;flex-shrink:0}
-.mgd5 .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:#A09A8E;font-size:11px;font-weight:600;text-decoration:none}
+.mgd5 .cap{font-size:13px;color:#5d635c;font-weight:600}
+.mgd5 .phone{width:340px;background:#14181a;border-radius:44px;padding:11px;box-shadow:0 30px 60px -20px rgba(0,0,0,.4)}
+.mgd5 .screen{background:#ece8df;border-radius:34px;height:748px;display:flex;flex-direction:column;overflow:hidden;position:relative}
+.mgd5 .sbar{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:14px;font-weight:600;flex-shrink:0}
+.mgd5 .topbar{display:flex;align-items:center;gap:11px;padding:4px 16px 8px;flex-shrink:0}
+.mgd5 .topbtn{width:40px;height:40px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a;flex-shrink:0}
+.mgd5 .topbtn svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.mgd5 .tt{font-size:16.5px;font-weight:700;line-height:1.2}
+.mgd5 .ts{font-size:11.5px;color:#80827a;margin-top:1px}
+.mgd5 .ibadge{margin-inline-start:auto;font-size:10px;font-weight:700;color:#8a5e16;background:#f0e6d2;padding:4px 9px;border-radius:999px;flex-shrink:0}
+.mgd5 .body{flex:1;overflow-y:auto;padding:2px 16px 16px}
+.mgd5 .hero{background:linear-gradient(150deg,#2a2f2c,#14181a);border-radius:16px;padding:15px;color:#f0ede6;margin-bottom:12px}
+.mgd5 .hl{font-size:12px;opacity:.85}
+.mgd5 .hn{font-size:28px;font-weight:700;margin-top:3px;font-variant-numeric:tabular-nums}
+.mgd5 .hn span{font-size:13px;font-weight:500;opacity:.8}
+.mgd5 .hrow{display:flex;gap:10px;margin-top:12px;padding-top:11px;border-top:1px solid rgba(255,255,255,.16)}
+.mgd5 .hrow div{flex:1}
+.mgd5 .hk{font-size:10.5px;opacity:.78}
+.mgd5 .hv{font-size:14px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+.mgd5 .why{background:#e3ecf6;border:1px solid #cdddf3;border-radius:13px;padding:11px 12px;margin-bottom:12px}
+.mgd5 .wt{font-size:12px;font-weight:700;color:#274b8a;margin-bottom:6px}
+.mgd5 .wr{display:flex;align-items:center;justify-content:space-between;font-size:11.5px;color:#274b8a;padding:3px 0}
+.mgd5 .wr b{font-weight:700;font-variant-numeric:tabular-nums}
+.mgd5 .fsel{display:flex;gap:7px;margin-bottom:11px}
+.mgd5 .fs{flex:1;text-align:center;padding:8px 4px;border-radius:10px;font-size:11.5px;font-weight:700;background:#f2eee5;color:#5d635c;border:1px solid #e2ddd1}
+.mgd5 .fs.on{background:#14181a;color:#f0ede6;border-color:#14181a}
+.mgd5 .dl{font-size:11px;font-weight:700;letter-spacing:.04em;color:#80827a;margin:13px 3px 8px}
+.mgd5 .row{display:flex;align-items:center;gap:10px;background:#fffdf8;border:1px solid #e2ddd1;border-radius:13px;padding:10px 12px;margin-bottom:7px}
+.mgd5 .av{width:34px;height:34px;border-radius:10px;background:#f4ebd7;color:#8a5e16;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.mgd5 .av.f{background:#f4e5e2;color:#9c3322}
+.mgd5 .rn{flex:1;min-width:0}
+.mgd5 .rnm{font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:5px}
+.mgd5 .rnm .arrow{width:11px;height:11px;fill:none;stroke:#b6b1a4;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.mgd5 .rsub{font-size:10.5px;color:#80827a;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mgd5 .amt{text-align:end;flex-shrink:0}
+.mgd5 .amt b{font-size:13.5px;font-weight:700;font-variant-numeric:tabular-nums;display:block}
+.mgd5 .st{font-size:9px;font-weight:700;padding:2px 6px;border-radius:999px;display:inline-block;margin-top:3px}
+.mgd5 .sf{background:#f4e5e2;color:#9c3322}
+.mgd5 .sw{background:#f4ebd7;color:#8a5e16}
+.mgd5 .done{font-size:9px;font-weight:700;color:#1a6d4d;background:#e4f0e9;padding:2px 6px;border-radius:999px;display:inline-block;margin-top:3px}
+.mgd5 .card{background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:4px 14px;margin-bottom:11px}
+.mgd5 .lr{display:flex;align-items:center;justify-content:space-between;padding:10px 0;font-size:13px;border-bottom:1px solid #f0ece2;gap:10px}
+.mgd5 .lr:last-child{border-bottom:none}
+.mgd5 .lk{color:#5d635c;min-width:0}
+.mgd5 .lv{font-weight:600;font-variant-numeric:tabular-nums;flex-shrink:0}
+.mgd5 .sec{font-size:15px;font-weight:700;margin:15px 2px 3px}
+.mgd5 .sub{font-size:12px;color:#80827a;margin:0 2px 10px;line-height:1.45}
+.mgd5 .tl{position:relative;padding-inline-start:20px;margin-bottom:12px}
+.mgd5 .tl::before{content:"";position:absolute;inset-inline-start:5px;top:6px;bottom:6px;width:2px;background:#e2ddd1}
+.mgd5 .te{position:relative;padding:7px 0;font-size:12px}
+.mgd5 .te::before{content:"";position:absolute;inset-inline-start:-19px;top:11px;width:9px;height:9px;border-radius:50%;background:#c8c2b4;border:2px solid #ece8df}
+.mgd5 .te.bad::before{background:#9c3322}
+.mgd5 .te.ok::before{background:#1a6d4d}
+.mgd5 .tet{font-weight:600}
+.mgd5 .tes{font-size:10.5px;color:#80827a;margin-top:1px}
+.mgd5 .person{background:#fffdf8;border:1px solid #e2ddd1;border-radius:13px;padding:11px 12px;margin-bottom:7px}
+.mgd5 .ptop{display:flex;align-items:center;gap:10px}
+.mgd5 .pav{width:32px;height:32px;border-radius:10px;background:#f2eee5;color:#5d635c;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:700;flex-shrink:0}
+.mgd5 .pnm{font-size:13px;font-weight:600}
+.mgd5 .prol{font-size:10.5px;color:#80827a;margin-top:1px}
+.mgd5 .pbtns{display:flex;gap:7px;margin-top:9px}
+.mgd5 .pb{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;border-radius:10px;padding:9px;font-size:11.5px;font-weight:700}
+.mgd5 .pb svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round}
+.mgd5 .pb.call{background:#f2eee5;color:#3a3f3a;border:1px solid #e2ddd1}
+.mgd5 .pb.wa{background:#dff3ea;color:#12684a;border:1px solid rgba(18,104,74,.2)}
+.mgd5 .warn{background:#f4ebd7;border:1px solid rgba(138,94,22,.22);border-radius:12px;padding:10px 12px;font-size:11.5px;color:#8a5e16;line-height:1.45;margin-bottom:11px}
+.mgd5 .note{background:#e3ecf6;border:1px solid #cdddf3;border-radius:12px;padding:10px 12px;font-size:11.5px;color:#274b8a;line-height:1.45;margin-bottom:11px}
+.mgd5 .footer{padding:11px 16px 17px;border-top:1px solid #e2ddd1;background:#ece8df;flex-shrink:0}
+.mgd5 .fnote{text-align:center;font-size:10.5px;color:#80827a;margin-bottom:8px;line-height:1.4}
+.mgd5 .btn{display:block;width:100%;border:none;border-radius:13px;padding:15px;font-size:15px;font-weight:700;background:#14181a;color:#f0ede6;text-align:center;font-family:inherit}
+.mgd5 .btn2{display:block;width:100%;background:none;border:none;text-align:center;font-size:13px;color:#5d635c;font-weight:600;padding:10px 0 0;font-family:inherit}
+.mgd5 .scrim{position:absolute;inset:0;background:rgba(20,24,26,.42)}
+.mgd5 .sheet{position:absolute;inset-inline:0;bottom:0;background:#ece8df;border-radius:26px 26px 34px 34px;padding:10px 16px 18px}
+.mgd5 .grab{width:38px;height:4px;border-radius:999px;background:#cfcabd;margin:0 auto 13px}
+.mgd5 .sh{font-size:19px;font-weight:700;margin:0 2px 3px}
+.mgd5 .shs{font-size:12px;color:#80827a;margin:0 2px 13px;line-height:1.45}
+.mgd5 .tabbar{display:flex;background:#fffdf8;border-top:1px solid #e2ddd1;padding:8px 4px 11px;flex-shrink:0}
+.mgd5 .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:#9a9c92;font-size:9.5px;font-weight:600;text-decoration:none}
 .mgd5 .tab svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-.mgd5 .tab.on{color:#9A6B1F}
-/* ===== Screen-Admin-Unpaid-Recovery ===== */
+.mgd5 .tab.on{color:#8a5e16}
 .mgd6 *{box-sizing:border-box}
-.mgd6{margin:0;background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;color:#14181A;-webkit-font-smoothing:antialiased}
-.mgd6 .board{max-width:1180px;margin:0 auto;padding:48px 24px 48px}
-.mgd6 .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#80827A;font-weight:600}
-.mgd6 .pill0{display:inline-block;margin:8px 0;padding:4px 12px;border-radius:999px;background:#F4EBD7;color:#9A6B1F;font-size:12px;font-weight:600}
-.mgd6 h1.mh{font-size:30px;margin:4px 0 8px;font-weight:700;letter-spacing:-.01em}
-.mgd6 .board>p.lead{margin:0 0 32px;color:#5D635C;font-size:15px;line-height:1.5;max-width:80ch}
-.mgd6 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center}
-.mgd6 .frame{display:flex;flex-direction:column;align-items:center;gap:12px}
-.mgd6 .cap{font-size:13px;color:#5D635C;font-weight:600}
-.mgd6 .phone{width:340px;background:#14181A;border-radius:44px;padding:12px;box-shadow:0 30px 60px -20px rgba(0,0,0,.4)}
-.mgd6 .screen{background:#ECE8DF;border-radius:34px;height:748px;display:flex;flex-direction:column;overflow:hidden;position:relative}
-.mgd6 .sbar{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:13px;font-weight:600;flex-shrink:0}
-.mgd6 .topbar{display:flex;align-items:center;gap:8px;padding:4px 16px 8px;flex-shrink:0}
-.mgd6 .topbtn{width:40px;height:40px;border-radius:12px;background:#FFFDF8;border:1px solid #E2DDD1;display:flex;align-items:center;justify-content:center;color:#3A3F3A;flex-shrink:0}
-.mgd6 .topbtn svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.mgd6 .tt{font-size:17px;font-weight:700;line-height:1.2}
-.mgd6 .ts{font-size:11px;color:#80827A;margin-top:4px}
-.mgd6 .ibadge{margin-inline-start:auto;font-size:11px;font-weight:700;color:#9A6B1F;background:#F4EBD7;padding:4px 12px;border-radius:999px;flex-shrink:0}
-.mgd6 .body{flex:1;overflow-y:auto;padding:4px 16px 16px}
-.mgd6 .hero{background:linear-gradient(150deg,#3A3F3A,#14181A);border-radius:16px;padding:16px;color:#F2EEE5;margin-bottom:12px}
-.mgd6 .hl{font-size:12px;opacity:.85}
-.mgd6 .hn{font-size:30px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
-.mgd6 .hn span{font-size:13px;font-weight:500;opacity:.8}
-.mgd6 .hrow{display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.16)}
-.mgd6 .hrow div{flex:1}
-.mgd6 .hk{font-size:11px;opacity:.78}
-.mgd6 .hv{font-size:13px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
-.mgd6 .why{background:#DFEEEB;border:1px solid #DFEEEB;border-radius:12px;padding:12px 12px;margin-bottom:12px}
-.mgd6 .wt{font-size:12px;font-weight:700;color:#0E6B61;margin-bottom:4px}
-.mgd6 .wr{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#0E6B61;padding:4px 0}
-.mgd6 .wr b{font-weight:700;font-variant-numeric:tabular-nums}
-.mgd6 .fsel{display:flex;gap:4px;margin-bottom:8px}
-.mgd6 .fs{flex:1;text-align:center;padding:8px 4px;border-radius:8px;font-size:11px;font-weight:700;background:#F2EEE5;color:#5D635C;border:1px solid #E2DDD1}
-.mgd6 .fs.on{background:#14181A;color:#F2EEE5;border-color:#14181A}
-.mgd6 .dl{font-size:11px;font-weight:700;letter-spacing:.04em;color:#80827A;margin:12px 4px 8px}
-.mgd6 .row{display:flex;align-items:center;gap:8px;background:#FFFDF8;border:1px solid #E2DDD1;border-radius:12px;padding:12px 12px;margin-bottom:4px}
-.mgd6 .av{width:34px;height:34px;border-radius:8px;background:#F4EBD7;color:#9A6B1F;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
-.mgd6 .av.f{background:#F0ECE2;color:#9C3322}
-.mgd6 .rn{flex:1;min-width:0}
-.mgd6 .rnm{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:4px}
-.mgd6 .rnm .arrow{width:11px;height:11px;fill:none;stroke:#A09A8E;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
-.mgd6 .rsub{font-size:11px;color:#80827A;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mgd6 .amt{text-align:end;flex-shrink:0}
-.mgd6 .amt b{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;display:block}
-.mgd6 .st{font-size:11px;font-weight:700;padding:4px 8px;border-radius:999px;display:inline-block;margin-top:4px}
-.mgd6 .sf{background:#F0ECE2;color:#9C3322}
-.mgd6 .sw{background:#F4EBD7;color:#9A6B1F}
-.mgd6 .done{font-size:11px;font-weight:700;color:#0E6B61;background:#DFEEEB;padding:4px 8px;border-radius:999px;display:inline-block;margin-top:4px}
-.mgd6 .card{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:12px;padding:4px 16px;margin-bottom:8px}
-.mgd6 .lr{display:flex;align-items:center;justify-content:space-between;padding:12px 0;font-size:13px;border-bottom:1px solid #F0ECE2;gap:8px}
-.mgd6 .lr:last-child{border-bottom:none}
-.mgd6 .lk{color:#5D635C;min-width:0}
-.mgd6 .lv{font-weight:600;font-variant-numeric:tabular-nums;flex-shrink:0}
-.mgd6 .sec{font-size:15px;font-weight:700;margin:12px 4px 4px}
-.mgd6 .sub{font-size:12px;color:#80827A;margin:0 4px 8px;line-height:1.45}
-.mgd6 .tl{position:relative;padding-inline-start:24px;margin-bottom:12px}
-.mgd6 .tl::before{content:"";position:absolute;inset-inline-start:5px;top:6px;bottom:6px;width:2px;background:#E2DDD1}
-.mgd6 .te{position:relative;padding:8px 0;font-size:12px}
-.mgd6 .te::before{content:"";position:absolute;inset-inline-start:-19px;top:11px;width:9px;height:9px;border-radius:50%;background:#D8D3C6;border:2px solid #ECE8DF}
-.mgd6 .te.bad::before{background:#9C3322}
-.mgd6 .te.ok::before{background:#0E6B61}
-.mgd6 .tet{font-weight:600}
-.mgd6 .tes{font-size:11px;color:#80827A;margin-top:4px}
-.mgd6 .person{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:12px;padding:12px 12px;margin-bottom:4px}
-.mgd6 .ptop{display:flex;align-items:center;gap:8px}
-.mgd6 .pav{width:32px;height:32px;border-radius:8px;background:#F2EEE5;color:#5D635C;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
-.mgd6 .pnm{font-size:13px;font-weight:600}
-.mgd6 .prol{font-size:11px;color:#80827A;margin-top:4px}
-.mgd6 .pbtns{display:flex;gap:4px;margin-top:8px}
-.mgd6 .pb{flex:1;display:flex;align-items:center;justify-content:center;gap:4px;border-radius:8px;padding:12px;font-size:11px;font-weight:700}
-.mgd6 .pb svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round}
-.mgd6 .pb.call{background:#F2EEE5;color:#3A3F3A;border:1px solid #E2DDD1}
-.mgd6 .pb.wa{background:#DFEEEB;color:#0E6B61;border:1px solid rgba(18,104,74,.2)}
-.mgd6 .warn{background:#F4EBD7;border:1px solid rgba(138,94,22,.22);border-radius:12px;padding:12px 12px;font-size:11px;color:#9A6B1F;line-height:1.45;margin-bottom:8px}
-.mgd6 .note{background:#DFEEEB;border:1px solid #DFEEEB;border-radius:12px;padding:12px 12px;font-size:11px;color:#0E6B61;line-height:1.45;margin-bottom:8px}
-.mgd6 .footer{padding:12px 16px 24px;border-top:1px solid #E2DDD1;background:#ECE8DF;flex-shrink:0}
-.mgd6 .fnote{text-align:center;font-size:11px;color:#80827A;margin-bottom:8px;line-height:1.4}
-.mgd6 .btn{display:block;width:100%;border:none;border-radius:12px;padding:16px;font-size:15px;font-weight:700;background:#14181A;color:#F2EEE5;text-align:center;font-family:inherit}
-.mgd6 .btn2{display:block;width:100%;background:none;border:none;text-align:center;font-size:13px;color:#5D635C;font-weight:600;padding:12px 0 0;font-family:inherit}
-.mgd6 .scrim{position:absolute;inset:0;background:rgba(20,24,26,.42)}
-.mgd6 .sheet{position:absolute;inset-inline:0;bottom:0;background:#ECE8DF;border-radius:24px 24px 34px 34px;padding:12px 16px 24px}
-.mgd6 .grab{width:38px;height:4px;border-radius:999px;background:#D8D3C6;margin:0 auto 12px}
-.mgd6 .sh{font-size:17px;font-weight:700;margin:0 4px 4px}
-.mgd6 .shs{font-size:12px;color:#80827A;margin:0 4px 12px;line-height:1.45}
-.mgd6 .tabbar{display:flex;background:#FFFDF8;border-top:1px solid #E2DDD1;padding:8px 4px 12px;flex-shrink:0}
-.mgd6 .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:#A09A8E;font-size:11px;font-weight:600;text-decoration:none}
+.mgd6{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
+.mgd6 .num{font-variant-numeric:tabular-nums}
+.mgd6 .mono{font-family:'IBM Plex Mono',monospace}
+.mgd6 svg{display:block;flex-shrink:0}
+.mgd6 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd6 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
+.mgd6 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:13px;font-weight:600}
+.mgd6 .topbar{display:flex;align-items:center;gap:12px;padding:6px 16px 8px}
+.mgd6 .topbtn{width:42px;height:42px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a}
+.mgd6 .ttl{font-size:19px;font-weight:600}
+.mgd6 .body{flex:1;overflow-y:auto;padding:8px 16px 20px;display:flex;flex-direction:column;gap:14px}
+.mgd6 .body>*{flex-shrink:0}
+.mgd6 .kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mgd6 .kpi{background:#fffdf8;border:1px solid #e2ddd1;border-radius:14px;padding:13px}
+.mgd6 .kl{font-size:11.5px;color:#80827a}
+.mgd6 .kv{font-size:19px;font-weight:700;margin-top:3px}
+.mgd6 .glabel{font-size:12px;font-weight:600;letter-spacing:.02em;color:#80827a;margin:2px 4px -6px}
+.mgd6 .group{background:#fffdf8;border:1px solid #e2ddd1;border-radius:16px;overflow:hidden}
+.mgd6 .srow{display:flex;align-items:center;gap:12px;padding:12px 14px;border-top:1px solid #f0ece2}
+.mgd6 .srow:first-child{border-top:none}
+.mgd6 .av{width:34px;height:34px;border-radius:9px;background:#dfeeeb;color:#0a514a;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0}
+.mgd6 .sl{flex:1;font-size:14px;font-weight:500}
+.mgd6 .ss{font-size:11.5px;color:#80827a;margin-top:1px;font-weight:400}
+.mgd6 .amt{font-size:13.5px;font-weight:600;font-variant-numeric:tabular-nums}
+.mgd6 .pill{font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.mgd6 .pdue{background:#f4e5e2;color:#9c3322}
+.mgd6 .pfail{background:#f4ebd7;color:#8a5e16}
+.mgd6 .ppaid{background:#e4f0e9;color:#1a6d4d}
+.mgd6 .prow{display:flex;align-items:center;gap:12px;padding:13px 14px;border-top:1px solid #f0ece2}
+.mgd6 .prow:first-child{border-top:none}
+.mgd6 .pnm{flex:1;font-size:14.5px;font-weight:500}
+.mgd6 .price{background:#f2eee5;border:1px solid #e2ddd1;border-radius:10px;padding:8px 12px;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;min-width:96px;text-align:end}
+.mgd6 .save{background:#0e6b61;color:#fff;text-align:center;font-size:15px;font-weight:600;padding:15px;border-radius:14px}
+.mgd6 .board{max-width:1480px;margin:0 auto;padding:56px 28px 96px}
+.mgd6 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
+.mgd6 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.mgd6 .frame{display:flex;flex-direction:column;align-items:center;gap:14px}
+.mgd6 .cap{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5d635c}
+.mgd6 .tabbar{display:flex;background:#fffdf8;border-top:1px solid #e2ddd1;padding:8px 4px 11px;flex-shrink:0}
+.mgd6 .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:#9a9c92;font-size:9.5px;font-weight:600;text-decoration:none}
 .mgd6 .tab svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-.mgd6 .tab.on{color:#9A6B1F}
-/* ===== Screen-Admin-Billing-Pricing ===== */
-.mgd7 *{box-sizing:border-box}
-.mgd7{margin:0;background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#14181A}
-.mgd7 .num{font-variant-numeric:tabular-nums}
-.mgd7 .mono{font-family:'IBM Plex Mono',monospace}
-.mgd7 svg{display:block;flex-shrink:0}
-.mgd7 .phone{width:340px;background:#14181A;border-radius:44px;padding:12px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
-.mgd7 .screen{background:#ECE8DF;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
-.mgd7 .sbar{display:flex;justify-content:space-between;align-items:center;padding:16px 24px 8px;font-size:13px;font-weight:600}
-.mgd7 .topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 8px}
-.mgd7 .topbtn{width:42px;height:42px;border-radius:12px;background:#FFFDF8;border:1px solid #E2DDD1;display:flex;align-items:center;justify-content:center;color:#3A3F3A}
-.mgd7 .ttl{font-size:17px;font-weight:600}
-.mgd7 .body{flex:1;overflow-y:auto;padding:8px 16px 24px;display:flex;flex-direction:column;gap:12px}
-.mgd7 .body>*{flex-shrink:0}
-.mgd7 .kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.mgd7 .kpi{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:12px;padding:16px}
-.mgd7 .kl{font-size:11px;color:#80827A}
-.mgd7 .kv{font-size:17px;font-weight:700;margin-top:4px}
-.mgd7 .glabel{font-size:12px;font-weight:600;letter-spacing:.02em;color:#80827A;margin:4px 4px -6px}
-.mgd7 .group{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:16px;overflow:hidden}
-.mgd7 .srow{display:flex;align-items:center;gap:12px;padding:12px 16px;border-top:1px solid #F0ECE2}
-.mgd7 .srow:first-child{border-top:none}
-.mgd7 .av{width:34px;height:34px;border-radius:8px;background:#DFEEEB;color:#0A514A;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0}
-.mgd7 .sl{flex:1;font-size:13px;font-weight:500}
-.mgd7 .ss{font-size:11px;color:#80827A;margin-top:4px;font-weight:400}
-.mgd7 .amt{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
-.mgd7 .pill{font-size:11px;font-weight:600;padding:4px 12px;border-radius:999px;white-space:nowrap}
-.mgd7 .pdue{background:#F0ECE2;color:#9C3322}
-.mgd7 .pfail{background:#F4EBD7;color:#9A6B1F}
-.mgd7 .ppaid{background:#DFEEEB;color:#0E6B61}
-.mgd7 .prow{display:flex;align-items:center;gap:12px;padding:16px 16px;border-top:1px solid #F0ECE2}
-.mgd7 .prow:first-child{border-top:none}
-.mgd7 .pnm{flex:1;font-size:15px;font-weight:500}
-.mgd7 .price{background:#F2EEE5;border:1px solid #E2DDD1;border-radius:8px;padding:8px 12px;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;min-width:96px;text-align:end}
-.mgd7 .save{background:#0E6B61;color:#fff;text-align:center;font-size:15px;font-weight:600;padding:16px;border-radius:12px}
-.mgd7 .board{max-width:1480px;margin:0 auto;padding:48px 32px 48px}
-.mgd7 .masthead{background:#ECE8DF;border:1px solid #E2DDD1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:48px 48px 48px}
-.mgd7 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:32px}
-.mgd7 .frame{display:flex;flex-direction:column;align-items:center;gap:12px}
-.mgd7 .cap{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5D635C}
-.mgd7 .tabbar{display:flex;background:#FFFDF8;border-top:1px solid #E2DDD1;padding:8px 4px 12px;flex-shrink:0}
-.mgd7 .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;color:#A09A8E;font-size:11px;font-weight:600;text-decoration:none}
-.mgd7 .tab svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-.mgd7 .tab.on{color:#9A6B1F}
-</style>
-</head>
-<body>
-<div class="mgd-top">
-  <div class="mgd-eyebrow">TutoringHQ · Merged reference</div>
-  <h1 class="mgd-h1">Admin · Money</h1>
-  <p class="mgd-lede">Fee collection, settlement, finance health, receipts, withdrawals, recovery, and plan pricing.</p>
-  <div class="mgd-toc"><a href="#Merged-Admin-Money-1">Admin Fee Collection</a><a href="#Merged-Admin-Money-2">Admin Settlement</a><a href="#Merged-Admin-Money-3">Admin Finance Health</a><a href="#Merged-Admin-Money-4">Admin Receipts</a><a href="#Merged-Admin-Money-5">Admin Withdrawals Analytics</a><a href="#Merged-Admin-Money-6">Admin Unpaid Recovery</a><a href="#Merged-Admin-Money-7">Admin Billing Pricing</a></div>
-</div>
-<div class="mgd-sec" id="Merged-Admin-Money-1">
-  <div class="mgd-bar"><span class="mgd-num">01</span><span class="mgd-name">Admin Fee Collection</span><span class="mgd-src">Screen-Admin-Fee-Collection.html</span></div>
-</div>
-<div class="mgd1">
-<div class="board">
+.mgd6 .tab.on{color:#8a5e16}
+</style></head><body>
+<div class="mgd-bar"><span class="mgd-num">01</span><span class="mgd-name">Admin Fee Collection</span><span class="mgd-src">Screen-Admin-Fee-Collection.html</span></div>
+<div class="mgd1"><div class="board">
   <div class="eyebrow">TutoringHQ · Reference Screen</div>
   <div class="pill0">Admin · Fee collection · Draft</div>
   <h1 class="mh">Admin fee collection</h1>
-  <p class="lead">Reorganised into three views that answer three different questions, rather than one screen trying to answer all of them. Money is a single top-to-bottom flow from what parents paid down to what we keep, with our revenue broken into its three real sources. Providers is one ranked list with a filter, not two separate breakdowns. Health is the operational read. Every figure reconciles: 360,095 collected less 288,000 paid out is 72,095 of revenue, and that is exactly the collection fees, price markup and processing fees added together. English and Arabic. Sample data is placeholder.</p>
+  <p class="lead">Reorganised into three views that answer three different questions, rather than one screen trying to answer all of them. Money is a single top-to-bottom flow from what parents paid down to what we keep, with our revenue broken into its three real sources. Providers is one ranked list with a filter, not two separate breakdowns. Health is the operational read. Every figure reconciles: 360,095 collected less 288,000 paid out is 72,095 of revenue, and that is exactly the processing fee and the subscriptioncessing fees added together. English and Arabic. Sample data is placeholder.</p>
 
   <div class="phones">
 
@@ -544,30 +422,30 @@ body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10
           <div class="hsub">49,738 net after processing costs and VAT</div>
         </div>
 
-        <div class="sec">MONEY IN AND OUT</div>
-        <div class="flow">
-          <div class="fr head"><span class="fk">Collected from parents</span><span class="fv">360,095</span></div>
-          <div class="fr"><span class="fk"><span class="sw" style="background:#c8a86a"></span>Paid out to providers</span><span class="fv neg">−288,000</span></div>
-          <div class="fr sum"><span class="fk">Our revenue</span><span class="fv">72,095</span></div>
-        </div>
-
-        <div class="sec">WHERE OUR REVENUE COMES FROM</div>
-        <div class="split"><i style="width:44.4%;background:#0e6b61"></i><i style="width:45.8%;background:#9a6b1f"></i><i style="width:9.8%;background:#274b8a"></i></div>
+        <div class="sec">EVERY POUND THAT REACHES US</div>
+        <div class="split"><i style="width:38.2%;background:#9a6b1f"></i><i style="width:23.4%;background:#0e6b61"></i><i style="width:17.8%;background:#274b8a"></i><i style="width:12.1%;background:#1a6d4d"></i><i style="width:8.5%;background:#c8a86a"></i></div>
         <div class="leg">
-          <div class="lg"><span class="sw" style="background:#0e6b61"></span>Collection fees</div>
-          <div class="lg"><span class="sw" style="background:#9a6b1f"></span>Price markup</div>
-          <div class="lg"><span class="sw" style="background:#274b8a"></span>Processing</div>
+          <div class="lg"><span class="sw" style="background:#9a6b1f"></span>Subscriptions</div>
+          <div class="lg"><span class="sw" style="background:#0e6b61"></span>Processing fees</div>
+          <div class="lg"><span class="sw" style="background:#274b8a"></span>WhatsApp packs</div>
+          <div class="lg"><span class="sw" style="background:#c8a86a"></span>Add-ons</div>
         </div>
         <div class="flow">
-          <div class="fr"><span class="fk"><span class="sw" style="background:#0e6b61"></span>Collection fees · 10% of provider fees</span><span class="fv">32,000</span></div>
-          <div class="fr"><span class="fk"><span class="sw" style="background:#9a6b1f"></span>Price markup · 7.5% + 7.5</span><span class="fv">33,000</span></div>
-          <div class="fr"><span class="fk"><span class="sw" style="background:#274b8a"></span>Processing fees · 1.5% + 1.5</span><span class="fv">7,095</span></div>
+          <div class="fr"><span class="fk"><span class="sw" style="background:#9a6b1f"></span>Subscriptions &middot; monthly and annual plans</span><span class="fv">27,540</span></div>
+          <div class="fr"><span class="fk"><span class="sw" style="background:#0e6b61"></span>Processing fees &middot; 10 EGP per tuition invoice</span><span class="fv">16,870</span></div>
+          <div class="fr"><span class="fk"><span class="sw" style="background:#274b8a"></span>WhatsApp message packs</span><span class="fv">9,200</span></div>
+          <div class="fr"><span class="fk"><span class="sw" style="background:#274b8a"></span>WhatsApp parent packs</span><span class="fv">3,640</span></div>
+          <div class="fr"><span class="fk"><span class="sw" style="background:#1a6d4d"></span>Processing fees &middot; 20 EGP per platform invoice</span><span class="fv">8,720</span></div>
+          <div class="fr"><span class="fk"><span class="sw" style="background:#c8a86a"></span>Branch add-on &middot; 199 EGP / mo</span><span class="fv">3,980</span></div>
+          <div class="fr"><span class="fk"><span class="sw" style="background:#c8a86a"></span>Per-student overage</span><span class="fv">2,145</span></div>
+          <div class="fr"><span class="fk"><span class="sw" style="background:#a09a8e"></span>Analytics, benchmarks, team seats</span><span class="fv">0</span></div>
+          <div class="fr"><span class="fk"><span class="sw" style="background:#a09a8e"></span>Card orders &middot; parked, coming soon</span><span class="fv">0</span></div>
+          <div class="fr"><span class="fk"><span class="sw" style="background:#a09a8e"></span>TutoringBot &middot; post-launch</span><span class="fv">0</span></div>
           <div class="fr sum"><span class="fk">Total</span><span class="fv">72,095</span></div>
         </div>
-
-        <div class="sec">WHAT IT COSTS US</div>
+<div class="sec">WHAT IT COSTS US</div>
         <div class="flow">
-          <div class="fr"><span class="fk">Paymob on collection</span><span class="fv neg">−13,503</span></div>
+          <div class="fr"><span class="fk">Paymob on subscription billing</span><span class="fv neg">−13,503</span></div>
           <div class="fr"><span class="fk">VAT on our fees</span><span class="fv neg">−8,854</span></div>
           <div class="fr sum"><span class="fk">Net</span><span class="fv">49,738</span></div>
         </div>
@@ -590,15 +468,15 @@ body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10
           <div class="kpi"><div class="kl">Teachers</div><div class="kv">200,000</div></div>
         </div>
 
-        <div class="glabel">PROVIDER FEE · OUR CUT · THEY RECEIVE</div>
-        <div class="srow"><div class="av ctr">NP</div><div class="sl"><div class="snm">Nile Prep Academy<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="ss">Centre · 58,000 · cut 5,800</div></div><div class="tri"><div class="tv">52,200</div><div class="tl">90%</div></div></div>
-        <div class="srow"><div class="av ctr">TC</div><div class="sl"><div class="snm">Test Center 333<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="ss">Centre · 34,000 · cut 3,400</div></div><div class="tri"><div class="tv">30,600</div><div class="tl">90%</div></div></div>
-        <div class="srow"><div class="av">SA</div><div class="sl"><div class="snm">Sherif Adel<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="ss">Teacher · 22,000 · cut 2,200</div></div><div class="tri"><div class="tv">19,800</div><div class="tl">90%</div></div></div>
-        <div class="srow"><div class="av ctr">GS</div><div class="sl"><div class="snm">Giza Science Hub<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="ss">Centre · 18,000 · cut 1,800</div></div><div class="tri"><div class="tv">16,200</div><div class="tl">90%</div></div></div>
-        <div class="srow"><div class="av">DF</div><div class="sl"><div class="snm">Dina Fouad<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="ss">Teacher · 18,000 · cut 1,800</div></div><div class="tri"><div class="tv">16,200</div><div class="tl">90%</div></div></div>
-        <div class="srow"><div class="av">KS</div><div class="sl"><div class="snm">Karim Samir<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="ss">Teacher · 12,000 · cut 1,200</div></div><div class="tri"><div class="tv">10,800</div><div class="tl">90%</div></div></div>
-        <div class="srow"><div class="av ctr">MS</div><div class="sl"><div class="snm">Maadi Study Centre<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="ss">Centre · 10,000 · cut 1,000</div></div><div class="tri"><div class="tv">9,000</div><div class="tl">90%</div></div></div>
-        <div class="srow"><div class="av">HK</div><div class="sl"><div class="snm">Hazem Kamal<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="ss">Teacher · 9,000 · cut 900</div></div><div class="tri"><div class="tv">8,100</div><div class="tl">90%</div></div></div>
+        <div class="glabel">COLLECTED · OUR PROCESSING FEES</div>
+        <div class="srow"><div class="av ctr">NP</div><div class="sl"><div class="snm">Nile Prep Academy<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="ss">Centre · 58,000 collected</div></div><div class="tri"><div class="tv">370</div><div class="tl">37 receipts</div></div></div>
+        <div class="srow"><div class="av ctr">TC</div><div class="sl"><div class="snm">Test Center 333<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="ss">Centre · 34,000 collected</div></div><div class="tri"><div class="tv">220</div><div class="tl">22 receipts</div></div></div>
+        <div class="srow"><div class="av">SA</div><div class="sl"><div class="snm">Sherif Adel<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="ss">Teacher · 22,000 collected</div></div><div class="tri"><div class="tv">140</div><div class="tl">14 receipts</div></div></div>
+        <div class="srow"><div class="av ctr">GS</div><div class="sl"><div class="snm">Giza Science Hub<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="ss">Centre · 18,000 · collected</div></div><div class="tri"><div class="tv">16,200</div><div class="tl">fees</div></div></div>
+        <div class="srow"><div class="av">DF</div><div class="sl"><div class="snm">Dina Fouad<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="ss">Teacher · 18,000 · collected</div></div><div class="tri"><div class="tv">16,200</div><div class="tl">fees</div></div></div>
+        <div class="srow"><div class="av">KS</div><div class="sl"><div class="snm">Karim Samir<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="ss">Teacher · 12,000 · collected</div></div><div class="tri"><div class="tv">10,800</div><div class="tl">fees</div></div></div>
+        <div class="srow"><div class="av ctr">MS</div><div class="sl"><div class="snm">Maadi Study Centre<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="ss">Centre · 10,000 · collected</div></div><div class="tri"><div class="tv">9,000</div><div class="tl">fees</div></div></div>
+        <div class="srow"><div class="av">HK</div><div class="sl"><div class="snm">Hazem Kamal<svg class="arrow" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></div><div class="ss">Teacher · 9,000 · collected</div></div><div class="tri"><div class="tv">8,100</div><div class="tl">fees</div></div></div>
 
         <div class="note">Everyone is on the same rate card. The all-in take still varies by ticket size, since the flat components weigh more on a small session than a large one.</div>
       </div>
@@ -663,28 +541,28 @@ body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10
           <div class="hsub">٤٩٬٧٣٨ صافٍ بعد تكاليف المعالجة والضريبة</div>
         </div>
 
-        <div class="sec">الداخل والخارج</div>
-        <div class="flow">
-          <div class="fr head"><span class="fk">المُحصّل من أولياء الأمور</span><span class="fv">٣٦٠٬٠٩٥</span></div>
-          <div class="fr"><span class="fk"><span class="sw" style="background:#c8a86a"></span>المدفوع لمقدّمي الخدمة</span><span class="fv neg">−٢٨٨٬٠٠٠</span></div>
-          <div class="fr sum"><span class="fk">إيرادنا</span><span class="fv">٧٢٬٠٩٥</span></div>
-        </div>
-
-        <div class="sec">مصادر الإيراد</div>
-        <div class="split"><i style="width:44.4%;background:#0e6b61"></i><i style="width:45.8%;background:#9a6b1f"></i><i style="width:9.8%;background:#274b8a"></i></div>
+                <div class="sec">كل جنيه بيوصلنا</div>
+        <div class="split"><i style="width:38.2%;background:#9a6b1f"></i><i style="width:23.4%;background:#0e6b61"></i><i style="width:17.8%;background:#274b8a"></i><i style="width:12.1%;background:#1a6d4d"></i><i style="width:8.5%;background:#c8a86a"></i></div>
         <div class="leg">
-          <div class="lg"><span class="sw" style="background:#0e6b61"></span>رسوم التحصيل</div>
-          <div class="lg"><span class="sw" style="background:#9a6b1f"></span>هامش السعر</div>
-          <div class="lg"><span class="sw" style="background:#274b8a"></span>المعالجة</div>
+          <div class="lg"><span class="sw" style="background:#9a6b1f"></span>الاشتراكات</div>
+          <div class="lg"><span class="sw" style="background:#0e6b61"></span>رسوم المعالجة</div>
+          <div class="lg"><span class="sw" style="background:#274b8a"></span>باقات واتساب</div>
+          <div class="lg"><span class="sw" style="background:#c8a86a"></span>الإضافات</div>
         </div>
         <div class="flow">
-          <div class="fr"><span class="fk"><span class="sw" style="background:#0e6b61"></span>رسوم التحصيل · ١٠٪</span><span class="fv">٣٢٬٠٠٠</span></div>
-          <div class="fr"><span class="fk"><span class="sw" style="background:#9a6b1f"></span>هامش السعر · ٧٫٥٪ + ٧٫٥</span><span class="fv">٣٣٬٠٠٠</span></div>
-          <div class="fr"><span class="fk"><span class="sw" style="background:#274b8a"></span>رسوم المعالجة · ١٫٥٪ + ١٫٥</span><span class="fv">٧٬٠٩٥</span></div>
+          <div class="fr"><span class="fk"><span class="sw" style="background:#9a6b1f"></span>الاشتراكات · شهري وسنوي</span><span class="fv">٢٧٬٥٤٠</span></div>
+          <div class="fr"><span class="fk"><span class="sw" style="background:#0e6b61"></span>رسوم المعالجة · ١٠ ج.م لكل فاتورة مصروفات</span><span class="fv">١٦٬٨٧٠</span></div>
+          <div class="fr"><span class="fk"><span class="sw" style="background:#274b8a"></span>باقات رسائل واتساب</span><span class="fv">٩٬٢٠٠</span></div>
+          <div class="fr"><span class="fk"><span class="sw" style="background:#274b8a"></span>باقات أولياء الأمور</span><span class="fv">٣٬٦٤٠</span></div>
+          <div class="fr"><span class="fk"><span class="sw" style="background:#1a6d4d"></span>رسوم المعالجة · ٢٠ ج.م لكل فاتورة منصة</span><span class="fv">٨٬٧٢٠</span></div>
+          <div class="fr"><span class="fk"><span class="sw" style="background:#c8a86a"></span>إضافة فرع · ١٩٩ ج.م / شهر</span><span class="fv">٣٬٩٨٠</span></div>
+          <div class="fr"><span class="fk"><span class="sw" style="background:#c8a86a"></span>زيادة عدد الطلاب</span><span class="fv">٢٬١٤٥</span></div>
+          <div class="fr"><span class="fk"><span class="sw" style="background:#a09a8e"></span>التحليلات والمقارنات ومقاعد الفريق</span><span class="fv">٠</span></div>
+          <div class="fr"><span class="fk"><span class="sw" style="background:#a09a8e"></span>طلبات الكروت · مؤجّلة، قريبًا</span><span class="fv">٠</span></div>
+          <div class="fr"><span class="fk"><span class="sw" style="background:#a09a8e"></span>TutoringBot · بعد الإطلاق</span><span class="fv">٠</span></div>
           <div class="fr sum"><span class="fk">الإجمالي</span><span class="fv">٧٢٬٠٩٥</span></div>
         </div>
-
-        <div class="sec">ما يكلّفنا</div>
+<div class="sec">ما يكلّفنا</div>
         <div class="flow">
           <div class="fr"><span class="fk">Paymob على التحصيل</span><span class="fv neg">−١٣٬٥٠٣</span></div>
           <div class="fr"><span class="fk">ضريبة القيمة المضافة على رسومنا</span><span class="fv neg">−٨٬٨٥٤</span></div>
@@ -710,14 +588,14 @@ body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10
         </div>
 
         <div class="glabel">سعر مقدّم الخدمة · حصّتنا · ما يستلمه</div>
-        <div class="srow"><div class="av ctr">NP</div><div class="sl"><div class="snm">أكاديمية النيل<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ss">سنتر · ٥٨٬٠٠٠ · حصتنا ٥٬٨٠٠</div></div><div class="tri"><div class="tv">٥٢٬٢٠٠</div><div class="tl">٩٠٪</div></div></div>
-        <div class="srow"><div class="av ctr">TC</div><div class="sl"><div class="snm">مركز تجريبي ٣٣٣<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ss">سنتر · ٣٤٬٠٠٠ · حصتنا ٣٬٤٠٠</div></div><div class="tri"><div class="tv">٣٠٬٦٠٠</div><div class="tl">٩٠٪</div></div></div>
-        <div class="srow"><div class="av">SA</div><div class="sl"><div class="snm">شريف عادل<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ss">مدرّس · ٢٢٬٠٠٠ · حصتنا ٢٬٢٠٠</div></div><div class="tri"><div class="tv">١٩٬٨٠٠</div><div class="tl">٩٠٪</div></div></div>
-        <div class="srow"><div class="av ctr">GS</div><div class="sl"><div class="snm">مركز الجيزة للعلوم<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ss">سنتر · ١٨٬٠٠٠ · حصتنا ١٬٨٠٠</div></div><div class="tri"><div class="tv">١٦٬٢٠٠</div><div class="tl">٩٠٪</div></div></div>
-        <div class="srow"><div class="av">DF</div><div class="sl"><div class="snm">دينا فؤاد<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ss">مدرّسة · ١٨٬٠٠٠ · حصتنا ١٬٨٠٠</div></div><div class="tri"><div class="tv">١٦٬٢٠٠</div><div class="tl">٩٠٪</div></div></div>
-        <div class="srow"><div class="av">KS</div><div class="sl"><div class="snm">كريم سامي<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ss">مدرّس · ١٢٬٠٠٠ · حصتنا ١٬٢٠٠</div></div><div class="tri"><div class="tv">١٠٬٨٠٠</div><div class="tl">٩٠٪</div></div></div>
-        <div class="srow"><div class="av ctr">MS</div><div class="sl"><div class="snm">مركز المعادي<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ss">سنتر · ١٠٬٠٠٠ · حصتنا ١٬٠٠٠</div></div><div class="tri"><div class="tv">٩٬٠٠٠</div><div class="tl">٩٠٪</div></div></div>
-        <div class="srow"><div class="av">HK</div><div class="sl"><div class="snm">حازم كمال<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ss">مدرّس · ٩٬٠٠٠ · حصتنا ٩٠٠</div></div><div class="tri"><div class="tv">٨٬١٠٠</div><div class="tl">٩٠٪</div></div></div>
+        <div class="srow"><div class="av ctr">NP</div><div class="sl"><div class="snm">أكاديمية النيل<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ss">سنتر · ٥٨٬٠٠٠ · حصتنا ٥٬٨٠٠</div></div><div class="tri"><div class="tv">٥٢٬٢٠٠</div><div class="tl">رسوم</div></div></div>
+        <div class="srow"><div class="av ctr">TC</div><div class="sl"><div class="snm">مركز تجريبي ٣٣٣<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ss">سنتر · ٣٤٬٠٠٠ · حصتنا ٣٬٤٠٠</div></div><div class="tri"><div class="tv">٣٠٬٦٠٠</div><div class="tl">رسوم</div></div></div>
+        <div class="srow"><div class="av">SA</div><div class="sl"><div class="snm">شريف عادل<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ss">مدرّس · ٢٢٬٠٠٠ · حصتنا ٢٬٢٠٠</div></div><div class="tri"><div class="tv">١٩٬٨٠٠</div><div class="tl">رسوم</div></div></div>
+        <div class="srow"><div class="av ctr">GS</div><div class="sl"><div class="snm">مركز الجيزة للعلوم<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ss">سنتر · ١٨٬٠٠٠ · حصتنا ١٬٨٠٠</div></div><div class="tri"><div class="tv">١٦٬٢٠٠</div><div class="tl">رسوم</div></div></div>
+        <div class="srow"><div class="av">DF</div><div class="sl"><div class="snm">دينا فؤاد<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ss">مدرّسة · ١٨٬٠٠٠ · حصتنا ١٬٨٠٠</div></div><div class="tri"><div class="tv">١٦٬٢٠٠</div><div class="tl">رسوم</div></div></div>
+        <div class="srow"><div class="av">KS</div><div class="sl"><div class="snm">كريم سامي<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ss">مدرّس · ١٢٬٠٠٠ · حصتنا ١٬٢٠٠</div></div><div class="tri"><div class="tv">١٠٬٨٠٠</div><div class="tl">رسوم</div></div></div>
+        <div class="srow"><div class="av ctr">MS</div><div class="sl"><div class="snm">مركز المعادي<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ss">سنتر · ١٠٬٠٠٠ · حصتنا ١٬٠٠٠</div></div><div class="tri"><div class="tv">٩٬٠٠٠</div><div class="tl">رسوم</div></div></div>
+        <div class="srow"><div class="av">HK</div><div class="sl"><div class="snm">حازم كمال<svg class="arrow" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ss">مدرّس · ٩٬٠٠٠ · حصتنا ٩٠٠</div></div><div class="tri"><div class="tv">٨٬١٠٠</div><div class="tl">رسوم</div></div></div>
 
         <div class="note">الجميع على نفس قائمة الأسعار. النسبة الإجمالية تختلف بحجم الحصة فقط، لأن المبالغ الثابتة تزن أكثر على الحصص الصغيرة.</div>
       </div>
@@ -770,13 +648,9 @@ body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10
     </div>
 
   </div>
-</div>
-</div>
-<div class="mgd-sec" id="Merged-Admin-Money-2">
-  <div class="mgd-bar"><span class="mgd-num">02</span><span class="mgd-name">Admin Settlement</span><span class="mgd-src">Screen-Admin-Settlement.html</span></div>
-</div>
-<div class="mgd2">
-<div class="board">
+</div></div>
+<div class="mgd-bar"><span class="mgd-num">02</span><span class="mgd-name">Admin Settlement</span><span class="mgd-src">Screen-Admin-Settlement.html</span></div>
+<div class="mgd2"><div class="board">
   <div class="masthead">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39)"></div><span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Reference Screen</span><span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#8a5e16;background:#f4ebd7;border:1px solid rgba(138,94,22,.2);padding:5px 11px;border-radius:999px">Internal · Admin</span></div>
     <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">Payout settlement</h1>
@@ -874,13 +748,9 @@ body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10
     </div></div></div>
 
   </div>
-</div>
-</div>
-<div class="mgd-sec" id="Merged-Admin-Money-3">
-  <div class="mgd-bar"><span class="mgd-num">03</span><span class="mgd-name">Admin Finance Health</span><span class="mgd-src">Screen-Admin-Finance-Health.html</span></div>
-</div>
-<div class="mgd3">
-<div class="board">
+</div></div>
+<div class="mgd-bar"><span class="mgd-num">03</span><span class="mgd-name">Admin Finance Health</span><span class="mgd-src">Screen-Admin-Finance-Health.html</span></div>
+<div class="mgd3"><div class="board">
   <div class="masthead">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39)"></div><span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Reference Screen</span><span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#8a5e16;background:#f4ebd7;border:1px solid rgba(138,94,22,.2);padding:5px 11px;border-radius:999px">Internal · Admin</span></div>
     <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">Finance & Platform health</h1>
@@ -1037,17 +907,13 @@ body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10
     </div></div></div>
 
   </div>
-</div>
-</div>
-<div class="mgd-sec" id="Merged-Admin-Money-4">
-  <div class="mgd-bar"><span class="mgd-num">04</span><span class="mgd-name">Admin Receipts</span><span class="mgd-src">Screen-Admin-Receipts.html</span></div>
-</div>
-<div class="mgd4">
-<div class="board">
+</div></div>
+<div class="mgd-bar"><span class="mgd-num">04</span><span class="mgd-name">Admin Receipts</span><span class="mgd-src">Screen-Admin-Receipts.html</span></div>
+<div class="mgd4"><div class="board">
   <div class="masthead">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39)"></div><span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Reference Screen</span><span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#8a5e16;background:#f4ebd7;border:1px solid rgba(138,94,22,.2);padding:5px 11px;border-radius:999px">Internal · Admin</span></div>
     <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">Receipts &amp; tax records</h1>
-    <p style="margin:0;max-width:78ch;font-size:17px;line-height:1.55;color:#5d635c">Every fee collection and withdrawal issues an electronic receipt tied to a verified National ID. This is the log behind the write-offs: totals for the month, a type filter, and each receipt. English and Arabic. Design only.</p>
+    <p style="margin:0;max-width:78ch;font-size:17px;line-height:1.55;color:#5d635c">Every fee collection and payout issues an electronic receipt tied to the recipient’s National ID. This is the log behind the write-offs: totals for the month, a type filter, and each receipt. English and Arabic. Design only.</p>
   </div>
   <div class="phones">
 
@@ -1092,130 +958,9 @@ body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10
     </div></div></div>
 
   </div>
-</div>
-</div>
-<div class="mgd-sec" id="Merged-Admin-Money-5">
-  <div class="mgd-bar"><span class="mgd-num">05</span><span class="mgd-name">Admin Withdrawals Analytics</span><span class="mgd-src">Screen-Admin-Withdrawals-Analytics.html</span></div>
-</div>
-<div class="mgd5">
-<div class="board">
-  <div class="masthead">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39)"></div><span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Reference Screen</span><span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#8a5e16;background:#f4ebd7;border:1px solid rgba(138,94,22,.2);padding:5px 11px;border-radius:999px">Internal · Admin</span></div>
-    <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">Withdrawals & Analytics</h1>
-    <p style="margin:0;max-width:80ch;font-size:17px;line-height:1.55;color:#5d635c">Withdrawals is the one money action left for a person: approving referral-earning payouts to referrers. Analytics is product usage across both customer types: accounts, sessions, attendance, messaging, and which features get used. English and Arabic. Sample data is placeholder. Design only.</p>
-  </div>
-  <div class="phones">
-
-    <!-- WITHDRAWALS · EN -->
-    <div class="frame"><span class="mono" style="font-size:12px;color:#5d635c">EN · /admin/withdrawals</span>
-    <div class="phone"><div dir="ltr" class="screen">
-      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
-      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ttl" style="flex:1">Withdrawals</div></div>
-      <div class="body">
-        <div class="sum"><div class="lab">Pending payouts</div><div class="big num">8,450 <span style="font-size:15px;font-weight:600">EGP</span></div><div class="sub">3 requests waiting for approval</div></div>
-        <div class="fpills"><div class="fp on">Pending 3</div><div class="fp">Approved</div><div class="fp">Paid</div><div class="fp">All</div></div>
-        <div class="group">
-          <div class="srow ex">
-            <div class="rowtop"><div class="av t">DF</div><div style="flex:1"><div class="nm">Dina Fouad</div><div class="mt">InstaPay · 2d ago</div></div><div class="rt"><div class="amt num">3,200</div><div class="mt">EGP</div></div></div>
-            <div class="chips"><div class="chip-a">Approve</div><div class="chip">Decline</div><div class="kebab"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="5" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="12" cy="19" r="1.4"/></svg></div></div>
-          </div>
-          <div class="srow"><div class="av">AM</div><div style="flex:1"><div class="nm">Al-Manar</div><div class="mt">Bank transfer · 3d ago</div></div><div class="rt"><div class="amt num">2,750</div><span class="bg bpend">Pending</span></div></div>
-          <div class="srow"><div class="av t">KS</div><div style="flex:1"><div class="nm">Karim Samir</div><div class="mt">InstaPay · 4d ago</div></div><div class="rt"><div class="amt num">2,500</div><span class="bg bpend">Pending</span></div></div>
-        </div>
-        <div style="font-size:11px;color:#80827a;line-height:1.5;margin:-2px 2px 0">These are referral earnings paid out to referrers. Approving records the payout for transfer.</div>
-      </div>
-      <div class="tabbar"><a class="tab"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span>Overview</span></a><a class="tab on"><svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>Money</span></a><a class="tab"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9"/></svg><span>Accounts</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg><span>Platform</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>More</span></a></div>
-    </div></div></div>
-
-    <!-- ANALYTICS · EN -->
-    <div class="frame"><span class="mono" style="font-size:12px;color:#5d635c">EN · /admin/analytics</span>
-    <div class="phone"><div dir="ltr" class="screen">
-      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
-      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ttl" style="flex:1">Analytics</div><span class="pill">This week <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span></div>
-      <div class="body">
-        <div class="kpis">
-          <div class="kpi"><div class="v num">244</div><div class="l">Active accounts</div></div>
-          <div class="kpi"><div class="v num">3,180</div><div class="l">Sessions this week</div></div>
-          <div class="kpi"><div class="v num">91%</div><div class="l">Attendance logged</div></div>
-          <div class="kpi"><div class="v num">12.4K</div><div class="l">WhatsApp sent</div></div>
-        </div>
-
-        <div class="glabel">ACCOUNTS · LAST 6 MONTHS</div>
-        <div class="card">
-          <div class="chart"><div class="cbar" style="height:74px"></div><div class="cbar" style="height:79px"></div><div class="cbar" style="height:84px"></div><div class="cbar" style="height:89px"></div><div class="cbar" style="height:92px"></div><div class="cbar on" style="height:96px"></div></div>
-          <div class="clabels"><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span><span>Jul</span></div>
-        </div>
-
-        <div class="glabel">FEATURE ADOPTION</div>
-        <div class="card" style="padding-bottom:14px">
-          <div class="rm"><span class="k">Attendance</span><span class="bar"><span class="bf" style="width:98%"></span></span><span class="val num">98%</span></div>
-          <div class="rm"><span class="k">Payments recorded</span><span class="bar"><span class="bf" style="width:76%"></span></span><span class="val num">76%</span></div>
-          <div class="rm"><span class="k">WhatsApp</span><span class="bar"><span class="bf" style="width:54%"></span></span><span class="val num">54%</span></div>
-          <div class="rm"><span class="k">Analytics add-on</span><span class="bar"><span class="bf" style="width:22%"></span></span><span class="val num">22%</span></div>
-        </div>
-      </div>
-      <div class="tabbar"><a class="tab"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span>Overview</span></a><a class="tab on"><svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>Money</span></a><a class="tab"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9"/></svg><span>Accounts</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg><span>Platform</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>More</span></a></div>
-    </div></div></div>
-
-    <!-- WITHDRAWALS · AR -->
-    <div class="frame"><span class="mono" style="font-size:12px;color:#5d635c">AR · /admin/withdrawals</span>
-    <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
-      <div class="sbar"><span class="num">٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
-      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div><div class="ttl" style="flex:1">السحوبات</div></div>
-      <div class="body">
-        <div class="sum"><div class="lab">المدفوعات المعلّقة</div><div class="big num">٨٬٤٥٠ <span style="font-size:15px;font-weight:600">ج.م</span></div><div class="sub">٣ طلبات بانتظار الموافقة</div></div>
-        <div class="fpills"><div class="fp on">معلّق ٣</div><div class="fp">مقبول</div><div class="fp">مدفوع</div><div class="fp">الكل</div></div>
-        <div class="group">
-          <div class="srow ex">
-            <div class="rowtop"><div class="av t">د</div><div style="flex:1"><div class="nm">دينا فؤاد</div><div class="mt">إنستاباي · قبل يومين</div></div><div class="rt"><div class="amt num">٣٬٢٠٠</div><div class="mt">ج.م</div></div></div>
-            <div class="chips"><div class="chip-a">موافقة</div><div class="chip">رفض</div><div class="kebab"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="5" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="12" cy="19" r="1.4"/></svg></div></div>
-          </div>
-          <div class="srow"><div class="av">م</div><div style="flex:1"><div class="nm">المنار</div><div class="mt">تحويل بنكي · قبل ٣ أيام</div></div><div class="rt"><div class="amt num">٢٬٧٥٠</div><span class="bg bpend">معلّق</span></div></div>
-          <div class="srow"><div class="av t">ك</div><div style="flex:1"><div class="nm">كريم سامي</div><div class="mt">إنستاباي · قبل ٤ أيام</div></div><div class="rt"><div class="amt num">٢٬٥٠٠</div><span class="bg bpend">معلّق</span></div></div>
-        </div>
-        <div style="font-size:11px;color:#80827a;line-height:1.5;margin:-2px 2px 0">هذه أرباح إحالة تُدفع للمُحيلين. الموافقة تسجّل الدفعة للتحويل.</div>
-      </div>
-      <div class="tabbar"><a class="tab"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span>نظرة عامة</span></a><a class="tab on"><svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>المال</span></a><a class="tab"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9"/></svg><span>الحسابات</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg><span>المنصة</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>المزيد</span></a></div>
-    </div></div></div>
-
-    <!-- ANALYTICS · AR -->
-    <div class="frame"><span class="mono" style="font-size:12px;color:#5d635c">AR · /admin/analytics</span>
-    <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
-      <div class="sbar"><span class="num">٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
-      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div><div class="ttl" style="flex:1">التحليلات</div><span class="pill">هذا الأسبوع <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span></div>
-      <div class="body">
-        <div class="kpis">
-          <div class="kpi"><div class="v num">٢٤٤</div><div class="l">الحسابات النشطة</div></div>
-          <div class="kpi"><div class="v num">٣٬١٨٠</div><div class="l">الجلسات هذا الأسبوع</div></div>
-          <div class="kpi"><div class="v num">٩١٪</div><div class="l">الحضور المسجّل</div></div>
-          <div class="kpi"><div class="v num">١٢٫٤ ألف</div><div class="l">رسائل واتساب</div></div>
-        </div>
-
-        <div class="glabel">الحسابات · آخر ٦ أشهر</div>
-        <div class="card">
-          <div class="chart"><div class="cbar" style="height:74px"></div><div class="cbar" style="height:79px"></div><div class="cbar" style="height:84px"></div><div class="cbar" style="height:89px"></div><div class="cbar" style="height:92px"></div><div class="cbar on" style="height:96px"></div></div>
-          <div class="clabels"><span>فبر</span><span>مار</span><span>أبر</span><span>مايو</span><span>يون</span><span>يول</span></div>
-        </div>
-
-        <div class="glabel">استخدام الميزات</div>
-        <div class="card" style="padding-bottom:14px">
-          <div class="rm"><span class="k">الحضور</span><span class="bar"><span class="bf" style="width:98%"></span></span><span class="val num">٩٨٪</span></div>
-          <div class="rm"><span class="k">تسجيل المدفوعات</span><span class="bar"><span class="bf" style="width:76%"></span></span><span class="val num">٧٦٪</span></div>
-          <div class="rm"><span class="k">واتساب</span><span class="bar"><span class="bf" style="width:54%"></span></span><span class="val num">٥٤٪</span></div>
-          <div class="rm"><span class="k">إضافة التحليلات</span><span class="bar"><span class="bf" style="width:22%"></span></span><span class="val num">٢٢٪</span></div>
-        </div>
-      </div>
-      <div class="tabbar"><a class="tab"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span>نظرة عامة</span></a><a class="tab on"><svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>المال</span></a><a class="tab"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9"/></svg><span>الحسابات</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg><span>المنصة</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>المزيد</span></a></div>
-    </div></div></div>
-
-  </div>
-</div>
-</div>
-<div class="mgd-sec" id="Merged-Admin-Money-6">
-  <div class="mgd-bar"><span class="mgd-num">06</span><span class="mgd-name">Admin Unpaid Recovery</span><span class="mgd-src">Screen-Admin-Unpaid-Recovery.html</span></div>
-</div>
-<div class="mgd6">
-<div class="board">
+</div></div>
+<div class="mgd-bar"><span class="mgd-num">05</span><span class="mgd-name">Admin Unpaid Recovery</span><span class="mgd-src">Screen-Admin-Unpaid-Recovery.html</span></div>
+<div class="mgd5"><div class="board">
   <div class="eyebrow">TutoringHQ · Reference Screen</div>
   <div class="pill0">Admin · Unpaid and failed · Draft</div>
   <h1 class="mh">Admin unpaid and failed</h1>
@@ -1275,9 +1020,9 @@ body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10
         <div class="sec">What happened</div>
         <div class="tl">
           <div class="te"><div class="tet">Link sent</div><div class="tes">21/07 17:04 · WhatsApp delivered and read</div></div>
-          <div class="te bad"><div class="tet">Card declined · do not honour</div><div class="tes">21/07 19:22 · Visa ····3391</div></div>
+          <div class="te bad"><div class="tet">Not received · do not honour</div><div class="tes">21/07 19:22 · Visa ····3391</div></div>
           <div class="te"><div class="tet">Retry link sent automatically</div><div class="tes">22/07 09:00 · company credit</div></div>
-          <div class="te bad"><div class="tet">Card declined again · same code</div><div class="tes">22/07 20:11 · Visa ····3391</div></div>
+          <div class="te bad"><div class="tet">Not received again · same code</div><div class="tes">22/07 20:11 · Visa ····3391</div></div>
           <div class="te"><div class="tet">Provider has not reminded</div><div class="tes">Sherif Adel has taken no action</div></div>
         </div>
 
@@ -1356,7 +1101,7 @@ body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10
 
         <div class="why">
           <div class="wt">سبب التعثّر</div>
-          <div class="wr"><span>رُفضت البطاقة أو المحفظة</span><b>١٤ · ٤٬١٨٠</b></div>
+          <div class="wr"><span>لسه ماوصلش أو المحفظة</span><b>١٤ · ٤٬١٨٠</b></div>
           <div class="wr"><span>أُرسل الرابط ولم يُفتح</span><b>٩ · ٢٬٦٦٠</b></div>
           <div class="wr"><span>فُتح ولم يكتمل</span><b>٦ · ١٬٥٨٠</b></div>
         </div>
@@ -1390,7 +1135,7 @@ body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10
         <div class="sec">ما حدث</div>
         <div class="tl">
           <div class="te"><div class="tet">أُرسل الرابط</div><div class="tes">٢١/٠٧ ١٧:٠٤ · وصل وقُرئ على واتساب</div></div>
-          <div class="te bad"><div class="tet">رُفضت البطاقة · عدم قبول</div><div class="tes">٢١/٠٧ ١٩:٢٢ · فيزا ····٣٣٩١</div></div>
+          <div class="te bad"><div class="tet">لسه ماوصلش · عدم قبول</div><div class="tes">٢١/٠٧ ١٩:٢٢ · فيزا ····٣٣٩١</div></div>
           <div class="te"><div class="tet">أُرسل رابط إعادة تلقائيًا</div><div class="tes">٢٢/٠٧ ٠٩:٠٠ · على حساب الشركة</div></div>
           <div class="te bad"><div class="tet">رُفضت مجددًا · نفس السبب</div><div class="tes">٢٢/٠٧ ٢٠:١١ · فيزا ····٣٣٩١</div></div>
           <div class="te"><div class="tet">مقدّم الخدمة لم يذكّر</div><div class="tes">شريف عادل لم يتخذ أي إجراء</div></div>
@@ -1422,13 +1167,9 @@ body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10
     </div>
 
   </div>
-</div>
-</div>
-<div class="mgd-sec" id="Merged-Admin-Money-7">
-  <div class="mgd-bar"><span class="mgd-num">07</span><span class="mgd-name">Admin Billing Pricing</span><span class="mgd-src">Screen-Admin-Billing-Pricing.html</span></div>
-</div>
-<div class="mgd7">
-<div class="board">
+</div></div>
+<div class="mgd-bar"><span class="mgd-num">06</span><span class="mgd-name">Admin Billing Pricing</span><span class="mgd-src">Screen-Admin-Billing-Pricing.html</span></div>
+<div class="mgd6"><div class="board">
   <div class="masthead">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39)"></div><span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Reference Screen</span><span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#8a5e16;background:#f4ebd7;border:1px solid rgba(138,94,22,.2);padding:5px 11px;border-radius:999px">Internal · Admin</span></div>
     <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">Billing &amp; pricing</h1>
@@ -1541,6 +1282,5 @@ body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10
     </div></div></div>
 
   </div>
-</div>
-</div>
+</div></div>
 </body></html>

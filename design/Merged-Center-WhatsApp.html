@@ -3,7 +3,7 @@
 ================================================================
  TutoringHQ · MERGED DESIGN REFERENCE
  File: Merged-Center-WhatsApp.html
- Center · WhatsApp
+ Center · WhatsApp · TutoringHQ
 
  CONTENTS (3 screens):
   01. WhatsApp   <-  Screen-WhatsApp.html
@@ -11,209 +11,155 @@
   03. WhatsApp Custom Flow   <-  Screen-WhatsApp-Custom-Flow.html
 
 ----------------------------------------------------------------
- HOW TO READ THIS FILE WHEN IMPLEMENTING IT
-----------------------------------------------------------------
- 1. CSS IS SCOPED. Every rule carries a .mgdN prefix so that
-    several screens can share one page without their styles
-    colliding.
-        in this file:   .mgd4 .pins{ ... }
-        in your code:   .pins{ ... }
-    Strip the .mgdN prefix. It is bookkeeping for this reference
-    file only and must never reach the codebase.
-
- 2. ONE SECTION = ONE SCREEN. Each section bar shows its number,
-    its name, and the original screen file it came from. Use that
-    filename as the screen's identity, not the section number.
-
- 3. FRAMES ARE STATES, NOT PAGES. Each phone inside a section is
-    one state of that screen (empty, filled, error, and so on).
-    The caption under or above each phone names the state.
-
- 4. THE TWO LANGUAGES ARE SEPARATE SCREENS. English and Arabic
-    are never a translation overlay. Arabic frames use Eastern
-    Arabic numerals (0-9 written as Arabic-Indic) and the Arabic
-    currency mark. English frames use Western numerals and EGP.
-    Directional icons such as chevrons flip with the language.
-
- 5. SAMPLE DATA IS PLACEHOLDER. Names, amounts, dates and phone
-    numbers are illustrative. Do not treat them as fixtures or
-    seed data.
-
- 6. THIS IS DESIGN, NOT PRODUCTION CODE. Markup here is built to
-    be read, not shipped. Take the layout, spacing, type scale
-    and colour decisions from it. Do not copy the DOM wholesale.
-
- 7. ANY UI OR BRANDING CHANGE BUMPS SW_VERSION in public/sw.js.
+ 1. CSS IS SCOPED with .mgdN. Strip it; it never reaches code.
+ 2. ONE SECTION = ONE SCREEN.
+ 3. FRAMES ARE STATES, not pages.
+ 4. THE TWO LANGUAGES ARE SEPARATE SCREENS.
+ 5. SAMPLE DATA IS PLACEHOLDER.
+ 6. ANY UI CHANGE BUMPS SW_VERSION in public/sw.js.
 ================================================================
 -->
-
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="color-scheme" content="light">
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Center · WhatsApp · TutoringHQ</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 html{background:#D8D3C6;color-scheme:light}
-:root{color-scheme:light}
-
-html,body{margin:0;padding:0}
-body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;-webkit-font-smoothing:antialiased}
-.mgd-top{max-width:1180px;margin:0 auto;padding:48px 24px 8px;color:#14181A}
-.mgd-eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#5D635C;font-weight:600}
-.mgd-h1{font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em;margin:12px 0 8px}
-.mgd-lede{font-size:15px;line-height:1.55;color:#5D635C;max-width:82ch;margin:0}
-.mgd-toc{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 0}
-.mgd-toc a{font-size:12px;font-weight:600;color:#0A514A;background:#DFEEEB;border:1px solid rgba(14,107,97,.18);padding:8px 12px;border-radius:999px;text-decoration:none}
-.mgd-sec{max-width:1180px;margin:0 auto;padding:16px 24px 0}
-.mgd-bar{display:flex;align-items:baseline;gap:12px;border-top:1px solid rgba(28,33,30,.16);padding-top:16px;margin-top:32px}
-.mgd-num{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#9A6B1F;font-weight:500}
-.mgd-name{font-size:22px;font-weight:700;color:#14181A;letter-spacing:-.01em}
-.mgd-src{margin-inline-start:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#80827A}
-/* ===== Screen-WhatsApp ===== */
+body{margin:0;background:#D8D3C6}
+.mgd-bar{max-width:1180px;margin:0 auto;padding:24px;display:flex;align-items:baseline;gap:12px;border-bottom:1px solid #E2DDD1;font-family:'IBM Plex Sans',sans-serif}
+.mgd-num{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#9A6B1F}
+.mgd-name{font-size:22px;font-weight:700;color:#14181A}
+.mgd-src{margin-inline-start:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#80827A}
+[class^="mgd"]{content-visibility:auto;contain-intrinsic-size:1px 4000px}
 .mgd1 *{box-sizing:border-box}
-.mgd1{margin:0;background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#14181A}
+.mgd1{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
 .mgd1 .num{font-variant-numeric:tabular-nums}
 .mgd1 .mono{font-family:'IBM Plex Mono',monospace}
 .mgd1 svg{display:block;flex-shrink:0}
-.mgd1 .phone{width:340px;background:#14181A;border-radius:44px;padding:12px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
-.mgd1 .screen{background:#ECE8DF;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
-.mgd1 .sbar{display:flex;justify-content:space-between;align-items:center;padding:16px 24px 8px;font-size:13px;font-weight:600}
+.mgd1 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd1 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
+.mgd1 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:13px;font-weight:600}
 .mgd1 .topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 8px}
-.mgd1 .topbtn{width:42px;height:42px;border-radius:12px;background:#FFFDF8;border:1px solid #E2DDD1;display:flex;align-items:center;justify-content:center;color:#3A3F3A}
-.mgd1 .addbtn{width:42px;height:42px;border-radius:12px;background:#0E6B61;color:#FFFDF8;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(14,107,97,.28)}
-.mgd1 .search{margin:4px 16px 4px;background:#FFFDF8;border:1px solid #E2DDD1;border-radius:12px;padding:12px 12px;display:flex;align-items:center;gap:8px;color:#A09A8E;font-size:13px}
-.mgd1 .body{flex:1;overflow-y:auto;padding:8px 16px 16px;display:flex;flex-direction:column;gap:8px}
-.mgd1 .badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 12px;border-radius:999px}
-.mgd1 .ok{background:#DFEEEB;color:#0E6B61}
-.mgd1 .neutral{background:#ECE8DF;color:#80827A}
-.mgd1 .trow{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:16px;padding:12px 16px}
-.mgd1 .ticon{width:40px;height:40px;border-radius:12px;background:#DFEEEB;color:#0A514A;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.mgd1 .prev{font-size:12px;color:#80827A;margin-top:4px;line-height:1.4}
-.mgd1 .var{font-family:'IBM Plex Mono',monospace;background:#DFEEEB;color:#0A514A;border-radius:4px;padding:0 4px;font-size:11px;direction:ltr;display:inline-block}
-.mgd1 .kb{color:#A09A8E;flex-shrink:0}
-.mgd1 .chip{border:1px solid #E2DDD1;background:#FFFDF8;border-radius:999px;padding:8px 12px;font-size:12px;font-weight:600;color:#5D635C;display:flex;align-items:center;gap:4px}
-.mgd1 .chip.pri{background:#0E6B61;border-color:#0E6B61;color:#FFFDF8}
+.mgd1 .topbtn{width:42px;height:42px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a}
+.mgd1 .addbtn{width:42px;height:42px;border-radius:12px;background:#0e6b61;color:#fffdf8;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(14,107,97,.28)}
+.mgd1 .search{margin:2px 16px 4px;background:#fffdf8;border:1px solid #e2ddd1;border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:9px;color:#a6a79d;font-size:14px}
+.mgd1 .body{flex:1;overflow-y:auto;padding:6px 16px 16px;display:flex;flex-direction:column;gap:10px}
+.mgd1 .badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px}
+.mgd1 .ok{background:#e4f0e9;color:#1a6d4d}
+.mgd1 .neutral{background:#eee7d9;color:#80827a}
+.mgd1 .trow{background:#fffdf8;border:1px solid #e2ddd1;border-radius:15px;padding:12px 13px}
+.mgd1 .ticon{width:40px;height:40px;border-radius:11px;background:#dfeeeb;color:#0a514a;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mgd1 .prev{font-size:12px;color:#80827a;margin-top:2px;line-height:1.4}
+.mgd1 .var{font-family:'IBM Plex Mono',monospace;background:#e7f1ef;color:#0a514a;border-radius:5px;padding:0 4px;font-size:11.5px;direction:ltr;display:inline-block}
+.mgd1 .kb{color:#b0b1a7;flex-shrink:0}
+.mgd1 .chip{border:1px solid #e2ddd1;background:#faf7f0;border-radius:999px;padding:8px 12px;font-size:12.5px;font-weight:600;color:#5d635c;display:flex;align-items:center;gap:6px}
+.mgd1 .chip.pri{background:#0e6b61;border-color:#0e6b61;color:#fffdf8}
 .mgd1 .scrim{position:absolute;inset:0;background:rgba(20,22,20,.30)}
-.mgd1 .sheet{position:absolute;left:0;right:0;bottom:0;background:#FFFDF8;border-radius:24px 24px 0 0;padding:8px 24px 24px;box-shadow:0 -10px 40px rgba(0,0,0,.16)}
-.mgd1 .grab{width:40px;height:4px;border-radius:999px;background:#D8D3C6;margin:4px auto 12px}
-.mgd1 .chatbg{background:#E2DDD1;background-image:radial-gradient(circle at 20% 10%,rgba(14,107,97,.05),transparent 40%);border-radius:12px;padding:16px 12px;display:flex;justify-content:flex-end}
-.mgd1 .wbubble{background:#E2DDD1;color:#122;border-radius:12px;border-top-right-radius:3px;padding:12px 12px 8px;font-size:13px;line-height:1.5;max-width:85%;box-shadow:0 1px 1px rgba(0,0,0,.08)}
-.mgd1 .wtime{font-size:11px;color:#5D635C;text-align:end;margin-top:4px;display:flex;align-items:center;gap:4px;justify-content:flex-end}
-.mgd1 .togline{display:flex;align-items:center;gap:8px;padding:12px 0}
+.mgd1 .sheet{position:absolute;left:0;right:0;bottom:0;background:#fffdf8;border-radius:24px 24px 0 0;padding:8px 18px 20px;box-shadow:0 -10px 40px rgba(0,0,0,.16)}
+.mgd1 .grab{width:40px;height:4px;border-radius:999px;background:#d8d3c6;margin:6px auto 12px}
+.mgd1 .chatbg{background:#e9e2d6;background-image:radial-gradient(circle at 20% 10%,rgba(14,107,97,.05),transparent 40%);border-radius:14px;padding:14px 12px;display:flex;justify-content:flex-end}
+.mgd1 .wbubble{background:#dcf8c6;color:#122;border-radius:12px;border-top-right-radius:3px;padding:9px 11px 6px;font-size:13px;line-height:1.5;max-width:85%;box-shadow:0 1px 1px rgba(0,0,0,.08)}
+.mgd1 .wtime{font-size:10px;color:#5c6b52;text-align:end;margin-top:3px;display:flex;align-items:center;gap:3px;justify-content:flex-end}
+.mgd1 .togline{display:flex;align-items:center;gap:11px;padding:12px 0}
 .mgd1 .tgl{width:42px;height:25px;border-radius:999px;flex-shrink:0;position:relative}
-.mgd1 .tgl.on{background:#0E6B61}
+.mgd1 .tgl.on{background:#0e6b61}
 .mgd1 .tgl::after{content:"";position:absolute;top:3px;width:19px;height:19px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);right:3px}
-.mgd1 .btn-primary{width:100%;height:48px;background:#0E6B61;color:#FFFDF8;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;box-shadow:0 2px 10px rgba(14,107,97,.28);border:none}
-.mgd1 .board{max-width:1180px;margin:0 auto;padding:48px 32px 48px}
-.mgd1 .masthead{background:#ECE8DF;border:1px solid #E2DDD1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:48px 48px 48px}
-.mgd1 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:32px}
-.mgd1 .frame{display:flex;flex-direction:column;align-items:center;gap:12px}
-/* ===== Screen-WhatsApp-Pack ===== */
+.mgd1 .btn-primary{width:100%;height:48px;background:#0e6b61;color:#fffdf8;border-radius:13px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;box-shadow:0 2px 10px rgba(14,107,97,.28);border:none}
+.mgd1 .board{max-width:1180px;margin:0 auto;padding:56px 28px 96px}
+.mgd1 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
+.mgd1 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.mgd1 .frame{display:flex;flex-direction:column;align-items:center;gap:14px}
 .mgd2 *{box-sizing:border-box}
-.mgd2{margin:0;background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;color:#14181A;-webkit-font-smoothing:antialiased}
-.mgd2 .board{max-width:1180px;margin:0 auto;padding:48px 24px 48px}
-.mgd2 .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#80827A;font-weight:600}
-.mgd2 .pill{display:inline-block;margin:8px 0;padding:4px 12px;border-radius:999px;background:#DFEEEB;color:#0A514A;font-size:12px;font-weight:600}
-.mgd2 h1.mh{font-size:30px;margin:4px 0 8px;font-weight:700;letter-spacing:-.01em}
-.mgd2 .board>p.lead{margin:0 0 32px;color:#5D635C;font-size:15px;line-height:1.5;max-width:70ch}
-.mgd2 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center}
+.mgd2{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans',sans-serif;color:#1b201d;-webkit-font-smoothing:antialiased}
+.mgd2 .board{max-width:1180px;margin:0 auto;padding:48px 24px 90px}
+.mgd2 .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#80827a;font-weight:600}
+.mgd2 .pill{display:inline-block;margin:10px 0;padding:4px 12px;border-radius:999px;background:#dfeeeb;color:#0a514a;font-size:12px;font-weight:600}
+.mgd2 h1.mh{font-size:30px;margin:6px 0 8px;font-weight:700;letter-spacing:-.01em}
+.mgd2 .board>p.lead{margin:0 0 34px;color:#5d635c;font-size:16px;line-height:1.5;max-width:70ch}
+.mgd2 .phones{display:flex;gap:34px;flex-wrap:wrap;justify-content:center}
 .mgd2 .frame{display:flex;flex-direction:column;align-items:center;gap:12px}
-.mgd2 .cap{font-size:13px;color:#5D635C;font-weight:600}
-.mgd2 .phone{width:340px;background:#14181A;border-radius:44px;padding:12px;box-shadow:0 30px 60px -20px rgba(0,0,0,.4)}
-.mgd2 .screen{background:#ECE8DF;border-radius:34px;height:748px;display:flex;flex-direction:column;overflow:hidden}
-.mgd2 .sbar{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:13px;font-weight:600;flex-shrink:0}
-.mgd2 .topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 12px;flex-shrink:0}
-.mgd2 .topbtn{width:42px;height:42px;border-radius:12px;background:#FFFDF8;border:1px solid #E2DDD1;display:flex;align-items:center;justify-content:center;color:#3A3F3A}
+.mgd2 .cap{font-size:13px;color:#5d635c;font-weight:600}
+.mgd2 .phone{width:340px;background:#14181a;border-radius:44px;padding:11px;box-shadow:0 30px 60px -20px rgba(0,0,0,.4)}
+.mgd2 .screen{background:#ece8df;border-radius:34px;height:748px;display:flex;flex-direction:column;overflow:hidden}
+.mgd2 .sbar{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:14px;font-weight:600;flex-shrink:0}
+.mgd2 .topbar{display:flex;align-items:center;gap:12px;padding:6px 16px 10px;flex-shrink:0}
+.mgd2 .topbtn{width:42px;height:42px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a}
 .mgd2 .topbtn svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .mgd2 .tt{font-size:17px;font-weight:700;line-height:1.2}
-.mgd2 .ts{font-size:12px;color:#80827A}
-.mgd2 .body{flex:1;overflow-y:auto;padding:4px 16px 16px}
-.mgd2 .hero{background:linear-gradient(150deg,#0E6B61,#0A514A);border-radius:16px;padding:16px;color:#F2EEE5;margin-bottom:12px}
+.mgd2 .ts{font-size:12px;color:#80827a}
+.mgd2 .body{flex:1;overflow-y:auto;padding:2px 16px 16px}
+.mgd2 .hero{background:linear-gradient(150deg,#0f766b,#0a514a);border-radius:16px;padding:16px;color:#eef6f4;margin-bottom:14px}
 .mgd2 .hero .hl{font-size:13px;opacity:.9}
-.mgd2 .hero .hn{font-size:30px;font-weight:700;margin-top:4px}
+.mgd2 .hero .hn{font-size:27px;font-weight:700;margin-top:4px}
 .mgd2 .hero .hn span{font-size:13px;font-weight:500;opacity:.85}
-.mgd2 .hint{font-size:11px;opacity:.8;margin-top:8px;line-height:1.4}
-.mgd2 .seg{display:flex;background:#F2EEE5;border:1px solid #E2DDD1;border-radius:12px;padding:4px;margin-bottom:12px}
-.mgd2 .seg div{flex:1;text-align:center;padding:12px;border-radius:8px;font-size:13px;font-weight:600;color:#5D635C}
-.mgd2 .seg div.on{background:#FFFDF8;color:#0A514A;box-shadow:0 1px 3px rgba(0,0,0,.08)}
-.mgd2 .sec{font-size:15px;font-weight:700;margin:4px 4px 4px}
-.mgd2 .sub{font-size:12px;color:#80827A;margin:0 4px 12px}
-.mgd2 .tier{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#FFFDF8;border:1.5px solid #E2DDD1;border-radius:12px;padding:16px 16px;margin-bottom:8px;cursor:pointer}
-.mgd2 .tier.on{border-color:#0E6B61;background:#FFFDF8;box-shadow:0 0 0 2px rgba(14,107,97,.1)}
-.mgd2 .tn{font-size:15px;font-weight:700}
-.mgd2 .tsub{font-size:12px;color:#80827A;margin-top:4px}
-.mgd2 .badge{display:inline-block;margin-inline-start:8px;padding:4px 12px;border-radius:999px;background:#F4EBD7;color:#9A6B1F;font-size:11px;font-weight:700;vertical-align:middle}
+.mgd2 .hint{font-size:11px;opacity:.8;margin-top:9px;line-height:1.4}
+.mgd2 .seg{display:flex;background:#f2eee5;border:1px solid #e2ddd1;border-radius:12px;padding:4px;margin-bottom:14px}
+.mgd2 .seg div{flex:1;text-align:center;padding:9px;border-radius:9px;font-size:13.5px;font-weight:600;color:#5d635c}
+.mgd2 .seg div.on{background:#fffdf8;color:#0a514a;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.mgd2 .sec{font-size:15px;font-weight:700;margin:2px 2px 3px}
+.mgd2 .sub{font-size:12.5px;color:#80827a;margin:0 2px 12px}
+.mgd2 .tier{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fffdf8;border:1.5px solid #e2ddd1;border-radius:14px;padding:13px 15px;margin-bottom:10px;cursor:pointer}
+.mgd2 .tier.on{border-color:#0e6b61;background:#f6faf9;box-shadow:0 0 0 2px rgba(14,107,97,.1)}
+.mgd2 .tn{font-size:16px;font-weight:700}
+.mgd2 .tsub{font-size:12px;color:#80827a;margin-top:2px}
+.mgd2 .badge{display:inline-block;margin-inline-start:8px;padding:2px 9px;border-radius:999px;background:#f0e6d2;color:#8a5e16;font-size:10.5px;font-weight:700;vertical-align:middle}
 .mgd2 .tp{text-align:end;white-space:nowrap}
 .mgd2 .tp b{font-size:17px;font-weight:700}
-.mgd2 .tp span{display:block;font-size:11px;color:#80827A}
-.mgd2 .custom{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#FFFDF8;border:1px dashed #D8D3C6;border-radius:12px;padding:16px 16px;margin-bottom:4px}
-.mgd2 .footer{padding:12px 16px 24px;border-top:1px solid #E2DDD1;background:#ECE8DF;flex-shrink:0}
-.mgd2 .fnote{text-align:center;font-size:11px;color:#80827A;margin-bottom:8px}
-.mgd2 .btn{display:block;width:100%;border:none;border-radius:12px;padding:16px;font-size:15px;font-weight:700;background:#0E6B61;color:#FFFDF8;text-align:center}
-/* ===== Screen-WhatsApp-Custom-Flow ===== */
+.mgd2 .tp span{display:block;font-size:11px;color:#80827a}
+.mgd2 .custom{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#faf7f0;border:1px dashed #d8cfb8;border-radius:14px;padding:13px 15px;margin-bottom:4px}
+.mgd2 .footer{padding:12px 16px 18px;border-top:1px solid #e2ddd1;background:#ece8df;flex-shrink:0}
+.mgd2 .fnote{text-align:center;font-size:11px;color:#80827a;margin-bottom:9px}
+.mgd2 .btn{display:block;width:100%;border:none;border-radius:13px;padding:15px;font-size:15px;font-weight:700;background:#0e6b61;color:#fffdf8;text-align:center}
 .mgd3 *{box-sizing:border-box}
-.mgd3{margin:0;background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#14181A}
+.mgd3{margin:0;background:#d8d3c6;background-image:radial-gradient(1100px 700px at 82% -10%,rgba(14,107,97,.10),transparent 60%),radial-gradient(1000px 700px at 8% -8%,rgba(154,107,31,.10),transparent 60%);font-family:'IBM Plex Sans','IBM Plex Sans Arabic',system-ui,sans-serif;color:#1b201d}
 .mgd3 .num{font-variant-numeric:tabular-nums}
 .mgd3 .mono{font-family:'IBM Plex Mono',monospace}
 .mgd3 svg{display:block;flex-shrink:0}
-.mgd3 .phone{width:340px;background:#14181A;border-radius:44px;padding:12px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
-.mgd3 .screen{background:#ECE8DF;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
-.mgd3 .sbar{display:flex;justify-content:space-between;align-items:center;padding:16px 24px 8px;font-size:13px;font-weight:600}
-.mgd3 .topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 12px}
-.mgd3 .topbtn{width:42px;height:42px;border-radius:12px;background:#FFFDF8;border:1px solid #E2DDD1;display:flex;align-items:center;justify-content:center;color:#3A3F3A}
-.mgd3 .body{flex:1;overflow-y:auto;padding:4px 16px 16px;display:flex;flex-direction:column;gap:12px}
-.mgd3 .sec{font-size:13px;font-weight:600;color:#80827A;margin:4px 4px -2px}
-.mgd3 .badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:4px 12px;border-radius:999px}
-.mgd3 .ok{background:#DFEEEB;color:#0E6B61}
-.mgd3 .card{background:#FFFDF8;border:1px solid #E2DDD1;border-radius:16px;padding:16px}
-.mgd3 .hero{background:linear-gradient(150deg,#0E6B61,#0A514A);border-radius:16px;padding:16px;color:#F2EEE5}
-.mgd3 .ubar{height:9px;border-radius:999px;background:rgba(255,255,255,.22);margin-top:8px;overflow:hidden}
-.mgd3 .ufill{height:100%;border-radius:999px;background:#FFFDF8}
+.mgd3 .phone{width:340px;background:#0c1c19;border-radius:44px;padding:11px;box-shadow:0 8px 16px rgba(28,33,30,.14),0 30px 70px rgba(28,33,30,.22)}
+.mgd3 .screen{background:#ece8df;border-radius:34px;overflow:hidden;height:748px;display:flex;flex-direction:column;position:relative}
+.mgd3 .sbar{display:flex;justify-content:space-between;align-items:center;padding:14px 24px 6px;font-size:13px;font-weight:600}
+.mgd3 .topbar{display:flex;align-items:center;gap:12px;padding:8px 16px 10px}
+.mgd3 .topbtn{width:42px;height:42px;border-radius:12px;background:#fffdf8;border:1px solid #e2ddd1;display:flex;align-items:center;justify-content:center;color:#3a3f3a}
+.mgd3 .body{flex:1;overflow-y:auto;padding:2px 16px 16px;display:flex;flex-direction:column;gap:12px}
+.mgd3 .sec{font-size:13px;font-weight:600;color:#80827a;margin:6px 2px -2px}
+.mgd3 .badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px}
+.mgd3 .ok{background:#e4f0e9;color:#1a6d4d}
+.mgd3 .card{background:#fffdf8;border:1px solid #e2ddd1;border-radius:16px;padding:14px}
+.mgd3 .hero{background:linear-gradient(150deg,#0f766b,#0a514a);border-radius:18px;padding:16px;color:#eef6f4}
+.mgd3 .ubar{height:9px;border-radius:999px;background:rgba(255,255,255,.22);margin-top:10px;overflow:hidden}
+.mgd3 .ufill{height:100%;border-radius:999px;background:#fffdf8}
 .mgd3 .scrim{position:absolute;inset:0;background:rgba(20,22,20,.32)}
-.mgd3 .sheet{position:absolute;left:0;right:0;bottom:0;background:#FFFDF8;border-radius:24px 24px 0 0;padding:8px 24px 24px;box-shadow:0 -10px 40px rgba(0,0,0,.16)}
-.mgd3 .grab{width:40px;height:4px;border-radius:999px;background:#D8D3C6;margin:4px auto 12px}
-.mgd3 .tier{display:flex;align-items:center;justify-content:space-between;border:1px solid #E2DDD1;border-radius:12px;padding:12px 16px;margin-bottom:8px;position:relative}
-.mgd3 .tier.press{border-color:#0E6B61;box-shadow:0 0 0 3px rgba(14,107,97,.16);background:#FFFDF8}
+.mgd3 .sheet{position:absolute;left:0;right:0;bottom:0;background:#fffdf8;border-radius:24px 24px 0 0;padding:8px 18px 20px;box-shadow:0 -10px 40px rgba(0,0,0,.16)}
+.mgd3 .grab{width:40px;height:4px;border-radius:999px;background:#d8d3c6;margin:6px auto 12px}
+.mgd3 .tier{display:flex;align-items:center;justify-content:space-between;border:1px solid #e2ddd1;border-radius:14px;padding:12px 13px;margin-bottom:9px;position:relative}
+.mgd3 .tier.press{border-color:#0e6b61;box-shadow:0 0 0 3px rgba(14,107,97,.16);background:#f6faf9}
 .mgd3 .tap{position:absolute;inset-inline-end:14px;top:50%;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;background:rgba(14,107,97,.16);border:2px solid rgba(14,107,97,.55)}
-.mgd3 .stepper{display:flex;align-items:center;justify-content:space-between;background:#FFFDF8;border:1px solid #E2DDD1;border-radius:16px;padding:12px 16px}
-.mgd3 .stbtn{width:44px;height:44px;border-radius:12px;background:#F2EEE5;color:#0A514A;border:none;display:flex;align-items:center;justify-content:center}
-.mgd3 .qchip{border:1px solid #E2DDD1;background:#FFFDF8;border-radius:999px;padding:8px 12px;font-size:12px;font-weight:600;color:#5D635C}
-.mgd3 .qchip.on{background:#0E6B61;border-color:#0E6B61;color:#fff}
-.mgd3 .rate{display:flex;align-items:center;justify-content:space-between;padding:12px 12px;border-radius:12px;border:1px solid #E2DDD1;background:#FFFDF8;margin-bottom:8px}
-.mgd3 .rate.on{border-color:#0E6B61;background:#FFFDF8;box-shadow:0 0 0 2px rgba(14,107,97,.1)}
-.mgd3 .totcard{background:#083F39;color:#F2EEE5;border-radius:16px;padding:16px 16px;display:flex;align-items:flex-end;justify-content:space-between}
-.mgd3 .rrow{display:flex;justify-content:space-between;font-size:13px;padding:12px 0;border-top:1px solid #F0ECE2}
+.mgd3 .stepper{display:flex;align-items:center;justify-content:space-between;background:#fffdf8;border:1px solid #e2ddd1;border-radius:16px;padding:12px 14px}
+.mgd3 .stbtn{width:44px;height:44px;border-radius:12px;background:#f2eee5;color:#0a514a;border:none;display:flex;align-items:center;justify-content:center}
+.mgd3 .qchip{border:1px solid #e2ddd1;background:#faf7f0;border-radius:999px;padding:7px 12px;font-size:12.5px;font-weight:600;color:#5d635c}
+.mgd3 .qchip.on{background:#0e6b61;border-color:#0e6b61;color:#fff}
+.mgd3 .rate{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:12px;border:1px solid #e2ddd1;background:#fbf8f2;margin-bottom:8px}
+.mgd3 .rate.on{border-color:#0e6b61;background:#f6faf9;box-shadow:0 0 0 2px rgba(14,107,97,.1)}
+.mgd3 .totcard{background:#083f39;color:#eef6f4;border-radius:16px;padding:14px 15px;display:flex;align-items:flex-end;justify-content:space-between}
+.mgd3 .rrow{display:flex;justify-content:space-between;font-size:14px;padding:9px 0;border-top:1px solid #f0ece2}
 .mgd3 .rrow:first-child{border-top:none}
-.mgd3 .btn-primary{width:100%;height:50px;background:#0E6B61;color:#FFFDF8;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;box-shadow:0 2px 10px rgba(14,107,97,.28);border:none}
-.mgd3 .btn-ghost{width:100%;height:44px;background:#F2EEE5;color:#5D635C;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;border:none}
-.mgd3 .footer{padding:12px 16px 16px;border-top:1px solid #E2DDD1;background:#ECE8DF}
-.mgd3 .empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:4px;padding:0 32px}
+.mgd3 .btn-primary{width:100%;height:50px;background:#0e6b61;color:#fffdf8;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:15px;font-weight:600;box-shadow:0 2px 10px rgba(14,107,97,.28);border:none}
+.mgd3 .btn-ghost{width:100%;height:44px;background:#f2eee5;color:#5d635c;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;border:none}
+.mgd3 .footer{padding:10px 16px 16px;border-top:1px solid #e2ddd1;background:#ece8df}
+.mgd3 .empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:6px;padding:0 26px}
 .mgd3 .tipwrap{position:relative;display:inline-flex;align-items:center}
-.mgd3 .info{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;color:#A09A8E;margin-inline-start:4px}
-.mgd3 .tip{position:absolute;bottom:calc(100% + 9px);inset-inline-start:-6px;width:198px;background:#14181A;color:#F2EEE5;font-size:11px;line-height:1.45;font-weight:400;text-align:start;padding:12px 12px;border-radius:8px;box-shadow:0 10px 24px rgba(20,22,20,.3);z-index:6}
-.mgd3 .tip::after{content:"";position:absolute;top:100%;inset-inline-start:14px;border:6px solid transparent;border-top-color:#14181A}
-.mgd3 .board{max-width:1320px;margin:0 auto;padding:48px 32px 48px}
-.mgd3 .masthead{background:#ECE8DF;border:1px solid #E2DDD1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:48px 48px 48px}
-.mgd3 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:32px}
-.mgd3 .frame{display:flex;flex-direction:column;align-items:center;gap:12px}
-.mgd3 .flowlabel{font-size:12px;font-weight:700;color:#0A514A;background:#DFEEEB;border:1px solid rgba(14,107,97,.2);padding:8px 12px;border-radius:999px}
-</style>
-</head>
-<body>
-<div class="mgd-top">
-  <div class="mgd-eyebrow">TutoringHQ · Merged reference</div>
-  <h1 class="mgd-h1">Center · WhatsApp</h1>
-  <p class="mgd-lede">The template library parents receive, the top-up packs, and the custom-amount flow.</p>
-  <div class="mgd-toc"><a href="#Merged-Center-WhatsApp-1">WhatsApp</a><a href="#Merged-Center-WhatsApp-2">WhatsApp Pack</a><a href="#Merged-Center-WhatsApp-3">WhatsApp Custom Flow</a></div>
-</div>
-<div class="mgd-sec" id="Merged-Center-WhatsApp-1">
-  <div class="mgd-bar"><span class="mgd-num">01</span><span class="mgd-name">WhatsApp</span><span class="mgd-src">Screen-WhatsApp.html</span></div>
-</div>
-<div class="mgd1">
-<div class="board">
+.mgd3 .info{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;color:#a6a79d;margin-inline-start:5px}
+.mgd3 .tip{position:absolute;bottom:calc(100% + 9px);inset-inline-start:-6px;width:198px;background:#1f2420;color:#eef0ec;font-size:11.5px;line-height:1.45;font-weight:400;text-align:start;padding:9px 11px;border-radius:10px;box-shadow:0 10px 24px rgba(20,22,20,.3);z-index:6}
+.mgd3 .tip::after{content:"";position:absolute;top:100%;inset-inline-start:14px;border:6px solid transparent;border-top-color:#1f2420}
+.mgd3 .board{max-width:1320px;margin:0 auto;padding:56px 28px 96px}
+.mgd3 .masthead{background:#ece8df;border:1px solid #e2ddd1;border-radius:24px;box-shadow:0 4px 10px rgba(28,33,30,.06),0 20px 50px rgba(28,33,30,.10);padding:40px 44px 34px}
+.mgd3 .phones{display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:40px}
+.mgd3 .frame{display:flex;flex-direction:column;align-items:center;gap:14px}
+.mgd3 .flowlabel{font-size:12px;font-weight:700;color:#0a514a;background:#dfeeeb;border:1px solid rgba(14,107,97,.2);padding:5px 11px;border-radius:999px}
+</style></head><body>
+<div class="mgd-bar"><span class="mgd-num">01</span><span class="mgd-name">WhatsApp</span><span class="mgd-src">Screen-WhatsApp.html</span></div>
+<div class="mgd1"><div class="board">
   <div class="masthead">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39)"></div><span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Reference Screen</span><span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#0e6b61;background:#dfeeeb;border:1px solid rgba(14,107,97,.18);padding:5px 11px;border-radius:999px">Lucide icons</span></div>
     <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">WhatsApp templates</h1>
@@ -289,13 +235,9 @@ body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10
     </div></div></div>
 
   </div>
-</div>
-</div>
-<div class="mgd-sec" id="Merged-Center-WhatsApp-2">
-  <div class="mgd-bar"><span class="mgd-num">02</span><span class="mgd-name">WhatsApp Pack</span><span class="mgd-src">Screen-WhatsApp-Pack.html</span></div>
-</div>
-<div class="mgd2">
-<div class="board">
+</div></div>
+<div class="mgd-bar"><span class="mgd-num">02</span><span class="mgd-name">WhatsApp Pack</span><span class="mgd-src">Screen-WhatsApp-Pack.html</span></div>
+<div class="mgd2"><div class="board">
   <div class="eyebrow">TutoringHQ · Reference Screen</div>
   <div class="pill">WhatsApp pack · One-time top-up · Draft</div>
   <h1 class="mh">WhatsApp pack</h1>
@@ -364,13 +306,9 @@ body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10
     </div>
 
   </div>
-</div>
-</div>
-<div class="mgd-sec" id="Merged-Center-WhatsApp-3">
-  <div class="mgd-bar"><span class="mgd-num">03</span><span class="mgd-name">WhatsApp Custom Flow</span><span class="mgd-src">Screen-WhatsApp-Custom-Flow.html</span></div>
-</div>
-<div class="mgd3">
-<div class="board">
+</div></div>
+<div class="mgd-bar"><span class="mgd-num">03</span><span class="mgd-name">WhatsApp Custom Flow</span><span class="mgd-src">Screen-WhatsApp-Custom-Flow.html</span></div>
+<div class="mgd3"><div class="board">
   <div class="masthead">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39)"></div><span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Reference Flow</span><span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#0e6b61;background:#dfeeeb;border:1px solid rgba(14,107,97,.18);padding:5px 11px;border-radius:999px">Lucide icons</span></div>
     <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">Custom pack · the flow</h1>
@@ -456,7 +394,7 @@ body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10
           <div class="rrow"><span style="color:#80827a">Messages</span><b class="num">3,000 · never expire</b></div>
           <div class="rrow"><span style="color:#80827a">Rate</span><b class="num">0.75 EGP / msg</b></div>
           <div class="rrow"><span style="color:#80827a">Subtotal (VAT incl)</span><b class="num">2,250 EGP</b></div>
-          <div class="rrow"><span class="tipwrap" style="color:#80827a">Processing fee<span class="info"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></span><span class="tip">A standard 20 EGP fee that helps us keep offering a high-quality, reliable service.</span></span><b class="num">20 EGP</b></div>
+          <div class="rrow"><span class="tipwrap" style="color:#80827a">Processing fee<span class="info"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></span><span class="tip">A standard 20 EGP fee on every invoice we issue. Tuition invoices carry 10 EGP instead, because the parent funds that one.</span></span><b class="num">20 EGP</b></div>
           <div class="rrow"><b style="font-size:15px">Total</b><b class="num" style="font-size:16px">2,270 EGP</b></div>
         </div>
         <div class="sec">Payment</div>
@@ -506,6 +444,5 @@ body{background:#D8D3C6;background-image:radial-gradient(1100px 700px at 82% -10
     </div></div></div>
 
   </div>
-</div>
-</div>
+</div></div>
 </body></html>
