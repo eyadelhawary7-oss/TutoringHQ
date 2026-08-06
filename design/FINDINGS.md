@@ -168,7 +168,12 @@ The column exists in the catalog and has **zero** references anywhere in `src/`.
 
 ---
 
-## 12. Two of the three parent notification opt-outs are ignored by the code that sends
+## 12. A consent control exists, is recorded, is shown back, and is overridden
+
+**This is a consent failure, not a notification bug.** The parent exercised a choice, the platform
+stored it, displayed it back to them as active, and then sent the messages anyway. Under PDPL that is
+a worse position than never having offered the control, because the record shows a choice was
+captured and honoured when it was not.
 
 `students` carries three per-student parent toggles, all `boolean` defaulting to `true`:
 `notify_on_scan`, `notify_on_absence`, `notify_on_balance`.
@@ -185,9 +190,22 @@ former, and `src/app/api/whatsapp-pack/settings/route.ts:50` reads all three bac
 | `api/cron/parent-absence-alerts/route.ts:83` | `students(id, name, parent_phone, parent_pack_opted_in, is_active)` | **No** |
 | `api/cron/parent-balance-alerts/route.ts` | no reference to `notify_on_balance` anywhere in the file | **No** |
 
-A parent who switches off absence or balance alerts keeps receiving them, the toggle keeps showing
-as off, and **every message is billed against the centre's paid WhatsApp pack.** An opt-out that
-appears to work and does nothing is worse than one that is absent, because nobody re-checks it.
+A parent who switches off absence or balance alerts keeps receiving them, and the toggle keeps
+reading as off. An opt-out that appears to work and does nothing is worse than one that is absent,
+because nobody re-checks it.
+
+**The centre is billed for every message it should never have sent.** Each of these goes out on the
+centre's paid WhatsApp pack, so the failure costs the customer money on top of overriding the
+parent. Two harms from one missing `select`.
+
+**Why this belongs to the platform and not the centre.** The centre cannot fix it, cannot see it,
+and did nothing wrong. The toggle, the storage, the display and the cron are all platform code. This
+sits with the consent obligations the platform owns directly rather than the ones it passes to
+centres under the agreement.
+
+**For Adsero.** They will want to know that a consent control existed and did not work, and for how
+long, separately from the question of whether the control was required. Recorded as an open item in
+`docs/LEGAL-STATUS.md`.
 
 *Source: `BUILD-AFTER-REDESIGN.md` F39. Verified 6 August 2026.*
 

@@ -65,6 +65,24 @@ licence, a separate sensitive-data permit, and a registered DPO.
 warrant and indemnity clause confirming they obtained explicit written parental consent before
 entering a minor's data. **No current agreement has one.**
 
+**A consent control existed and did not work.** `students` carries three per-student parent
+notification toggles. All three are writable and are displayed back as set, but only
+`notify_on_scan` is checked before sending. `api/cron/parent-absence-alerts` does not select
+`notify_on_absence` and `api/cron/parent-balance-alerts` never references `notify_on_balance`, so a
+parent who opted out of either kept receiving those messages while the toggle read as off. Verified
+against live code 6 August 2026; detail in `design/FINDINGS.md` entry 12.
+
+This is a platform failure, not a center one. The toggle, its storage, its display and the crons are
+all platform code, so no center could have seen or fixed it. **Adsero needs it separately from the
+question of whether the control was required at all**, because the record shows a choice captured
+and represented as honoured when it was not.
+
+**No parent has actually been overridden.** Checked the live catalog 6 August 2026: 4 student rows,
+of which **zero** have any of the three flags set to false. Nobody has ever exercised the opt-out, so
+no message has gone out against one. The defect is real in code and has produced no violation. Fix it
+before launch and there is nothing to disclose; ship it as-is and the first parent to use the toggle
+creates one.
+
 ---
 
 ## Open questions
