@@ -71,6 +71,15 @@ These are not passed to centers under the agreement. The platform builds them, a
 neither see nor fix them. Recorded here because they previously lived only in Eyad's notes and were
 therefore uncitable.
 
+**All four were checked on 6 August 2026. All four were wrong.** That is the finding, more than any
+one of them. Each was written down as a platform obligation and none carried a verification date, so
+nothing distinguished "done" from "intended". No center could see or report any of them, and nothing
+in CI tests a promise. **Treat a written obligation with no verification date beside it as
+unverified.**
+
+None has harmed anyone: zero parent phones at more than one center, zero opt-out flags set to false,
+zero erasure requests filed. All four are pre-launch fixes rather than disclosures.
+
 | | Obligation | State |
 |---|---|---|
 | 1 | Right-to-erasure self-serve delete | **No self-serve path, and erasure is incomplete.** See below. |

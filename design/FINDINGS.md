@@ -17,6 +17,32 @@ recorded in `docs/STATE-OF-PLAY.md` or one of the five recovered documents.
 
 ---
 
+# The pattern, which is worse than any single entry
+
+**Four of the four consent obligations the platform owns were checked. Four were wrong.**
+
+| | Obligation | Verified state |
+|---|---|---|
+| 1 | Right-to-erasure self-serve delete | No self-serve path; erasure stops at one table. Entry 3 |
+| 2 | Consent check before parent alert crons | Two of three toggles ignored at send. Entry 2 |
+| 3 | Per-center scoping of consent opt-outs | Consent written across centre boundaries. Entry 1 |
+| 4 | Short-lived revokable parent-portal links | Minted cross-centre, never revoked on erasure. Entries 1 and 3 |
+
+**This is not four bugs. It is a category of commitment that was written down and never checked.**
+Each was recorded as something the platform owns rather than something a centre owns, which is
+precisely what made them invisible: no centre could see them, no centre could report them, and
+nothing in CI tests a promise. They surfaced only because they were asked about one at a time, and
+the fourth was found by asking a fourth time rather than by anything flagging it.
+
+**None has harmed anyone.** Zero parent phones at more than one centre, zero opt-out flags set to
+false, zero erasure requests filed. Every one is a pre-launch fix rather than a disclosure, and each
+of those three facts took one query.
+
+**The lesson for anything else on a list like this:** a written obligation with no verification date
+beside it should be read as unverified, not as done. Three of these four sat that way for weeks.
+
+---
+
 ## 1. Consent granted to one centre is written to every centre that parent touches
 
 **Read this one first.** It is a cross-tenant write on consent data, the category Adsero calls
@@ -130,8 +156,14 @@ and nulls `phone`, `parent_phone`, `qr_code`, `qr_data`, `qr_code_data` and `gra
 preserves referential integrity for invoices, payments and attendance, which is exactly the right
 shape.
 
-**Where it falls down.** The route's own comment claims it strips *every* personal field. It strips
-the `students` row and two notes tables. Verified against the catalog, **at least nine other tables
+**The most dangerous thing here is the comment.** Line 86 reads *"Strip every personal/identifying
+field; keep the row + financial links."* It sits directly above code that strips exactly one table
+plus two notes tables. **A reviewer reads the comment, sees correct-looking code beneath it, and
+signs off without counting the tables.** This is the third instance of a check that measures the wrong
+thing, after the `substring(-11)` phone compare and the schema-drift gate that cannot see a REVOKE,
+both recorded in `docs/WORKING-RULES.md` as the failure pattern to look for first. A wrong comment on plausible code is how a gap survives review.
+
+**What it actually leaves behind.** It strips the `students` row and two notes tables. Verified against the catalog, **at least nine other tables
 still hold that parent's phone number afterwards**: `families.parent_phone`,
 `paid_parents.parent_phone`, `parent_pack_monthly_counts.parent_phone`,
 `pending_enrollments.parent_phone`, `wa_conversations.contact_phone`, `wa_message_queue.to_phone`,
@@ -139,12 +171,15 @@ still hold that parent's phone number afterwards**: `families.parent_phone`,
 plus `whatsapp_usage.to_phone`.
 
 **`parent_portal_tokens` is not revoked either.** The route never touches that table, so a live,
-unexpired portal token keyed to the erased student keeps resolving. That is obligation 4's
-revocation capability existing and not being invoked at the one moment it exists for.
+unexpired portal token keyed to the erased student keeps resolving. **Obligation 4's revocation
+capability exists and is not invoked at the exact moment it exists for.** Short-lived revokable links
+are worth nothing if the one event that must revoke them does not.
 
-**It also handles one student per call.** The body is `{ requestId, studentId }`. A parent with three
-children needs three separate actions and nothing links them, so partial erasure is the default
-outcome rather than an edge case, even though `students.sibling_family_id` exists.
+**It handles one student per call, so partial erasure is the default.** The body is
+`{ requestId, studentId }`. **A parent with three children gets one child forgotten. Nobody asked for
+that.** An erasure request is made by a person about their family, and the route models it as an
+operation on a row. `students.sibling_family_id` exists and is not consulted. Partial erasure is the
+default outcome here, not an edge case.
 
 **Nobody has exercised the right.** Live catalog, 6 August 2026: `privacy_requests` holds **0** rows.
 So this is a pre-launch fix, not a disclosure.
