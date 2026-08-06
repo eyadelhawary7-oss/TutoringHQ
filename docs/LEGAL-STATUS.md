@@ -83,7 +83,7 @@ notification toggles. All three are writable and are displayed back as set, but 
 `notify_on_scan` is checked before sending. `api/cron/parent-absence-alerts` does not select
 `notify_on_absence` and `api/cron/parent-balance-alerts` never references `notify_on_balance`, so a
 parent who opted out of either kept receiving those messages while the toggle read as off. Verified
-against live code 6 August 2026; detail in `design/FINDINGS.md` entry 12.
+against live code 6 August 2026; detail in `design/FINDINGS.md` entry 2.
 
 This is a platform failure, not a center one. The toggle, its storage, its display and the crons are
 all platform code, so no center could have seen or fixed it. **Adsero needs it separately from the
@@ -110,7 +110,7 @@ tokens are minted across that same boundary.
 
 **Nobody has been affected yet.** Live catalog, 6 August 2026: **zero** parent phone numbers appear
 at more than one center. Same position as obligation 2, real in code and no violation produced.
-Detail in `design/FINDINGS.md` entry 16.
+Detail in `design/FINDINGS.md` entry 1.
 
 ---
 

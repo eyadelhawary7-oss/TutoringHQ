@@ -17,158 +17,54 @@ recorded in `docs/STATE-OF-PLAY.md` or one of the five recovered documents.
 
 ---
 
-## 1. `requireSuperAdminRow` does not require a row
+## 1. Consent granted to one centre is written to every centre that parent touches
 
-**`src/lib/admin-access.ts`.** The function computes
-`adminUser?.role === 'super_admin' || isSuperAdminPhone(sessionPhone)`.
+**Read this one first.** It is a cross-tenant write on consent data, the category Adsero calls
+sensitive, and it is the same shape as the cross-tenant hole closed in July. Entry 2 ignores a
+parent's opt-out; **this one manufactures an opt-in they never gave.** That is worse, and the fix is
+one line.
 
-The name promises a database-backed check. It falls back to `SUPER_ADMIN_PHONES`, **the same
-environment variable the first gate already reads**. Every route that calls it believing it has
-added an independent, catalog-verifiable second gate has added nothing. The name is the dangerous
-part, because it invites exactly that belief.
-
-`STATE-OF-PLAY` records the first half of this, that the phone path mints a CEO with no database row
-and no forensic trail. It does not record that the second gate is not a second gate.
-
-Live catalog: `admin_users` holds **1** `super_admin` row. Anyone else holding that authority holds
-it entirely off-catalog.
-
-*Source: `BUILD-AFTER-REDESIGN.md`. Verified 6 August 2026.*
-
----
-
-## 2. Every centre is capped at two team members and told it is on Starter
-
-**`src/app/api/invite-user/route.ts:67`.** The query selects `plan, max_teachers` from `centers`.
-**`centers.max_teachers` does not exist** (catalog: 0). The error is **not destructured**:
+A parent taps the Arabic consent button in a WhatsApp thread. `src/app/api/whatsapp/webhook/route.ts:350`
+then runs:
 
 ```ts
-const { data: centerPlanRow } = await supabaseAdmin
-  .from('centers')
-  .select('plan, max_teachers')
+.from('students')
+.select('id, center_id')
+.eq('parent_phone', normalized)
+.eq('parent_consent_given', false)
 ```
 
-So PostgREST returns 42703, `centerPlanRow` is null, and `maxTeam = Number(undefined ?? 2)` is
-**2**. Every centre on every plan is capped at two team members. `planName` reads from the same null
-object and falls back to `'Starter'`, so a Business centre is told it has reached the limit *for the
-Starter plan*.
+**No `center_id` filter**, although `centerId` is in scope and used two lines earlier for
+`wa_conversations`. The loop at `:362` sets `parent_consent_given`, `parent_consent_at` and
+`parent_phone_verified` on every row returned, **and inserts a `parent_portal_tokens` row for each**.
 
-**A paid feature that silently does not deliver, and fails without an error because the error is
-never read.**
+A parent with children at two centres who agrees in Centre A's thread has consent recorded at Centre
+B, which never asked. Centre B's send gate (`src/lib/whatsapp/flows/parentNotifications.ts:174`
+filters `parent_consent_given = true`) then opens, so Centre B begins sending consent-gated, billed
+WhatsApp messages on the strength of an agreement given to someone else. Portal tokens cross the same
+boundary.
 
-*Source: `BUILD-AFTER-REDESIGN.md` F26 #3. Verified 6 August 2026.*
+**Nobody is affected yet.** Live catalog, 6 August 2026: **zero** parent phone numbers appear at more
+than one centre. Real in code, no violation produced, which is a very different conversation with
+Adsero than the alternative.
 
----
+**Not remotely forgeable, checked because it would have changed the priority.** This route *is* on
+`PUBLIC_WEBHOOK_PREFIXES` (`proxy.ts:32`), so it is exempt from the Origin check that entry 11
+describes. That exemption is paid for: the route verifies a Meta-signed HMAC and **fails closed at
+all three gates** — missing `WHATSAPP_APP_SECRET` returns 401 at `:411`, missing
+`x-hub-signature-256` returns 401 at `:416`, and a mismatch returns 401 at `:428` after a
+timing-safe compare. So this is reachable only by a real parent tapping the button in a genuine Meta
+delivery. **Entry 1 and entry 11 do not compound**, and either can be fixed alone.
 
-## 3. `/api/settings/limits` returns 404 for every centre, always
+This is obligation 3 of the four the platform owns, and it touches obligation 4. Both are now
+recorded in `docs/LEGAL-STATUS.md`.
 
-**`src/app/api/settings/limits/route.ts:18`** selects `max_teachers, max_students, plan`. Neither
-`centers.max_teachers` nor `centers.max_students` exists (catalog: 0 and 0). The select errors,
-`centerError` is truthy, and the route returns 404 "Center not found" before it counts anything. The
-endpoint cannot succeed under any conditions.
-
-*Source: `BUILD-AFTER-REDESIGN.md` F26 #2. Verified 6 August 2026.*
-
----
-
-## 4. Every vendor print PDF for every card order is dead
-
-**`src/app/api/admin/card-orders/[orderId]/pdf/route.ts:33`** selects `card_style`.
-**`card_orders.card_style` does not exist** (catalog: 0). The select errors and the route returns
-404 unconditionally.
-
-This one cannot be fixed by deleting the read. **The checkout path writes `card_style`**
-(`api/card-order-cart/checkout/route.ts`) and five sites read it. A whole feature was built against
-a column that was never added, so removing the reads means deciding the card style option does not
-exist. Card orders are parked, which lowers the urgency but not the fact.
-
-*Source: `BUILD-AFTER-REDESIGN.md` F26 #1. Verified 6 August 2026.*
+*Touches consent and tenancy. Source: `SURVEY-Verification-Payouts.md` follow-through and the
+consent obligations list. Verified 6 August 2026.*
 
 ---
 
-## 5. `bosta_shipments` is queried and does not exist
-
-**`src/lib/loadCardOrderDetail.ts:72`** runs
-`admin.from('bosta_shipments').select('*').eq('card_order_id', id).maybeSingle()`.
-**The table does not exist** (catalog: 0).
-
-*Source: `BUILD-AFTER-REDESIGN.md` F26. Verified 6 August 2026.*
-
----
-
-## 6. The centre all-in rate is computed five ways and three of them are wrong
-
-`getQuarterlyAllInMonthlyRateFromCenter` (`src/lib/pricing.ts:235`) is the canonical helper and it
-resolves `top_centers` then `early_adopter_price` then `all_in_price`. **It has exactly one external
-caller**, `src/app/api/admin/billing/route.ts:105`.
-
-Three paths bypass it and never consult `early_adopter_price`:
-
-| Path | Reads |
-|---|---|
-| `src/app/[locale]/settings/billing/page.tsx:89-93` | `all_in_price` |
-| `src/app/[locale]/(dashboard)/billing/BillingPageClient.tsx:298-301` | `billing_amount` then `all_in_price` |
-| `src/app/api/ceo/dashboard/route.ts:114-115` | `all_in_price` first, though it selects `early_adopter_price` at `:37` and `:108` |
-
-The moment a centre is made an early adopter, `all_in_price` still holds the list price written at
-signup while `early_adopter_price` holds what is actually owed. **The owner is shown a renewal figure
-above what they pay, on both of their billing screens, while admin MRR shows the correct lower one.**
-
-**Latent today, not visible.** Live catalog: 2 centres, both `is_test`, 0 early adopters, 0 rows with
-an `early_adopter_price`. This becomes real on the first early adopter.
-
-*Source: `SURVEY-Center-Money.md`. Verified 6 August 2026.*
-
----
-
-## 7. The early-adopter badge contradicts the number beside it
-
-**`src/app/[locale]/(dashboard)/billing/BillingPageClient.tsx:344`** renders the "Early adopter" chip
-from `center.is_early_adopter`, directly beside `displayAmount` computed at `:298-301`, which never
-consults the early-adopter price. **The badge and the number disagree by construction**, not by
-timing or by data.
-
-*Source: `SURVEY-Center-Money.md`. Verified 6 August 2026.*
-
----
-
-## 8. `center_invites.status` does not exist
-
-Catalog: 0. Any invite flow that filters or transitions on invite status has nothing to read or
-write.
-
-*Source: `BUILD-AFTER-REDESIGN.md` F19. Verified 6 August 2026.*
-
----
-
-## 9. `subjects.is_active` does not exist, and neither does any grades table
-
-Catalog: `public.subjects` carries no `is_active` column, and no grades table exists in `public`. Any
-subject on/off control and the entire grades concept have no backing schema.
-
-*Source: `BUILD-AFTER-REDESIGN.md` F33. Verified 6 August 2026.*
-
----
-
-## 10. `student_groups.teacher_split_pct` and `assign_teacher_to_group` are dead
-
-The column exists in the catalog and has **zero** references anywhere in `src/`. The RPC
-`assign_teacher_to_group` likewise has **zero** references. Dead schema carrying an implied teacher
-revenue split that nothing computes.
-
-*Source: `BUILD-AFTER-REDESIGN.md` F9. Verified 6 August 2026.*
-
----
-
-## 11. `student_groups.capacity_cap` is dead
-
-The column exists in the catalog and has **zero** references anywhere in `src/`.
-
-*Source: `BUILD-AFTER-REDESIGN.md` F11. Verified 6 August 2026.*
-
----
-
-## 12. A consent control exists, is recorded, is shown back, and is overridden
+## 2. A consent control exists, is recorded, is shown back, and is overridden
 
 **This is a consent failure, not a notification bug.** The parent exercised a choice, the platform
 stored it, displayed it back to them as active, and then sent the messages anyway. Under PDPL that is
@@ -211,30 +107,50 @@ long, separately from the question of whether the control was required. Recorded
 
 ---
 
-## 13. `students.payment_status` and `students.fee` are still live and still misleading
+## 3. `requireSuperAdminRow` does not require a row
 
-Both columns remain: `payment_status` is `text NOT NULL DEFAULT 'unpaid'`, `fee` is `numeric
-DEFAULT 0`. Neither is maintained after insert. The authoritative values are computed by
-`src/lib/studentBalance.ts` (`getStudentBalances`) and held on `student_groups.fee_per_class`.
+**`src/lib/admin-access.ts`.** The function computes
+`adminUser?.role === 'super_admin' || isSuperAdminPhone(sessionPhone)`.
 
-The six known readers were repointed onto the helper, which `STATE-OF-PLAY` records. **What it does
-not record is that the columns survive**, so nothing stops a seventh reader being written by someone
-reaching for a flat field instead of a join-and-sum.
+The name promises a database-backed check. It falls back to `SUPER_ADMIN_PHONES`, **the same
+environment variable the first gate already reads**. Every route that calls it believing it has
+added an independent, catalog-verifiable second gate has added nothing. The name is the dangerous
+part, because it invites exactly that belief.
 
-**Checked for a seventh instance and found none.** The scanner was the likeliest candidate and is
-clean: `src/components/attendance/ScanTab.tsx:349` selects only
-`id, student_number, name, is_active, center_id`, and `:578` seeds its local `fee` from the group's
-`fee_per_class`, which is the authoritative source. The scanner is correct today.
+`STATE-OF-PLAY` records the first half of this, that the phone path mints a CEO with no database row
+and no forensic trail. It does not record that the second gate is not a second gate.
 
-This entry exists so the next instance is logged as instance seven of a known pattern rather than
-written up as a new discovery. Dropping or backfilling the two columns is the only version of the
-fix that makes an eighth impossible rather than merely findable.
+Live catalog: `admin_users` holds **1** `super_admin` row. Anyone else holding that authority holds
+it entirely off-catalog.
 
-*Source: `BUILD-AFTER-REDESIGN.md` F16. Verified 6 August 2026.*
+*Source: `BUILD-AFTER-REDESIGN.md`. Verified 6 August 2026.*
 
 ---
 
-## 14. The scanner billing pipeline, five live faults from one vocabulary mismatch
+## 4. Every centre is capped at two team members and told it is on Starter
+
+**`src/app/api/invite-user/route.ts:67`.** The query selects `plan, max_teachers` from `centers`.
+**`centers.max_teachers` does not exist** (catalog: 0). The error is **not destructured**:
+
+```ts
+const { data: centerPlanRow } = await supabaseAdmin
+  .from('centers')
+  .select('plan, max_teachers')
+```
+
+So PostgREST returns 42703, `centerPlanRow` is null, and `maxTeam = Number(undefined ?? 2)` is
+**2**. Every centre on every plan is capped at two team members. `planName` reads from the same null
+object and falls back to `'Starter'`, so a Business centre is told it has reached the limit *for the
+Starter plan*.
+
+**A paid feature that silently does not deliver, and fails without an error because the error is
+never read.**
+
+*Source: `BUILD-AFTER-REDESIGN.md` F26 #3. Verified 6 August 2026.*
+
+---
+
+## 5. The scanner billing pipeline, five live faults from one vocabulary mismatch
 
 The scanner is the core attendance-to-billing path, not an edge screen. One item of the original
 finding was fixed; **five remain live and all five were re-verified**.
@@ -283,69 +199,79 @@ directly.
 
 ---
 
-## 15. A migration filename is not its recorded version, so absence proves nothing
+## 6. The centre all-in rate is computed five ways and three of them are wrong
 
-`supabase_migrations.schema_migrations` stamps a version at apply time that **does not match the
-filename**. Verified live:
+`getQuarterlyAllInMonthlyRateFromCenter` (`src/lib/pricing.ts:235`) is the canonical helper and it
+resolves `top_centers` then `early_adopter_price` then `all_in_price`. **It has exactly one external
+caller**, `src/app/api/admin/billing/route.ts:105`.
 
-| File | Recorded as |
+Three paths bypass it and never consult `early_adopter_price`:
+
+| Path | Reads |
 |---|---|
-| `20260804120000_sessions_tenant_key_and_occurrence_uniqueness.sql` | `20260804094631` |
-| `20260730110000_students_inactive_reason.sql` | `20260730122204` |
-| `20260730090000_permissions_canonical_admin_store.sql` | `20260729184405` |
+| `src/app/[locale]/settings/billing/page.tsx:89-93` | `all_in_price` |
+| `src/app/[locale]/(dashboard)/billing/BillingPageClient.tsx:298-301` | `billing_amount` then `all_in_price` |
+| `src/app/api/ceo/dashboard/route.ts:114-115` | `all_in_price` first, though it selects `early_adopter_price` at `:37` and `:108` |
 
-So a filename cannot be looked up in that table, and **absence from it is not evidence that a file
-has not been applied.** Match on the migration *name*, or better, check the catalog for the objects
-the file creates. `CLAUDE.md` already says the ledger is bookkeeping and not proof; this is the
-concrete mechanism, with the drift measured rather than asserted.
+The moment a centre is made an early adopter, `all_in_price` still holds the list price written at
+signup while `early_adopter_price` holds what is actually owed. **The owner is shown a renewal figure
+above what they pay, on both of their billing screens, while admin MRR shows the correct lower one.**
 
-**Related and already handled, recorded so it is not re-opened.** `schedule_slots.parent_slot_id` is
-dropped (catalog: 0) and the rule against reviving it is carried **in the database itself** as a
-`COMMENT ON TABLE public.schedule_slots`, verified present. It reads in part: *"Do NOT add a
-parent/child slot pointer to build a second materialisation path."* That comment outlives any
-document, so the rule needs no entry here beyond this pointer.
+**Latent today, not visible.** Live catalog: 2 centres, both `is_test`, 0 early adopters, 0 rows with
+an `early_adopter_price`. This becomes real on the first early adopter.
 
-*Source: `BUILD-AFTER-REDESIGN.md` F27. Verified 6 August 2026.*
+*Source: `SURVEY-Center-Money.md`. Verified 6 August 2026.*
 
 ---
 
-## 16. Consent granted to one centre is written to every centre that parent touches
+## 7. The early-adopter badge contradicts the number beside it
 
-**The mirror image of entry 12. That one ignores an opt-out; this one manufactures an opt-in.**
+**`src/app/[locale]/(dashboard)/billing/BillingPageClient.tsx:344`** renders the "Early adopter" chip
+from `center.is_early_adopter`, directly beside `displayAmount` computed at `:298-301`, which never
+consults the early-adopter price. **The badge and the number disagree by construction**, not by
+timing or by data.
 
-A parent taps the Arabic consent button in a WhatsApp thread. `src/app/api/whatsapp/webhook/route.ts:350`
-then runs:
-
-```ts
-.from('students')
-.select('id, center_id')
-.eq('parent_phone', normalized)
-.eq('parent_consent_given', false)
-```
-
-**No `center_id` filter**, although `centerId` is in scope and used two lines earlier for
-`wa_conversations`. The loop at `:362` sets `parent_consent_given`, `parent_consent_at` and
-`parent_phone_verified` on every row returned, **and inserts a `parent_portal_tokens` row for each**.
-
-A parent with children at two centres who agrees in Centre A's thread has consent recorded at Centre
-B, which never asked. Centre B's send gate (`src/lib/whatsapp/flows/parentNotifications.ts:174`
-filters `parent_consent_given = true`) then opens, so Centre B begins sending consent-gated, billed
-WhatsApp messages on the strength of an agreement given to someone else. Portal tokens cross the same
-boundary.
-
-**Nobody is affected yet.** Live catalog, 6 August 2026: **zero** parent phone numbers appear at more
-than one centre. Real in code, no violation produced, which is a very different conversation with
-Adsero than the alternative.
-
-This is obligation 3 of the four the platform owns, and it touches obligation 4. Both are now
-recorded in `docs/LEGAL-STATUS.md`.
-
-*Touches consent and tenancy. Source: `SURVEY-Verification-Payouts.md` follow-through and the
-consent obligations list. Verified 6 August 2026.*
+*Source: `SURVEY-Center-Money.md`. Verified 6 August 2026.*
 
 ---
 
-## 17. Four CEO and admin mutation routes have no CSRF check, including a platform kill switch
+## 8. `/api/settings/limits` returns 404 for every centre, always
+
+**`src/app/api/settings/limits/route.ts:18`** selects `max_teachers, max_students, plan`. Neither
+`centers.max_teachers` nor `centers.max_students` exists (catalog: 0 and 0). The select errors,
+`centerError` is truthy, and the route returns 404 "Center not found" before it counts anything. The
+endpoint cannot succeed under any conditions.
+
+*Source: `BUILD-AFTER-REDESIGN.md` F26 #2. Verified 6 August 2026.*
+
+---
+
+## 9. Every vendor print PDF for every card order is dead
+
+**`src/app/api/admin/card-orders/[orderId]/pdf/route.ts:33`** selects `card_style`.
+**`card_orders.card_style` does not exist** (catalog: 0). The select errors and the route returns
+404 unconditionally.
+
+This one cannot be fixed by deleting the read. **The checkout path writes `card_style`**
+(`api/card-order-cart/checkout/route.ts`) and five sites read it. A whole feature was built against
+a column that was never added, so removing the reads means deciding the card style option does not
+exist. Card orders are parked, which lowers the urgency but not the fact.
+
+*Source: `BUILD-AFTER-REDESIGN.md` F26 #1. Verified 6 August 2026.*
+
+---
+
+## 10. `bosta_shipments` is queried and does not exist
+
+**`src/lib/loadCardOrderDetail.ts:72`** runs
+`admin.from('bosta_shipments').select('*').eq('card_order_id', id).maybeSingle()`.
+**The table does not exist** (catalog: 0).
+
+*Source: `BUILD-AFTER-REDESIGN.md` F26. Verified 6 August 2026.*
+
+---
+
+## 11. Four CEO and admin mutation routes have no CSRF check, including a platform kill switch
 
 `POST /api/ceo/leads`, `PATCH /api/ceo/actions/[id]`, `PATCH /api/ceo/platform-config` and
 `PATCH /api/admin/centers/[id]` contain **zero** `validateCSRFRequest` calls. Sibling routes have
@@ -375,6 +301,93 @@ same list.
 
 ---
 
+---
+
+## 12. `center_invites.status` does not exist
+
+Catalog: 0. Any invite flow that filters or transitions on invite status has nothing to read or
+write.
+
+*Source: `BUILD-AFTER-REDESIGN.md` F19. Verified 6 August 2026.*
+
+---
+
+## 13. `subjects.is_active` does not exist, and neither does any grades table
+
+Catalog: `public.subjects` carries no `is_active` column, and no grades table exists in `public`. Any
+subject on/off control and the entire grades concept have no backing schema.
+
+*Source: `BUILD-AFTER-REDESIGN.md` F33. Verified 6 August 2026.*
+
+---
+
+## 14. `student_groups.teacher_split_pct` and `assign_teacher_to_group` are dead
+
+The column exists in the catalog and has **zero** references anywhere in `src/`. The RPC
+`assign_teacher_to_group` likewise has **zero** references. Dead schema carrying an implied teacher
+revenue split that nothing computes.
+
+*Source: `BUILD-AFTER-REDESIGN.md` F9. Verified 6 August 2026.*
+
+---
+
+## 15. `student_groups.capacity_cap` is dead
+
+The column exists in the catalog and has **zero** references anywhere in `src/`.
+
+*Source: `BUILD-AFTER-REDESIGN.md` F11. Verified 6 August 2026.*
+
+---
+
+## 16. `students.payment_status` and `students.fee` are still live and still misleading
+
+Both columns remain: `payment_status` is `text NOT NULL DEFAULT 'unpaid'`, `fee` is `numeric
+DEFAULT 0`. Neither is maintained after insert. The authoritative values are computed by
+`src/lib/studentBalance.ts` (`getStudentBalances`) and held on `student_groups.fee_per_class`.
+
+The six known readers were repointed onto the helper, which `STATE-OF-PLAY` records. **What it does
+not record is that the columns survive**, so nothing stops a seventh reader being written by someone
+reaching for a flat field instead of a join-and-sum.
+
+**Checked for a seventh instance and found none.** The scanner was the likeliest candidate and is
+clean: `src/components/attendance/ScanTab.tsx:349` selects only
+`id, student_number, name, is_active, center_id`, and `:578` seeds its local `fee` from the group's
+`fee_per_class`, which is the authoritative source. The scanner is correct today.
+
+This entry exists so the next instance is logged as instance seven of a known pattern rather than
+written up as a new discovery. Dropping or backfilling the two columns is the only version of the
+fix that makes an eighth impossible rather than merely findable.
+
+*Source: `BUILD-AFTER-REDESIGN.md` F16. Verified 6 August 2026.*
+
+---
+
+## 17. A migration filename is not its recorded version, so absence proves nothing
+
+`supabase_migrations.schema_migrations` stamps a version at apply time that **does not match the
+filename**. Verified live:
+
+| File | Recorded as |
+|---|---|
+| `20260804120000_sessions_tenant_key_and_occurrence_uniqueness.sql` | `20260804094631` |
+| `20260730110000_students_inactive_reason.sql` | `20260730122204` |
+| `20260730090000_permissions_canonical_admin_store.sql` | `20260729184405` |
+
+So a filename cannot be looked up in that table, and **absence from it is not evidence that a file
+has not been applied.** Match on the migration *name*, or better, check the catalog for the objects
+the file creates. `CLAUDE.md` already says the ledger is bookkeeping and not proof; this is the
+concrete mechanism, with the drift measured rather than asserted.
+
+**Related and already handled, recorded so it is not re-opened.** `schedule_slots.parent_slot_id` is
+dropped (catalog: 0) and the rule against reviving it is carried **in the database itself** as a
+`COMMENT ON TABLE public.schedule_slots`, verified present. It reads in part: *"Do NOT add a
+parent/child slot pointer to build a second materialisation path."* That comment outlives any
+document, so the rule needs no entry here beyond this pointer.
+
+*Source: `BUILD-AFTER-REDESIGN.md` F27. Verified 6 August 2026.*
+
+---
+
 # Four the ledger called open and verification closed
 
 **Recorded so nobody re-opens them from an old copy of a deleted document.** Each was carried as an
@@ -398,9 +411,12 @@ Not yet checked, and therefore not yet claimed either way.
 
 **8 F-codes:** F5b, F6, F8, F14, F28, F29, F32, F38.
 
-F20 produced finding 14, F27 produced finding 15, and S9 was pulled forward out of order to become
-finding 17 because a CSRF gap on a platform kill switch does not queue behind eight F-codes.
-Finding 16 came out of checking consent obligation 3 while writing up entry 12.
+F20 produced finding 5, F27 produced finding 17, and S9 was pulled forward out of order to become
+finding 11 because a CSRF gap on a platform kill switch does not queue behind eight F-codes.
+Finding 1 came out of checking consent obligation 3 while writing up entry 2.
+
+**Entries are ordered by severity, not by when they were found.** The two consent failures lead
+because they are the only ones touching data counsel treats as sensitive.
 
 **Check the live data on anything consent-shaped.** Both consent findings are real in code and have
 produced no violation, and establishing that took one query each. A defect that has harmed nobody is
