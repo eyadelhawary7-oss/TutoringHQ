@@ -821,6 +821,34 @@ unconfirmed, counted as collected, flipping 600 owed into an 1,800 credit. Karim
 `confirmed=true` with a `pending` status — a contradictory pair (see entry 35). If its boolean is the
 truth, his credit is arithmetically correct and not a defect at all.
 
+### CORRECTION — the "App shows" column is what the helper computes, NOT what the screen renders
+
+**The screen shows neither figure. It shows `0`.** Rendering `/en/students/<id>` for both Adam Sherif
+and Sara Ahmed gives `Balance 0 EGP · Paid up` and `Lifetime paid 0 EGP` — a `Paid` chip in both
+cases. The 1,800 and 3,200 credits above are what `studentBalance.ts` *would* return from the catalog;
+they are not on screen.
+
+**Sara Ahmed disproves the pending explanation on her own.** She has exactly one payment — cash,
+`status='paid'`, `confirmed=true`, 2,400 — against 4,800 of charges. **No pending row exists for her.**
+She genuinely owes 2,400 and the screen says `Paid up · 0 EGP`. Entry 33's mechanism cannot produce
+that.
+
+So there are **two stacked defects**, and the one that reaches the user is the second:
+
+1. `pending` counted as collected — real, verified, and it will dominate once the InstaPay flow
+   creates pending rows at volume. **Still blocking.**
+2. **Something zeroes the balance on the detail page for every student tested**, and `?? 0` renders
+   that as a confident `0 EGP · Paid up`.
+
+**Mechanism of the second is not yet established and is not guessed here.** What is known: every
+`/api/db` call on the page returns **200**, so it is not a failed request; and `Lifetime paid` — which
+sums confirmed payments and is independent of all attendance-scan logic — reads `0` for a student
+holding one confirmed 2,400 payment. **That points at the payments arm of the helper rather than the
+charge arm.** The roster agrees, reporting `Unpaid 0 · 0 EGP due` centre-wide.
+
+This is the more urgent of the two: it is live now, on every student, with no InstaPay flow required,
+and `?? 0` makes it indistinguishable from a settled account.
+
 Centre-wide, outstanding reads **15,650 EGP against a true 16,250**, and Adam disappears from the
 overdue list entirely.
 
