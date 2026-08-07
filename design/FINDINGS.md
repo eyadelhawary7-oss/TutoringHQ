@@ -625,6 +625,34 @@ live reader at all, or is a third source of truth for a state already held in tw
 
 ---
 
+---
+
+## 24. Lifecycle is earned from scan history, and two junction tables disagree about membership
+
+**`trg_recalc_lifecycle_on_scan` recomputes `students.lifecycle_status` from scan history.** Setting
+the column directly does not hold: inserting recent scans for a student promotes `enrolled` and
+`at_risk` to `active`, correctly, and the only way back is to change the scan history. Confirmed on
+6 August 2026 while seeding, by the trigger firing and overriding the intended states.
+
+**Consequence for anyone constructing test data or reasoning about a state:** lifecycle is a
+derived value, not a settable one. A screen showing `at_risk` is making a claim about attendance, and
+changing it means changing attendance.
+
+**Separately, student-to-group membership lives in two tables that do not agree.** Live counts for
+Test Center 333 on 6 August 2026: `student_group_members` **16** rows, `enrollments` **15**, with
+**2** pairs present in the first and absent from the second and **1** the other way round. They are
+not a copy of each other in either direction.
+
+They are split by subsystem rather than duplicated by accident: `enrollments` is read by 23 sites,
+almost all under `api/teacher/private/*`, and `student_group_members` by 15 sites, all centre-side
+(`students/print`, `parent/portal`, `term-summary`, `cron/daily-summary`, `cron/parent-absence-alerts`,
+`center/group-proposals`). **The boundary is real but nothing enforces it**, so a row written to one
+and not the other is invisible until two screens disagree about whether a student is in a group.
+
+*Touches tenancy and data integrity. Verified 6 August 2026.*
+
+---
+
 # Six the ledger called open and verification closed
 
 **Recorded so nobody re-opens them from an old copy of a deleted document.** Each was carried as an

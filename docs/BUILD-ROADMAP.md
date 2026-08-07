@@ -85,6 +85,13 @@ Depends on nothing in Stages 1 and 2, so it can run in parallel.
 | **3.3** | Sending credit between accounts. |
 | **3.4** | The balance ledger, with references neither side can delete. |
 
+**Decide D27 before D26, and treat that as a deadline even though nothing is scheduled.** D27 chooses
+how a notification is composed: an i18n key plus params in `in_app_notifications.metadata`, translated
+at render. D26 is the decision not to add notification writers yet. There are exactly **two** writers
+today, so D27 reverses cleanly right now and gets expensive the moment D26 loosens and more arrive.
+**A decision that reverses cheaply now and expensively later has a deadline whether or not anyone set
+one.** Both are in `design/FINDINGS.md` under open decisions.
+
 ---
 
 ## Stage 4. The visual pipeline
