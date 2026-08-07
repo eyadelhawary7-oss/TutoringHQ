@@ -1085,7 +1085,7 @@ vindication of checking every hit rather than trusting the grep — the count sa
 |---|---|
 | `Teacher-Setup` | **Redraw.** The verified/unverified switch *is* the file: *"when verified the collect toggle is on and it becomes Payout details (where we send their money)"*. Its own caption already concedes *"the verified payout is draft, pending legal review"* |
 | `Teacher-Home` | **Redraw.** Same premise: *"An unverified teacher self-collects… A verified teacher lets TutoringHQ record every payment"*, plus a full ledger — *"Your balance 4,250 EGP · ready for your next payout"*, *"Recent payouts — Bank payout … CIB ••4821"* — and *"TutoringHQ collects every student payment… then pays you automatically. Verify my ID"* |
-| `Center-Home` | **Excise.** A whole `Screen-Center-Dashboard-Verified` variant, plus three notification rows (payout requested, auto-collected, *"1,350 EGP sent to your InstaPay"*) |
+| `Center-Home` | **Excise** the three notification rows (payout requested, auto-collected, *"1,350 EGP sent to your InstaPay"*) — done. **RELABEL, do not excise, the dashboard** — see the correction below |
 | `Center-Setup` | **Excise.** *"Verify to enable payouts"* on the welcome screen, *"Teacher payout requests"* as a notify-me option, a `Screen-Center-Team-Verified` variant, and two team permissions — *"Withdraw money — Owner only"*, *"Change payout account — Owner only"* |
 | `Public-Marketing` | **Excise.** *"Teacher payouts"* as a headline feature, *"Split to each teacher's own account, or land in yours"*, and *"Instant payout — priced per withdrawal"* in the price list |
 | `Admin-Platform` | **Excise.** The `Unverified` filter chip on both the centres and solo-teachers lists |
@@ -1094,8 +1094,34 @@ vindication of checking every hit rather than trusting the grep — the count sa
 made from counts — `Teacher-Setup` (6 hits) needs more work than `Center-Home` (7), and
 `Admin-Accounts` (2) needs none.
 
+### CORRECTION — `Screen-Center-Dashboard-Verified` is not a variant, it is the dashboard
+
+This entry said to excise it. **That would have deleted the centre dashboard.** Section 01 of
+`Merged-Center-Home` is the *only* dashboard in the file and owns **2 of its 8 frames** (EN and AR).
+It carries the label `Center dashboard · Verified · Draft` and copy reading *"on a verified center the
+balance is the thing an owner opens the app to see"* — but there is no unverified counterpart beside
+it. The word "Verified" is framing, not a fork.
+
+**So the job is a relabel, not an excision**: strip the verified framing and keep the screens. Filed
+before acting on it, because "excise the Verified variant" read as safe and would have removed a
+screen the product needs.
+
+### The sweep regex has a blind spot, and it nearly certified this file clean
+
+After the notification rows came out, `Merged-Center-Home` **dropped off the residue list entirely** —
+`.rediff/sweep.mjs` reported it clear. It is not. The regex matches `valify`, `identity verif` and
+`تأكيد الهوية`, but **not a bare `Verified`**, so a whole verified-framed dashboard sits in a file the
+tool calls clean.
+
+**A file passing the sweep is not evidence it is swept.** The tool was written from the vocabulary
+found in one pass over `Merged-Center-Home` and inherited that pass's blind spots; using its silence
+as a completion signal is circular. Every remaining file needs the `sweepctx` context read, not just a
+green count — and the same doubt applies to the four protected files, whose 33 hits were measured with
+this same regex and are therefore a floor, not a total.
+
 *Source: `.rediff/sweepctx.mjs`, every hit read in surrounding copy with CSS and script stripped so
-class names like `.payouts` do not count as product text. 7 August 2026.*
+class names like `.payouts` do not count as product text. Correction added 7 August 2026 after the
+tool reported a false clean.*
 
 ---
 
