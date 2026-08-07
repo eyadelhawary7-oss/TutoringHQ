@@ -201,12 +201,12 @@ body{margin:0;background:#D8D3C6}
   <div class="masthead">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39)"></div><span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Reference Screen</span><span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#0a514a;background:#dfeeeb;border:1px solid #bfe0da;padding:5px 11px;border-radius:999px">Teacher · Settings</span></div>
     <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">Teacher settings</h1>
-    <p style="margin:0;max-width:82ch;font-size:17px;line-height:1.55;color:#5d635c">Full settings in both states. When <b>unverified</b> (self-collect) the payment section is Payment details (where parents pay them); when <b>verified</b> the collect toggle is on and it becomes Payout details (where we send their money). Subscription stays compact as a Manage billing row that opens the Billing screen. English and Arabic. Design only; the verified payout is draft, pending legal review.</p>
+    <p style="margin:0;max-width:82ch;font-size:17px;line-height:1.55;color:#5d635c">One state, because there is only one. A teacher is paid directly by the parent and TutoringHQ never holds the money, so there is no account to verify and no collect toggle to earn. Payment details is where the parent sends the transfer; everything else on the screen is the account, the join code and billing. Subscription stays compact as a Manage billing row that opens the Billing screen. English and Arabic. Design only.</p>
   </div>
   <div class="phones">
 
-    <!-- UNVERIFIED · EN (full) -->
-    <div class="frame"><span class="cap">EN · unverified (self-collect)</span>
+    <!-- EN (full) -->
+    <div class="frame"><span class="cap">EN · settings</span>
     <div class="phone"><div dir="ltr" class="screen">
       <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
       <div class="appbar"><div class="iconbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ttl">Settings</div><div class="iconbtn globe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div></div>
@@ -219,24 +219,16 @@ body{margin:0;background:#D8D3C6}
           <div class="save">Save changes</div>
         </div>
         <div class="group">
-          <div class="tglrow">
-            <div class="tgltx"><div class="tt">Collect payments for me</div><div class="ts">Turn on InstaPay to turn this on</div></div>
-            <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;color:#0e6b61"><span style="font-size:12.5px;font-weight:600">Verify</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
-          </div>
-        </div>
-        <div class="group">
           <h3 class="gh">Payment details</h3>
-          <p class="gsub">Parents pay you directly. We only relay these in fee reminders, never a payment link.</p>
+          <p class="gsub">The parent transfers to you directly and TutoringHQ never holds the money. We send the invoice link, read the receipt they upload and match it to the invoice — then you confirm it arrived in your own account.</p>
           <div class="field"><div class="flabel">InstaPay address</div><div class="input ph">e.g. aly@instapay</div></div>
           <div class="field"><div class="flabel">InstaPay wallet number</div><div class="input ph">e.g. 010 1234 5678</div></div>
           <div class="flabel" style="margin-bottom:10px">Methods you accept</div>
           <div class="checks">
             <div class="checkrow"><div class="box on"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>Cash</div>
             <div class="checkrow"><div class="box on"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>InstaPay</div>
-            <div class="checkrow"><div class="box"></div>InstaPay</div>
-            <div class="checkrow"><div class="box"></div>Other</div>
           </div>
-          <div class="field"><div class="flabel">Default method</div><div class="input">Cash<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#80827a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div></div>
+          <p class="gsub" style="margin:12px 0 0">InstaPay is the default for every student once this is set up. A cash record can be changed to InstaPay; the reverse is blocked, because the parent has already paid the fee.</p>
           <div class="save sm">Save changes</div>
         </div>
         <div class="codecard">
@@ -269,65 +261,8 @@ body{margin:0;background:#D8D3C6}
       <nav class="tabbar"><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.4 12 4l8 7.4"/><path d="M6 10.2V20h12v-9.8"/><path d="M10 20v-5h4v5"/></svg><span>Home</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2.4"/><path d="M8 3.5v3M16 3.5v3M4 9.6h16"/></svg><span>Schedule</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V5.5a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1V20"/><path d="M14 20V9.5h4a1 1 0 0 1 1 1V20"/><path d="M3.5 20h17"/><path d="M8 8.5h.01M11 8.5h.01M8 12h.01M11 12h.01M8 15.5h.01M11 15.5h.01"/></svg><span>Centers</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="10" rx="2"/><circle cx="12" cy="12" r="2.2"/><path d="M6.4 9.6h.01M17.6 14.4h.01"/></svg><span>Income</span></a><a class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>More</span></a></nav>
     </div></div></div>
 
-    <!-- VERIFIED · EN (payout section) -->
-    <div class="frame"><span class="cap">EN · verified</span>
-    <div class="phone"><div dir="ltr" class="screen">
-      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
-      <div class="appbar"><div class="iconbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ttl">Settings<span class="vchip"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span></div><div class="iconbtn globe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div></div>
-      <div class="body">
-        <div class="group">
-          <div class="tglrow">
-            <div class="tgltx"><div class="tt"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#1a6d4d" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Collect payments for me</div><div class="ts on">On. We invoice parents and process your payout straight to your account.</div></div>
-            <div class="switch on"><span class="knob"></span></div>
-          </div>
-        </div>
-        <div class="group">
-          <h3 class="gh">Account</h3>
-          <p class="gsub">Update your name and the subject you teach.</p>
-          <div class="field"><div class="flabel">Display name</div><div class="input">Aly Shady</div></div>
-          <div class="field"><div class="flabel">Subject (optional)</div><div class="input">Physics</div></div>
-          <div class="save">Save changes</div>
-        </div>
-        <div class="group">
-          <h3 class="gh">Payout details</h3>
-          <p class="gsub">Where we send your money. Held in Pending, then processed straight to your account. Cycle: Thursday 12:00 am to the next Wednesday 11:59 pm.</p>
-          <div class="field"><div class="flabel">Account holder</div><div class="input">Aly Shady</div><div class="acctsub">Matches your verified ID</div></div>
-          <div class="field"><div class="flabel">Bank</div><div class="input">CIB<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#80827a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div></div>
-          <div class="field"><div class="flabel">IBAN</div><div class="input"><span class="mono" dir="ltr">EG38 0019 0005 0000 0012 3456 7890</span></div></div>
-          <div class="save sm">Save changes</div>
-        </div>
-        <div class="codecard">
-          <h3 class="gh">My code</h3>
-          <p class="gsub" style="color:#8a5e16">Give this code to a center so they can add you to their roster.</p>
-          <div class="codebox"><div class="codeval mono">ALY653</div><div class="copy"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>Copy</div></div>
-          <p class="codenote">To earn from referrals, share your referral link from the Referrals screen, not this code.</p>
-        </div>
-        <div class="group">
-          <h3 class="gh">Change PIN</h3>
-          <div class="field" style="margin-top:6px"><div class="flabel">Current PIN</div><div class="input ph">••••</div></div>
-          <div class="field"><div class="flabel">New PIN</div><div class="input ph">••••</div></div>
-          <div class="field"><div class="flabel">Confirm new PIN</div><div class="input ph">••••</div></div>
-          <div class="save sm">Update PIN</div>
-        </div>
-        <div class="group">
-          <h3 class="gh">Your account</h3>
-          <div class="acctline">Registered phone</div>
-          <div class="acctsub"><span class="mono" dir="ltr">+20 10 1234 5678</span> · contact support to change your number</div>
-        </div>
-        <div class="group" style="padding:0;overflow:hidden">
-          <div style="display:flex;align-items:center;gap:13px;padding:16px">
-            <div style="width:38px;height:38px;border-radius:11px;background:#f2eee5;color:#5d635c;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div>
-            <div style="flex:1"><div style="font-size:14px;font-weight:600">Manage billing</div><div style="font-size:11.5px;color:#80827a;margin-top:2px">Standard · Trial · 14 days left</div></div>
-            <div style="color:#c9c4b6"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
-          </div>
-        </div>
-      </div>
-    
-      <nav class="tabbar"><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.4 12 4l8 7.4"/><path d="M6 10.2V20h12v-9.8"/><path d="M10 20v-5h4v5"/></svg><span>Home</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2.4"/><path d="M8 3.5v3M16 3.5v3M4 9.6h16"/></svg><span>Schedule</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V5.5a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1V20"/><path d="M14 20V9.5h4a1 1 0 0 1 1 1V20"/><path d="M3.5 20h17"/><path d="M8 8.5h.01M11 8.5h.01M8 12h.01M11 12h.01M8 15.5h.01M11 15.5h.01"/></svg><span>Centers</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="10" rx="2"/><circle cx="12" cy="12" r="2.2"/><path d="M6.4 9.6h.01M17.6 14.4h.01"/></svg><span>Income</span></a><a class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>More</span></a></nav>
-    </div></div></div>
-
-    <!-- UNVERIFIED · AR (full) -->
-    <div class="frame"><span class="cap">AR · unverified (self-collect)</span>
+    <!-- AR (full) -->
+    <div class="frame"><span class="cap">AR · الإعدادات</span>
     <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
       <div class="sbar"><span class="num">٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
       <div class="appbar"><div class="iconbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div><div class="ttl">الإعدادات</div><div class="iconbtn globe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div></div>
@@ -340,81 +275,16 @@ body{margin:0;background:#D8D3C6}
           <div class="save">حفظ التغييرات</div>
         </div>
         <div class="group">
-          <div class="tglrow">
-            <div class="tgltx"><div class="tt">تحصيل إنستاباي</div><div class="ts">فعّل إنستاباي لتفعيل هذا الخيار</div></div>
-            <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;color:#0e6b61"><span style="font-size:12.5px;font-weight:600">وثّق</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>
-          </div>
-        </div>
-        <div class="group">
           <h3 class="gh">تفاصيل الدفع</h3>
-          <p class="gsub">أولياء الأمور يدفعون لك مباشرة. نمرّر هذه التفاصيل في التذكيرات فقط، ولا نرسل رابط دفع أبدًا.</p>
+          <p class="gsub">وليّ الأمر يحوّل لك مباشرة، وTutoringHQ لا تحتفظ بالمال أبدًا. نرسل رابط الفاتورة، ونقرأ الإيصال الذي يرفعه ونطابقه مع الفاتورة — ثم تؤكّد أنت وصوله إلى حسابك.</p>
           <div class="field"><div class="flabel">عنوان إنستاباي</div><div class="input ph">مثال: aly@instapay</div></div>
           <div class="field"><div class="flabel">رقم محفظة إنستاباي</div><div class="input ph">مثال: 010 1234 5678</div></div>
           <div class="flabel" style="margin-bottom:10px">الطرق التي تقبلها</div>
           <div class="checks">
             <div class="checkrow"><div class="box on"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>نقدًا</div>
             <div class="checkrow"><div class="box on"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>إنستاباي</div>
-            <div class="checkrow"><div class="box"></div>إنستاباي</div>
-            <div class="checkrow"><div class="box"></div>أخرى</div>
           </div>
-          <div class="field"><div class="flabel">الطريقة الافتراضية</div><div class="input">نقدًا<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#80827a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div></div>
-          <div class="save sm">حفظ التغييرات</div>
-        </div>
-        <div class="codecard">
-          <h3 class="gh">رمزي</h3>
-          <p class="gsub" style="color:#8a5e16">أعطِ هذا الرمز لمركز حتى يضيفك إلى قائمته.</p>
-          <div class="codebox"><div class="codeval mono">ALY653</div><div class="copy"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>نسخ</div></div>
-          <p class="codenote">للربح من الإحالات، شارك رابط الإحالة من شاشة الإحالات، لا هذا الرمز.</p>
-        </div>
-        <div class="group">
-          <h3 class="gh">تغيير الرمز السري</h3>
-          <div class="field" style="margin-top:6px"><div class="flabel">الرمز الحالي</div><div class="input ph">••••</div></div>
-          <div class="field"><div class="flabel">الرمز الجديد</div><div class="input ph">••••</div></div>
-          <div class="field"><div class="flabel">تأكيد الرمز الجديد</div><div class="input ph">••••</div></div>
-          <div class="save sm">تحديث الرمز</div>
-        </div>
-        <div class="group">
-          <h3 class="gh">حسابك</h3>
-          <div class="acctline">الهاتف المسجّل</div>
-          <div class="acctsub"><span class="mono" dir="ltr">+20 10 1234 5678</span> · تواصل مع الدعم لتغيير رقمك</div>
-        </div>
-        <div class="group" style="padding:0;overflow:hidden">
-          <div style="display:flex;align-items:center;gap:13px;padding:16px">
-            <div style="width:38px;height:38px;border-radius:11px;background:#f2eee5;color:#5d635c;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div>
-            <div style="flex:1"><div style="font-size:14px;font-weight:600">إدارة الفوترة</div><div style="font-size:11.5px;color:#80827a;margin-top:2px">عادي · تجريبي · باقٍ ١٤ يومًا</div></div>
-            <div style="color:#c9c4b6"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>
-          </div>
-        </div>
-      </div>
-    
-      <nav class="tabbar"><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.4 12 4l8 7.4"/><path d="M6 10.2V20h12v-9.8"/><path d="M10 20v-5h4v5"/></svg><span>الرئيسية</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2.4"/><path d="M8 3.5v3M16 3.5v3M4 9.6h16"/></svg><span>الجدول</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V5.5a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1V20"/><path d="M14 20V9.5h4a1 1 0 0 1 1 1V20"/><path d="M3.5 20h17"/><path d="M8 8.5h.01M11 8.5h.01M8 12h.01M11 12h.01M8 15.5h.01M11 15.5h.01"/></svg><span>المراكز</span></a><a class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="10" rx="2"/><circle cx="12" cy="12" r="2.2"/><path d="M6.4 9.6h.01M17.6 14.4h.01"/></svg><span>الدخل</span></a><a class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>المزيد</span></a></nav>
-    </div></div></div>
-
-    <!-- VERIFIED · AR (payout section) -->
-    <div class="frame"><span class="cap">AR · verified</span>
-    <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
-      <div class="sbar"><span class="num">٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
-      <div class="appbar"><div class="iconbtn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div><div class="ttl">الإعدادات<span class="vchip"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span></div><div class="iconbtn globe"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div></div>
-      <div class="body">
-        <div class="group">
-          <div class="tglrow">
-            <div class="tgltx"><div class="tt"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#1a6d4d" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>تحصيل إنستاباي</div><div class="ts on">مُفعّل. نرسل الفواتير لأولياء الأمور ونعالج تحويلك على طول لحسابك.</div></div>
-            <div class="switch on"><span class="knob"></span></div>
-          </div>
-        </div>
-        <div class="group">
-          <h3 class="gh">الحساب</h3>
-          <p class="gsub">حدّث اسمك والمادة التي تدرّسها.</p>
-          <div class="field"><div class="flabel">الاسم الظاهر</div><div class="input">علي شادي</div></div>
-          <div class="field"><div class="flabel">المادة (اختياري)</div><div class="input">فيزياء</div></div>
-          <div class="save">حفظ التغييرات</div>
-        </div>
-        <div class="group">
-          <h3 class="gh">تفاصيل التحويل</h3>
-          <p class="gsub">حيث نرسل أموالك. تُحتجَز في الرصيد المعلّق ثم تُعالَج على طول لحسابك. الدورة: الخميس ١٢:٠٠ ص حتى الأربعاء ١١:٥٩ م.</p>
-          <div class="field"><div class="flabel">صاحب الحساب</div><div class="input">علي شادي</div><div class="acctsub">مطابق لهويتك الموثّقة</div></div>
-          <div class="field"><div class="flabel">البنك</div><div class="input">CIB<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#80827a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div></div>
-          <div class="field"><div class="flabel">رقم الآيبان</div><div class="input"><span class="mono" dir="ltr">EG38 0019 0005 0000 0012 3456 7890</span></div></div>
+          <p class="gsub" style="margin:12px 0 0">إنستاباي هو الافتراضي لكل طالب بمجرد ضبط الحساب. تسجيل الكاش ينفع يتحوّل لإنستاباي، لكن العكس مرفوض لأن وليّ الأمر يكون دفع الرسوم بالفعل.</p>
           <div class="save sm">حفظ التغييرات</div>
         </div>
         <div class="codecard">
@@ -454,7 +324,7 @@ body{margin:0;background:#D8D3C6}
   <div class="masthead">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39)"></div><span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Reference Screen</span><span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#0a514a;background:#dfeeeb;border:1px solid #bfe0da;padding:5px 11px;border-radius:999px">Teacher · Centers</span></div>
     <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">Centers</h1>
-    <p style="margin:0;max-width:82ch;font-size:17px;line-height:1.55;color:#5d635c">Everything about the centers a teacher works with: what they're owed, per-center earnings, a live group proposal they can accept, counter or decline, class-time confirmations, and joining a new center. This is the teacher's income from centers, separate from their own private groups, so it doesn't change with verification. English and Arabic. Design only.</p>
+    <p style="margin:0;max-width:82ch;font-size:17px;line-height:1.55;color:#5d635c">Everything about the centers a teacher works with: what they're owed, per-center earnings, a live group proposal they can accept, counter or decline, class-time confirmations, and joining a new center. This is the teacher's income from centers, separate from their own private groups. English and Arabic. Design only.</p>
   </div>
   <div class="phones">
 

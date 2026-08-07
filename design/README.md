@@ -1,6 +1,8 @@
 # design/
 
-**25 merged HTML files. 110 screens. 503 frames.** Regenerated 6 August 2026.
+**25 merged HTML files. 110 screens. 499 frames.** Regenerated 6 August 2026; frame count updated
+7 August 2026 when the four `verified` frames in `Merged-Teacher-Setup` and `Merged-Teacher-Home`
+were dropped, the two-state account model having ceased to exist. Screens are unchanged.
 
 This folder is the source of truth for what every screen looks like and what logic sits behind it.
 
