@@ -347,10 +347,25 @@ async function processWebhookPayload(body: Record<string, unknown>): Promise<voi
             }
             if (buttonTitle === 'وافق' || buttonTitle.includes('وافق')) {
               const normalized = normalizePhone(fromPhone);
+              // FINDINGS entry 1. This query had no center_id filter, so a
+              // parent tapping consent in ONE centre's thread had consent
+              // written — and a parent_portal_tokens row minted — at EVERY
+              // centre holding that phone number. Consent the parent never
+              // gave, manufactured across a tenant boundary, on the data
+              // counsel treats as sensitive.
+              //
+              // The unresolved-centre case is the same bug, not a lesser one:
+              // continuing without a centre is exactly what made the query
+              // global. A tap we cannot attribute to a centre grants consent
+              // to none.
+              if (!centerId) {
+                continue;
+              }
               const { data: toConsent } = await admin
                 .from('students')
                 .select('id, center_id')
                 .eq('parent_phone', normalized)
+                .eq('center_id', centerId)
                 .eq('parent_consent_given', false);
               const list = (toConsent ?? []) as { id: string; center_id: string }[];
               const now = new Date().toISOString();
