@@ -1056,6 +1056,49 @@ absence of an affordance.
 
 ---
 
+## 50. The residue sweep is an English instrument, and the Arabic half of the design set was never measured
+
+**Entry 43's marker list is English.** `payout`, `verify`, `auto-collect`, `split-90-10`, `7.5%`,
+`1.5%`. Every count published from it — the 32, the 33, the per-file table — is a count of the
+**English** frames, and it was read as a count of the files.
+
+Three Arabic instances have now surfaced by reading rather than by grepping, each in a file the
+sweep had already scored:
+
+| File | Arabic | English in the same slot |
+|---|---|---|
+| `Center-Setup` settings list | `التحقق من الهوية` — identity verification | already read `InstaPay account` |
+| `Design-Patterns` teacher-money empty state | `بعد خصم نصيب المنصة` — *after deducting the platform's share* | `minus the platform share` — **was** counted |
+| `Design-Patterns`, same card | `تحويل مجاني واحد في الشهر` · `شوف التحويلات بتشتغل إزاي` | `one free payout a month` · `See how payouts work` — **were** counted |
+
+The `Design-Patterns` pair is the clearest demonstration, because **both locales say the same dead
+thing and only the English was scored.** Entry 43 recorded `Merged-Design-Patterns` at 4 hits:
+payout ×3 and split-90-10 ×1. The three payout hits are the English card. The Arabic card, three
+more instances of the identical copy, contributed **zero** — `تحويل` is not `payout`.
+
+### And the fourth of those four was never a hit at all
+
+Entry 43's `split-90-10 ×1` for this file is `<i style="width:90%;background:#9a6b1f"></i>` — the
+fill on a **capacity bar** for a group at 18 of 20 seats. Not the revenue split. So the file's real
+figure under its own marker set was 3 English hits and 3 uncounted Arabic ones, reported as 4.
+
+### Why this is not just a wider regex
+
+An Arabic marker list is the easy half. The hard half is that **`تحويل` means transfer, and a
+transfer is live under the new model** — a parent transfers to a teacher by InstaPay. The word that
+marks the dead payout is the same word that describes the surviving mechanism, so an Arabic sweep
+returns hits that can only be settled by reading the sentence. There is no grep that separates
+*"we transfer your money to you"* from *"the parent transfers to you"*.
+
+Which is entry 46's rule arriving where it actually bites: the count was never the work. In English
+the marker list was a decent first pass. **In Arabic it is not even that**, and a file cannot be
+called swept because its English scored zero.
+
+*Source: `sweep43.mjs` calibrated against entry 43's published per-file numbers, plus reads of the
+`Center-Setup` settings list and both `Design-Patterns` teacher-money frames. 7 August 2026.*
+
+---
+
 ## 49. Three of six methods passed the server gate and were rejected by the database, and `transactions` is not what the migration says it is
 
 Two findings from narrowing the tuition method enums. Both were found by reading
