@@ -737,6 +737,85 @@ and a proxy that holds in most files is the hardest kind to catch.
 
 ---
 
+## 27. The room-clash guard is correct. Nothing stops a slot that ends before it starts, and such a slot switches the guard off
+
+**The guard itself passes.** Extracted verbatim from `schedule/page.tsx` (lines 220–229 and 478–504,
+sliced by line range rather than retyped) and run against the 9 live `schedule_slots` rows of Test
+Center 333, plus 9 synthetic cases.
+
+| Check | Result |
+|---|---|
+| Live rows: flagged set vs. independently computed overlap set | **9 of 9 rows agree.** 1 overlapping pair found, 2 slots flagged, expected 2 |
+| Negative control — Wed 09:00–11:00 and Wed 14:00–16:00, both Room 3 | **Correctly not flagged.** Rules out a guard comparing only room + day |
+| Room 2 appears on Sun ×2, Tue, Thu | Only the Sunday pair flags. No cross-day false positive |
+| Synthetic edge cases (null rooms ×2, touching intervals, 1-minute overlap, containment, identical times, `day_of_week` as text, three-way pile-up) | **9 of 9 behave as expected** |
+
+F38 is genuinely closed: two room-less overlapping slots do not flag, and one room-less against one
+roomed does not flag.
+
+**The hole is upstream of the guard, in what may be stored.** A slot with `end_time` before
+`start_time` — 23:00–01:00 — makes `timeToMinutes(end)` *smaller* than `timeToMinutes(start)` (60 vs.
+1380). The overlap test `a1 < b2 && a2 < b1` then evaluates `a2 < 60`, false for every slot starting
+after 01:00. **The slot stops clashing with anything.** A 23:30–23:45 booking in the same room on the
+same day is not flagged, and the room silently loses double-booking protection for that day.
+
+Nothing rejects such a row at any of the three layers:
+
+| Layer | What was checked | Result |
+|---|---|---|
+| Client | `handleAddSlot`, `schedule/page.tsx:532–548` | Requires group + room, checks `hasConflict`. **No end-after-start check.** Both inputs (`:1358`, `:1367`) are bare `<input type="time">` with no relative `min`/`max` |
+| Server | `dbInsertSchemas` in `validations.ts:323` | **5 keys** — `attendance_overrides`, `students`, `student_groups`, `payments`, `card_orders`. `schedule_slots` is not one of them, so `api/db/route.ts:132` finds no schema and validates nothing. `dbProxyScope.ts:35` scopes it by `center_id` only, which is tenancy, not shape |
+| Database | `pg_constraint` where `contype = 'c'` on `schedule_slots` | **0 rows.** No CHECK constraint of any kind |
+
+**What is executed fact and what is not.** The guard behaviour, the 0 CHECK constraints and the
+5-key schema list were each produced by a command run in this session. That no layer rejects the row
+is read from all three layers rather than proven by a write — no probe row was inserted. The
+remaining step is one insert against the running dev server and a delete; it needs a word first
+because it perturbs seeded data.
+
+**A stale count inside the fix.** The comment at `:485` reads *"0 of 1 slots has a null room_id"*.
+That was true when the centre held one slot. It holds nine today and the figure is still 0, so the
+claim survives by luck, not by being maintained. A live measurement frozen into a code comment is a
+number nobody will re-run.
+
+*Source: `.rediff/build-guard.mjs` → `.rediff/run-guard.mts`, `.rediff/edge-guard.mts`, live catalog. 7 August 2026.*
+
+---
+
+## 28. A fresh clone cannot `npm run dev`, and the failure points nowhere near the cause
+
+`setup-fonts` is wired into `npm run build` only. `npm run dev` does not run it, so a clone that has
+never been built has no fonts on disk and every page returns **500**. The trace names neither fonts
+nor the script.
+
+The cost is not the fix, which is one command. It is that the symptom — a blank 500 on every route —
+reads as a broken environment, a bad secret or a failed migration, and all three were checked here
+before fonts were. Anyone onboarding pays that same detour.
+
+Either add `setup-fonts` to a `predev` hook, or make the font loader fail with a message naming the
+script.
+
+*Source: reproduced while bringing the app up locally. 7 August 2026.*
+
+---
+
+## 29. On a Friday the schedule is empty and gives no sign the week is not
+
+Cairo Friday is `jsWeekday` 5. No slot in Test Center 333 runs Friday, so the default view on a Friday
+renders **"No sessions on this day"** — correct, and indistinguishable from a centre with no schedule
+at all.
+
+The empty state describes the selected day but says nothing about the week around it. An owner opening
+the app on the Egyptian weekend sees what looks like an empty product. A count on the day chips, or an
+empty state reading "No sessions Friday — 9 this week", removes the ambiguity at no cost.
+
+Not a defect. Recording it because it is invisible from the code and only appears if the app is opened
+on the right day, which is how it was found.
+
+*Source: observed running the app locally, Friday 7 August 2026.*
+
+---
+
 # Six the ledger called open and verification closed
 
 **Recorded so nobody re-opens them from an old copy of a deleted document.** Each was carried as an
