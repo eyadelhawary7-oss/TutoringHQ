@@ -96,6 +96,42 @@ worktree isolation verified active before release.
 
 **The six protected files are excluded** and come to Eyad per PR.
 
+### Report frames exercised out of frames drawn. Never a single parity fraction.
+
+`MERGED-FILE-MAP.md` counts **frames**, and frames are *states*. A file at 18 frames is 18 states to
+reproduce, most of which need data. A single fraction that counts unexercised frames as passing is
+the word "done" one level up: it reports parity that was never tested. **Every file reports how many
+of its frames could actually be produced, and names the ones that could not.**
+
+### Test tenant readiness, measured 6 August 2026
+
+| | Test Center 333 | Test Owner Center |
+|---|---|---|
+| Users | 1 owner | **0 — no account exists to log in with** |
+| Students / groups / subjects / rooms | 2 / 2 / 2 / 1 | 0 / 0 / 0 / 0 |
+| Schedule slots / enrolments / invoices | 1 / 1 / 1 | 0 / 0 / 0 |
+| Attendance scans / payments | **0 / 0** | 0 / 0 |
+
+Neither is suspended: `centers.status` is `active` for both and neither has a `subscriptions` row, so
+the middleware lets both through. `centers.subscription_status` says `suspended` on 333 and **is not
+the column the middleware reads** (see `design/FINDINGS.md` entry 23).
+
+**Center-Groups and Center-Students can start now, structure only.** 2 students give a real roster and
+a real student detail; 2 groups, 1 room and 1 slot give the group and schedule screens something to
+render. That is enough to compare layout, order and element presence.
+
+**Everything attendance-, money-, insight- or home-shaped must wait for data.** With 0 scans and 0
+payments those screens render empty states, and comparing a populated design against an empty screen
+establishes nothing.
+
+**Test Owner Center is not a test centre, it is a row.** Zero users means it cannot be logged into at
+all. Give it an owner or delete it; it should not sit in the count as though it were usable.
+
+**Two screens need a migration, not data.** `Merged-Center-Groups`' Branches screen has **no backing
+table of any kind** — the only branch-shaped table in `public` is `branch_user_assignments`. That is a
+design with no schema behind it, so it needs a migration proposal before it can be built, and no
+amount of seeding changes that. Do not log it as a data gap.
+
 ---
 
 ## Stage 5. The seven defects

@@ -121,6 +121,11 @@ Only FEATURE and BUILD write, never simultaneously on the same file.
 Per file: the visual difference count before and after, feature gaps found versus built, what was
 omitted and the exact reason, and which agent produced each finding.
 
+**Report frames exercised out of frames drawn.** `MERGED-FILE-MAP.md` counts frames, and frames are
+states, not screens. A file at 18 frames is 18 states, most of which need data to produce. A single
+parity fraction that counts unexercised frames as passing is "done" wearing a number, so name the
+frames that could not be produced and why.
+
 **Never report "done."**
 
 Report only when a file completes, a PR opens or merges, or you hit a stop condition. If nothing has

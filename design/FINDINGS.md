@@ -599,6 +599,32 @@ than a discovery.
 
 ---
 
+---
+
+## 23. `centers.status` and `centers.subscription_status` are two columns, one load-bearing
+
+`centers` carries both. **The middleware reads `status`, not `subscription_status`.** `proxy.ts:384`
+branches on `center?.status === 'suspended'`, and the separate subscription check at `:429` reads the
+**`subscriptions` table**, not the similarly-named column on `centers`.
+
+Test Center 333 has `subscription_status = 'suspended'` and `status = 'active'`, with no row in
+`subscriptions`. **It is not suspended in any sense the app acts on**, despite a column saying it is.
+Reading the wrong one gives the opposite answer, and both names are plausible.
+
+I made this exact mistake mid-check while answering whether the re-diff could run against that
+centre, and caught it only by opening `proxy.ts` instead of trusting the column name. **This is the
+fourth check-measuring-the-wrong-thing in this pass**, after the `substring(-11)` phone compare, the
+schema-drift gate that cannot see a REVOKE, and the erasure comment that claims more than the code
+does. Two columns whose names are near-synonyms, one of which decides whether a centre can use the
+product, is a trap that will be sprung again.
+
+**What to establish, and it is not answered here:** whether `centers.subscription_status` has any
+live reader at all, or is a third source of truth for a state already held in two places.
+
+*Source: verification of the re-diff readiness question. Verified 6 August 2026.*
+
+---
+
 # Six the ledger called open and verification closed
 
 **Recorded so nobody re-opens them from an old copy of a deleted document.** Each was carried as an
@@ -622,13 +648,38 @@ which is the point: a ledger marker is a claim, not evidence, whichever directio
 
 Not yet checked, and therefore not yet claimed either way.
 
-**All F-codes are done.** The eight remaining produced four entries (F6, F8, F28, F29), two more
-closed-by-verification rows (F5b, F38), and two drops. F14 and F32 were dropped for the same reason
-as F12, F36 and F37: each asserts that a design drew something with no backing column, and those
-designs are replaced, so re-establishing them is Stage 4 re-diff work rather than a codebase fact.
+**The pass is complete.** Every one of the twelve deleted documents has been worked through.
 
-**Still to do:** the 7 standing D-codes from `ASSUMPTIONS-LOG.md` (D8, D17, D21, D26, D27, D29, D34),
-each to go in as an open decision once its underlying fact is verified, then `DATA-GAPS.md`.
+**`DATA-GAPS.md` produced nothing, as predicted.** It was a column-existence sweep, and of the 13
+distinct column claims it makes, **11 now exist**. The two that do not are already recorded
+elsewhere: `students.balance_due` is the canonical phantom column in `docs/WORKING-RULES.md`, and
+nothing selects it today (its 30 remaining references are all computed client-side fields fed by
+`getStudentBalance`), and `notifications.type` names a table that is actually `in_app_notifications`.
+Zero new findings, and the file is fully superseded.
+
+**Dropped, all for the same reason:** F12, F14, F32, F36, F37. Each asserts that a design drew
+something with no backing column. Those designs are replaced, so re-establishing them is Stage 4
+re-diff work against the new drawings rather than a fact about the codebase.
+
+---
+
+# Open decisions, carried forward
+
+From `ASSUMPTIONS-LOG.md`. These were decided in Eyad's place because they changed behaviour rather
+than whether a screen could be built, and they are recorded so any can be overturned without
+archaeology. **Each underlying fact was re-verified on 6 August 2026.**
+
+| | Decision | The fact it rests on, verified |
+|---|---|---|
+| **D8** | No seat add-on built | `centers.max_teachers` and `max_students` do not exist. Pricing a seat is moot while every centre is invisibly capped at 2. See entries 4 and 10 |
+| **D17** | Public teacher profile stays read-only, no "add this teacher" action | `src/app/[locale]/teachers/` exists and ships the page. Adding the action changes account state |
+| **D21** | Keep full-UUID join links, no short codes | `group_join_links` has 0 rows and 0 code references. Live UUID links work. See entry 17 |
+| **D26** | No new notification writers | Exactly **2** writers of `in_app_notifications` exist (`privacy-request/route.ts:140`, `cardOrderNotifications.ts:83`) and the table holds 0 rows. Wiring some would read as broken rather than honestly sparse |
+| **D27** | Compose notifications via i18n key + params in `metadata` jsonb | `in_app_notifications.metadata` exists. **Decide this before D26, not after** — it reverses cleanly while there are two writers and gets expensive once there are more |
+| **D29** | The 5 unbacked `/pricing` add-ons stay withheld | Only `platform_config.pack_price_per_parent` has real backing, live value **12**. `NEW-MODEL.md` independently confirms analytics, benchmarks and team seats are 0 for now |
+| **D34** | Drop the "withdrawals to your own account" bullet rather than reword it | **Now permanent, not provisional.** It was logged as "reinstate once V4 lands"; V4 was verification, which is dead, and `NEW-MODEL.md` says credit cannot be withdrawn as cash at all |
+
+**D27 is the only one with a deadline.** The rest can sit.
 
 F20 produced finding 7, F27 produced finding 20, and S9 was pulled forward out of order to become
 finding 13 because a CSRF gap on a platform kill switch does not queue behind eight F-codes.
