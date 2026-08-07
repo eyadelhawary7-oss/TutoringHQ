@@ -1028,6 +1028,57 @@ absence of an affordance.
 
 ---
 
+## 37. `?? 0` on money is pervasive, and 24 sites are the entry-33 shape
+
+Entry 33's second half is not confined to the student detail card. Across `src/`:
+
+| Pattern | Sites |
+|---|---|
+| `?? 0` on an identifier naming money (`balance`, `paid`, `due`, `amount`, `revenue`, `total`, `fee`, `price`) | **345** |
+| …narrowed to `balance` / `owed` / `due` specifically — a *loaded* figure, not a config default | **24** |
+
+Most of the 345 are benign: `fee_per_class ?? 0` where the fee is genuinely optional, or reduce
+accumulators that must start at zero. **The 24 are not**, because each substitutes a real, reassuring
+number for a value that failed to arrive. `ScanTab.tsx:276` is the clearest —
+`balance_due: balanceMap.get(s.id)?.balance ?? 0` — and it feeds the door scanner, so a student whose
+balance did not load is admitted as owing nothing.
+
+The remedy is the same everywhere and the codebase already contains it. In
+`groups/page.tsx:1239` the neighbouring statistic renders `'—'` when its value is null, **three lines
+above** a count that renders `0`. The vocabulary for "unknown" exists; money is the place it is not
+used.
+
+*Source: `grep -rnE "\?\?\s*0"` over `src/`, filtered and counted 7 August 2026.*
+
+---
+
+## 38. A finding that fits the established pattern gets less scrutiny, which is backwards
+
+While diffing `Merged-Center-Groups` frame 3, a capture showed the group detail reporting
+**`Waiting 0`** beside a tab reading **`Waitlist · 1`**, with the catalog confirming 1. It looked like
+a third instance of entry 33 — a summary contradicting a list on the same screen — and it was written
+up as one.
+
+**It is not a defect.** Both numbers read the same `waitlist.length`: the stat at
+`groups/page.tsx:1238` and the tab at `:1331`. Re-tested at 300 ms, 1,400 ms and 6,000 ms after the
+tab click, **`Waiting` reads 1 at every timing.** The original capture was an artefact of the
+click sequence in that run, not a state the product reaches.
+
+**What makes this worth recording is why it was nearly believed.** Entry 33 had just established
+"summary disagrees with list" as a real, verified pattern in this codebase. The new observation
+matched it exactly, so it inherited that credibility instead of earning its own. **A pattern makes
+the next instance more plausible and no more likely to be true** — and it does so precisely when
+scepticism is cheapest to skip, because the shape is already familiar.
+
+Same discipline as entry 26, applied in the opposite direction: there, an impossible intermediate
+exposed a bad selector; here, a *plausible* observation needed a direct test to be dismissed. The
+check cost one script. Reporting it would have cost a false entry that a future reader could not
+reproduce.
+
+*Source: re-tested `/en/groups` → Chemistry A → Waitlist at three settle times. 7 August 2026.*
+
+---
+
 ## 36. Pluralisation is a two-key idiom, and Arabic has six plural forms — the scheme cannot reach the language
 
 The three plural bugs found in the rendered diff — `across 1 branches`, `في ١ فروع`, `منذ ٨ ساعة` —
