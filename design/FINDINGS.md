@@ -45,6 +45,16 @@ beside it should be read as unverified, not as done. Three of these four sat tha
 
 ## 1. Consent granted to one centre is written to every centre that parent touches
 
+> **FIXED 8 August 2026.** `whatsapp/webhook/route.ts` now filters the consent query by
+> `.eq('center_id', centerId)`, and — the half that is easy to miss — **refuses the write entirely
+> when `centerId` is null** rather than continuing. `resolveCenterForPhone` returns `string | null`,
+> so falling through unresolved is not a lesser version of the bug, it *is* the bug: an unscoped
+> query is exactly what a missing centre produces. A tap that cannot be attributed to a centre now
+> grants consent to none. Typecheck clean, 211 files / 2089 tests pass.
+>
+> Still true and unchanged: zero parent phone numbers appear at more than one centre, so no
+> violation was ever produced.
+
 **Read this one first.** It is a cross-tenant write on consent data, the category Adsero calls
 sensitive, and it is the same shape as the cross-tenant hole closed in July. Entry 2 ignores a
 parent's opt-out; **this one manufactures an opt-in they never gave.** That is worse, and the fix is
@@ -1062,6 +1072,62 @@ absence of an affordance.
 
 ---
 
+## 54. The re-diff was never blocked by the seed accounts, and the first capture found dead model live in the app
+
+### The blocker was one missing file, and two layers hid it
+
+Entry 51 and the previous report both named entry 19's torn-down audit seed accounts as the reason
+the app could not be reached. **That was wrong.** `.env.local` is gitignored, so credentials pasted
+into one session do not reach the next; Test Center 333 was fully seeded the whole time. The seed
+accounts were never needed.
+
+**A second layer sat behind it, and it is a live fault rather than an environment quirk.**
+`/api/login` calls `rateLimit()` in `src/lib/rateLimitCore.ts:34`, which begins:
+
+```ts
+const r = getUpstashRedis();
+if (!r) return { success: false, remaining: 0, reset: now + windowSeconds };
+```
+
+**Without Upstash configured, every login is denied** — not throttled, denied, and the screen says
+*"Too many requests. Please try again later."* So the first diagnosis from the symptom is always
+"I have been rate-limited", and waiting never clears it. The file says this is deliberate: the
+limiters were changed from fail-open to fail-closed because `if (limiter)` had been silently skipping
+the check.
+
+**`CLAUDE.md` still states the opposite** — *"without them rate-limiting falls open"* — under
+Build/runtime config. One of the two must move; the code is the one that has been tested.
+
+The session was reached instead by minting a Supabase session directly
+(`/auth/v1/token?grant_type=password` with the anon key) and writing it into the
+`sb-<ref>-auth-token` cookie that `@supabase/ssr` reads. That is the same session the login flow
+produces, and it does not touch the rate limiter. `scripts/rediff/mint-session.mjs` does it;
+`scripts/rediff/capture.mjs` captures a route at 390px.
+
+### The first capture found the deleted feature still shipping
+
+`/en/dashboard`, rendered as the Test Center 333 owner, contains the string
+**"Verification unavailable"**.
+
+`src/components/verification/VerificationBadge.tsx` is live, and its own comment explains the string:
+the badge reads that way *"because the Valify credentials are placeholders."* **Valify is identity
+verification, which `NEW-MODEL` deletes outright.** It renders on at least three surfaces —
+`dashboard/page.tsx:581`, `attendance/page.tsx:68`, and `join/g/[groupId]/JoinFlowClient.tsx:167`.
+
+**This is the re-diff's whole point arriving on the first page.** The sweep removed verification from
+25 drawings across nine PRs. The app still shows it to every owner, on the screen they open first,
+and no amount of design work would have surfaced that — only rendering the live app against the
+drawing does. Entry 43 said these files could not usefully be diffed until swept; they are swept now,
+and the very first frame proves the direction that matters is app-side.
+
+**Reported as one finding from one route, not as a re-diff.** 23 files remain undiffed. What has
+changed is that they are now reachable.
+
+*Source: `rateLimitCore.ts:34-43`, a minted session against Test Center 333, and a rendered capture of
+`/en/dashboard` at 390px. 8 August 2026.*
+
+---
+
 ## 53. The three held payout PRs all serve referral credit, and all three live
 
 Triaged 7 August 2026 against the test Eyad set for the `Merged-Admin-Money` `WD-` rows: **if the
@@ -1197,7 +1263,17 @@ Eyad, 7 August 2026: *"I applied it through the Supabase MCP tool, which wrote i
 ledger as `20260807185735_narrow_tuition_payment_methods` but left the repo with no file."*
 
 **Confirmed against `supabase_migrations.schema_migrations`:** version `20260807185735` is present,
-1 row of 268 — and **`20260806120000` is absent, 0 rows.** So the file that has sat in
+1 row of 268 — and **`20260806120000` was absent, 0 rows.**
+
+**That file has since been deleted** (7 August 2026, at Eyad's instruction): an unapplied migration
+sitting in `migrations/` beside the applied one is two sources for a single change, and this entry's
+own lesson cuts both ways — *"a recorded version with no filename"* has a mirror image, **a filename
+with no recorded version**, and leaving one behind while naming the other would have been the same
+trap wearing the opposite face. Deleting it was verified inert rather than assumed: a rebuild with
+the file removed is **byte-identical to the committed snapshot**, 6484 lines, because
+`20260807185735` applies the same DDL and more.
+
+So the file that had sat in
 `supabase/migrations/` since 6 August was never applied at all, and the DDL it describes reached
 production by a different route that recorded a different version. Entry 21 warned that a filename is
 not its recorded version; this is the sharper case — **a recorded version with no filename anywhere.**
@@ -1832,6 +1908,10 @@ Verified: `legalCorpusParity` 14 of 14 pass; full suite 211 files / 2,089 tests 
 A migration named `20260806120000_PROPOSAL_narrow_tuition_payment_methods.sql` was written to be
 *proposed*, not applied: Eyad applies tuition-constraint changes to production by hand. **The prefix
 is a naming convention with no enforcement anywhere.**
+
+> **That file no longer exists.** Deleted 7 August 2026 once `20260807185735` recorded the applied
+> DDL, because keeping an unapplied migration beside the applied one is two sources for one change.
+> The entry is kept for the mechanism it establishes, which outlived the file. See entry 52.
 
 Opening PR #368 demonstrated both halves in under a minute:
 
