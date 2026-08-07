@@ -795,6 +795,48 @@ live insert/delete probe. 7 August 2026.*
 
 ---
 
+## 32. Design-set corrections — settled rulings, so file 9 does not re-ask them
+
+**A divergence between a design frame and the live app is not automatically an app defect.** Six of
+the first ten frames diffed turned out to be the *drawing* being stale. Ruled by Eyad 7 August 2026 on
+the `Center-Groups` / `Center-Students` diff; recorded here because the same questions recur on every
+remaining file.
+
+### The design is stale. Do not change the app, do not re-raise.
+
+| Drawn | Live | Ruling |
+|---|---|---|
+| `300 EGP/mo` | `650 EGP per lesson` | **Per-lesson is the locked model, monthly is dead.** Live is right |
+| `Mr. Sherif · center 30%` | absent | **The percentage model is gone. Do not build the line at all** |
+| Week starts Sunday | Week starts Saturday | **Saturday is correct for Egypt.** The design is wrong |
+| No subject icons, no capacity bar, plain rows | icons, capacity bar, `⋮` / `›` | **Live additions that improve on the drawing. Keep them** |
+| `أحد إثنين ثلاثاء …` full day names | `س ح ن ث ر خ ج` | **Keep the single letters.** Conventional, and they fit the strip. The design is impractical here |
+| `الغرف` *(from the app)* | — | **`القاعات` wins.** A tutoring centre has halls, not generic rooms — the app must change to match the design on this one |
+
+Note on the fee column: `student_groups.fee_per_class` is the live billing column and it renders.
+`groups.monthly_fee` is a **different table's** column carrying the dead monthly model. Both exist in
+the catalog; only the first is read by the groups list. Do not conflate them.
+
+`center_cut_egp` is **populated on all seven groups** in Test Center 333 (45, 50, 40, 60, 10, 30, 30).
+"Do not build the attribution line" therefore leaves a live, non-null column with **no reader**. That
+is a loose end for the percentage-model removal, not a display question.
+
+### The app is wrong. These are defects to fix.
+
+| Defect | Evidence |
+|---|---|
+| **`Grade Grade 10`** | The UI prefixes `Grade` onto data that already contains it. Visible on every student row with a grade, both locales |
+| **`across 1 branches`** | No pluralisation. English needs singular/plural |
+| **`في ١ فروع`** | Worse than the English. **Arabic has dual and plural forms, not just singular and plural** — a two-form fix is not enough here |
+| **`ادفع لكل درس`** | Imperative verb where a preposition belongs. `ar.json:5586` and `:6407`. Must read **`لكل حصة`** — and **`حصة`, not `درس`**, because that is the word the rest of the product uses |
+| **No `At risk` filter** | Design draws `All standing / Paid / At risk / Overdue`; live has `All / Behind / Paid up`. **`lifecycle_status` carries five live states in one centre** — `active`, `at_risk`, `inactive`, `churned`, `enrolled` — and `at_risk` holds two students right now (Ali Mostafa, Sara Ahmed). The live chips filter *payment standing*, a different axis, so lifecycle has **no filter at all**. This is wider than one missing chip |
+| **Import copy dropped a requirement** | The design's *"Only student name and parent phone are required"* is gone from `/students/import`. **That sentence prevents support tickets.** Put it back |
+
+*Source: rendered diff of `Merged-Center-Groups` and `Merged-Center-Students` against the live app at
+390px, plus live catalog. Ruled 7 August 2026.*
+
+---
+
 ## 30. A live measurement written into a code comment is a number nobody re-runs
 
 The comment at `schedule/page.tsx:485`, inside the F38 fix, reads:
