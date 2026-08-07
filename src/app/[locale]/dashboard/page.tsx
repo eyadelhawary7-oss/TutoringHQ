@@ -46,10 +46,6 @@ interface DashboardData {
     dayKey: string;
     cash: number;
     instapay: number;
-    vodafone: number;
-    orange: number;
-    fawry: number;
-    bank: number;
     other: number;
   }[];
   /** §01 "Schedule": today's schedule_slots, Cairo day-of-week. */
@@ -308,7 +304,10 @@ export default function DashboardPage() {
       // §01 "Digital share" is a Cairo-week figure, so the method split is
       // bucketed over the Cairo week's day keys and nothing else.
       const chartDayKeys: string[] = getCairoWeekDayKeys(new Date());
-      const defaultMethods = { cash: 0, instapay: 0, vodafone: 0, orange: 0, fawry: 0, bank: 0, other: 0 };
+      // Tuition is cash or InstaPay only — `payments_method_check` enforces it.
+      // `vodafone`, `orange`, `fawry` and `bank` were removed with the gateway
+      // model and hold zero rows; anything unrecognised falls into `other`.
+      const defaultMethods = { cash: 0, instapay: 0, other: 0 };
       const revenueChartData: DashboardData['revenueChartData'] = chartDayKeys.map((dayKey) => {
         const byMethod = { ...defaultMethods };
         paymentsData.filter(p => p.confirmed && p.paid_at).forEach(p => {
@@ -325,10 +324,6 @@ export default function DashboardPage() {
           const amt = parseFloat(String(p.amount || 0));
           if (m === 'cash') byMethod.cash += amt;
           else if (m === 'instapay') byMethod.instapay += amt;
-          else if (m === 'vodafone_cash' || m === 'vodacash') byMethod.vodafone += amt;
-          else if (m === 'orange' || m === 'orange_cash') byMethod.orange += amt;
-          else if (m === 'fawry') byMethod.fawry += amt;
-          else if (m === 'bank_transfer' || m === 'bank') byMethod.bank += amt;
           else byMethod.other += amt;
         });
         return { dayKey, ...byMethod };
@@ -494,7 +489,7 @@ export default function DashboardPage() {
   let digitalShareOnline = 0;
   for (const d of safeData.revenueChartData) {
     digitalShareCash += d.cash;
-    digitalShareOnline += d.instapay + d.vodafone + d.orange + d.fawry + d.bank + d.other;
+    digitalShareOnline += d.instapay + d.other;
   }
   const digitalShareTotal = digitalShareCash + digitalShareOnline;
   const digitalSharePct = digitalShareTotal > 0 ? Math.round((digitalShareOnline / digitalShareTotal) * 100) : 0;

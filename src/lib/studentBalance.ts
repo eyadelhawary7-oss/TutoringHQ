@@ -19,13 +19,20 @@
  *                        create and 0 for groups made any other way — reading it
  *                        undercharges to 0.) students.fee is a NULL-in-practice
  *                        fallback for a group-less scan; unresolved fee → 0.
- *   • logged payments  = SUM(payments.amount) for the student whose `status` is a
- *                        real collection state (see PAID_PAYMENT_STATUSES). Both
- *                        'confirmed' (cash / verified) and 'pending' (logged
- *                        digital, not yet reconciled) count — nothing auto-confirms
- *                        pending, so gating on 'confirmed' would overstate debt
- *                        forever. The 'late'-fee assessment rows and any
- *                        void/refund states are intentionally excluded.
+ *   • logged payments  = SUM(payments.amount) for the student where
+ *                        `payments.confirmed` is true AND the row is not an
+ *                        assessment or reversal (see NON_COLLECTION_STATUSES).
+ *                        `confirmed` is authoritative, NOT `status`: NEW-MODEL:118
+ *                        says only the provider can confirm money arrived, and
+ *                        `confirmed` is the column that records exactly that.
+ *                        `status` is a lifecycle label, and counting 'pending' as
+ *                        collected let an unconfirmed InstaPay upload cancel the
+ *                        charge it had not settled.
+ *                        (This paragraph previously argued the opposite — that
+ *                        gating on confirmation "would overstate debt forever"
+ *                        because nothing auto-confirms. That stopped being true
+ *                        when api/payments/confirm landed, and the comment
+ *                        outlived it. See finding 30.)
  *
  * A positive balance is money owed; a NEGATIVE balance is a CREDIT (overpayment).
  * We never floor at zero — screens render the credit.
@@ -40,8 +47,30 @@
  * a screen lists, so listing many students never becomes N+1.
  */
 
-/** Payment statuses that count as money collected against the balance. */
+/**
+ * DEPRECATED as a money check. `payments.status` is a lifecycle label that
+ * drifted into deciding whether money arrived; `payments.confirmed` is the
+ * column that means "the provider confirmed it", which is the only thing
+ * NEW-MODEL lets us treat as collected. Balances now filter on `confirmed`.
+ *
+ * Kept exported because callers still describe statuses; do NOT reintroduce it
+ * as a collection filter.
+ */
 export const PAID_PAYMENT_STATUSES = ['confirmed', 'pending', 'paid'] as const;
+
+/**
+ * Rows that are NOT a collection even when `confirmed` is true. `status` still
+ * does this second job — distinguishing a payment from a late-fee assessment or
+ * a reversal — which is separate from whether money arrived. Dropping this when
+ * the filter moved to `confirmed` counted a 'late' assessment as a credit; the
+ * balance unit test caught it.
+ */
+export const NON_COLLECTION_STATUSES = ['late', 'void', 'refund', 'refunded', 'reversed'] as const;
+
+/** True when a confirmed row is an assessment or reversal, not a collection. */
+export function isNonCollection(status: string | null | undefined): boolean {
+  return status != null && (NON_COLLECTION_STATUSES as readonly string[]).includes(status);
+}
 
 /** Attendance-scan status that is NOT chargeable (student was marked absent). */
 export const NON_CHARGEABLE_SCAN_STATUS = 'absent';
@@ -151,15 +180,25 @@ export async function getStudentBalances(
     billable: boolean | null;
   }[];
 
-  // 3) Payments — sum logged collections (confirmed + pending + paid) per student.
-  let payQ = build('payments', 'student_id, amount, status')
+  // 3) Payments — sum CONFIRMED collections per student.
+  //
+  // `payments.confirmed` is authoritative, not `payments.status`. NEW-MODEL:118
+  // — only the provider can confirm money arrived — and `confirmed` is the
+  // column that records exactly that. `status` is a lifecycle label, and
+  // treating 'pending' as collected made an unverified InstaPay upload cancel
+  // the charge it had not settled: the one state the InstaPay flow exists to
+  // represent read as money in hand. The dashboard already filtered on
+  // `confirmed` (dashboard/page.tsx), so this also removes a second, conflicting
+  // definition of "money that arrived".
+  let payQ = build('payments', 'student_id, amount, confirmed, status')
     .in('student_id', ids)
-    .in('status', PAID_PAYMENT_STATUSES);
+    .eq('confirmed', true);
   if (centerId) payQ = payQ.eq('center_id', centerId);
   const payRows = (((await payQ) as { data?: unknown }).data ?? []) as {
     student_id: string;
     amount: number | null;
-    status: string;
+    confirmed: boolean | null;
+    status: string | null;
   }[];
 
   // Fold: charge = Σ snapshotted charged_fee; paid = Σ payments; balance = charge − paid.
@@ -171,6 +210,9 @@ export async function getStudentBalances(
   }
   const paidTotal = new Map<string, number>();
   for (const p of payRows) {
+    // `confirmed` says money arrived; `status` still says what the row IS. A
+    // late-fee assessment or a reversal is confirmed and is not a collection.
+    if (isNonCollection(p.status)) continue;
     paidTotal.set(p.student_id, (paidTotal.get(p.student_id) ?? 0) + (Number(p.amount) || 0));
   }
 

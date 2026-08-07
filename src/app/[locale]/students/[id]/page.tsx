@@ -326,10 +326,22 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
             .then((map) => {
               if (cancelled) return;
               const b = map.get(row.id);
-              setBalance(b?.balance ?? 0);
-              setLifetimePaid(b?.paid ?? 0);
+              // NEVER `?? 0` on a money field. A student with no entry in the
+              // map is one whose balance did not load, and rendering that as
+              // `0 EGP · Paid up` is indistinguishable from a settled account —
+              // the reassuring reading, chosen by default, on the one number a
+              // centre uses to decide whether to chase a parent. `null` keeps
+              // the card in its unloaded state instead of asserting a figure.
+              setBalance(b ? b.balance : null);
+              setLifetimePaid(b ? b.paid : null);
             })
-            .catch((err) => console.error('[student-detail] balance load failed', err));
+            .catch((err) => {
+              console.error('[student-detail] balance load failed', err);
+              if (cancelled) return;
+              // Same rule on the failure path: unknown, not zero.
+              setBalance(null);
+              setLifetimePaid(null);
+            });
         }
 
         if (row && cid) {
@@ -554,8 +566,11 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
       setStudent(row);
       const balanceMap = await getStudentBalances(supabase, { studentIds: [row.id] });
       const b = balanceMap.get(row.id);
-      setBalance(b?.balance ?? 0);
-      setLifetimePaid(b?.paid ?? 0);
+      // Unknown, not zero — see the refresh path above. The render already
+      // guards on `balance !== null` (:1059, :1078) and `lifetimePaid !== null`
+      // (:1195); `?? 0` was defeating a null-check that was already correct.
+      setBalance(b ? b.balance : null);
+      setLifetimePaid(b ? b.paid : null);
       // Standing and the payments list move with the balance — a collect that
       // updated the figure but left "12 days overdue" and the last-payment row
       // stale would be the screen contradicting itself.
