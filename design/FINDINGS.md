@@ -1056,6 +1056,49 @@ absence of an affordance.
 
 ---
 
+## 46. Sweep classification — every residue hit in the seven files, checked in context
+
+**Raw marker counts were never the work; this is.** Entry 43 reported 32 hits across seven
+non-protected files. Read in context, they are not uniform, and one whole file needs no change.
+
+### `Merged-Admin-Accounts` — NO CHANGE. Both hits are live.
+
+> *"What the program pays out, the commission tiers, and who is earning. Owed ties to the withdrawals
+> queue; each payout becomes an expense receipt."*
+> *"Owed amounts flow to the withdrawals queue once a referrer requests a payout."*
+
+**These are referral payouts, which survive.** The platform still pays referrers and staff; only
+*tuition* payouts died. Editing this file would have deleted live product. It is the clearest
+vindication of checking every hit rather than trusting the grep — the count said 2, the truth is 0.
+
+### Three more false positives
+
+| File | Text | Why it stays |
+|---|---|---|
+| `Center-Setup` | *"Mark attendance **automatically**"* | A scanner preference. Nothing to do with collecting money |
+| `Public-Marketing` | *"Prices **verified** against `pricing_plans` and `platform_config`"* | A provenance caption about price-checking, not identity verification |
+| `Admin-Platform` | *"Paymob Payments & payouts — Connected"* | Paymob still processes **centre subscriptions**. Only the tuition leg died; the vendor row is real |
+
+### Genuinely dead, and the shape differs by file
+
+| File | What must change |
+|---|---|
+| `Teacher-Setup` | **Redraw.** The verified/unverified switch *is* the file: *"when verified the collect toggle is on and it becomes Payout details (where we send their money)"*. Its own caption already concedes *"the verified payout is draft, pending legal review"* |
+| `Teacher-Home` | **Redraw.** Same premise: *"An unverified teacher self-collects… A verified teacher lets TutoringHQ record every payment"*, plus a full ledger — *"Your balance 4,250 EGP · ready for your next payout"*, *"Recent payouts — Bank payout … CIB ••4821"* — and *"TutoringHQ collects every student payment… then pays you automatically. Verify my ID"* |
+| `Center-Home` | **Excise.** A whole `Screen-Center-Dashboard-Verified` variant, plus three notification rows (payout requested, auto-collected, *"1,350 EGP sent to your InstaPay"*) |
+| `Center-Setup` | **Excise.** *"Verify to enable payouts"* on the welcome screen, *"Teacher payout requests"* as a notify-me option, a `Screen-Center-Team-Verified` variant, and two team permissions — *"Withdraw money — Owner only"*, *"Change payout account — Owner only"* |
+| `Public-Marketing` | **Excise.** *"Teacher payouts"* as a headline feature, *"Split to each teacher's own account, or land in yours"*, and *"Instant payout — priced per withdrawal"* in the price list |
+| `Admin-Platform` | **Excise.** The `Unverified` filter chip on both the centres and solo-teachers lists |
+
+**Two files need redrawing, four need excision, one needs nothing.** That distinction could not be
+made from counts — `Teacher-Setup` (6 hits) needs more work than `Center-Home` (7), and
+`Admin-Accounts` (2) needs none.
+
+*Source: `.rediff/sweepctx.mjs`, every hit read in surrounding copy with CSS and script stripped so
+class names like `.payouts` do not count as product text. 7 August 2026.*
+
+---
+
 ## 45. Inherited credibility — a claim that fits a confirmed pattern is believed without earning it
 
 **A distinct failure from measuring the wrong thing, and it needs its own name.**
