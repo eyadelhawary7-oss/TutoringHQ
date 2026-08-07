@@ -87,7 +87,10 @@ export const whatsappSendSchema = z.object({
 export const paymentSchema = z.object({
   student_id: z.string().uuid('Invalid student ID'),
   amount: z.number().min(0, 'Amount must be non-negative').max(100000),
-  method: z.enum(['cash', 'instapay', 'vodacash', 'orange', 'fawry', 'bank'], {
+  // Two tuition methods only — design/NEW-MODEL.md. Must stay in step with
+  // payments_method_check; a value this enum accepts and the constraint does
+  // not is an insert that fails at the database instead of at the edge.
+  method: z.enum(['cash', 'instapay'], {
     message: 'Invalid payment method',
   }),
   payment_date: z.string().datetime().optional(),

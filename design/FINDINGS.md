@@ -1056,6 +1056,88 @@ absence of an affordance.
 
 ---
 
+## 49. Three of six methods passed the server gate and were rejected by the database, and `transactions` is not what the migration says it is
+
+Two findings from narrowing the tuition method enums. Both were found by reading
+the constraint out of `pg_constraint` and comparing it to the code, rather than
+by reading the code alone.
+
+### `api/payments/collect` allows spellings the constraint has never accepted
+
+`ALLOWED_METHODS` in `src/app/api/payments/collect/route.ts` and the live
+`payments_method_check` do not agree, and this is the route that decides what
+reaches the column:
+
+| Server allow-list | `payments_method_check` | Result |
+|---|---|---|
+| `cash` | `cash` | ok |
+| `instapay` | `instapay` | ok |
+| `fawry` | `fawry` | ok |
+| **`vodafone_cash`** | `vodacash` | **insert rejected** |
+| **`orange_cash`** | `orange` | **insert rejected** |
+| **`bank_transfer`** | `bank` | **insert rejected** |
+
+The comment above the set read *"mirrors the client method picker"*, and that is
+exactly the defect: **it was checked against the picker instead of against the
+column.** Three of six pass a validation whose only purpose is to stop values the
+database will not take.
+
+**`bank_transfer` is the one that mattered**, because it is the only one of the
+three the collect modal actually offered — `payments/page.tsx` had
+`'cash' | 'instapay' | 'bank_transfer'`. So **every Bank Transfer collection
+returned 500** with "Failed to record payment" and nothing saying why.
+
+It is the third instance of the spelling split, after the `ScanResultScreen`
+`vodafone_cash`/`vodacash` bug the migration itself describes. One method, two
+spellings, and each layer checked itself against the layer beside it rather than
+against the catalog. **Narrowing to two methods with one spelling each is what
+ends it**; correcting the spellings would have preserved the shape that keeps
+producing it.
+
+### `transactions` is the teacher private-tuition ledger, not Paymob platform billing
+
+The migration scoped `transactions_method_chk` out with this reason:
+
+> *"It governs the platform charging its own customers through Paymob, where
+> card, wallet, apple_pay and google_pay are legitimate. That is not tuition."*
+
+**Checked against the catalog, that is not what the table is.** `public.transactions`
+carries `student_id`, `group_id`, `teacher_id`, `lesson_fee`, `payer_type`,
+`payer_phone`, `teacher_net` and `snap_teacher_pct`, and its readers are almost
+all under `src/app/api/teacher/private/*`. A student paying a teacher for a
+lesson is tuition by any reading.
+
+Its constraint still admits `card`, `wallet`, `apple_pay`, `google_pay`,
+`vodafone_cash` and `other` — the first four dead with the gateway, the fifth
+dead with the wallets.
+
+**It is still not narrowed, and the reason has been replaced rather than
+removed.** The same table carries `customer_commission_amt`,
+`teacher_commission_amt`, `platform_gross`, `snap_customer_pct`,
+`settlement_status` and `paymob_split_ref` — the 90/10 split and platform
+settlement the new model deletes outright. Narrowing one column of a table
+pending a larger removal answers the small question and hides the big one. **This
+needs a decision about the table.**
+
+**Why the wrong reason survived.** It is a plausible sentence about a table named
+`transactions`, in a file whose other claims were carefully verified, written by
+someone who had just verified them. Entry 45's shape at the level of a rationale
+rather than an observation: the surrounding rigour was inherited by the one claim
+that had not earned it.
+
+### A count in a comment, again
+
+The migration's SAFETY block asserted `payments 0 rows`. Live on 7 August:
+**30 rows — 19 `cash`, 11 `instapay`.** The narrowing is still safe, and the
+figure that was supposed to establish that had been wrong for a day. Entry 30
+exactly, in the file that gates a production DDL. Re-run and dated in place.
+
+*Source: `pg_constraint` and row counts read live 7 August 2026,
+`api/payments/collect/route.ts`, `information_schema.columns` for
+`public.transactions`, and its call sites under `api/teacher/private/*`.*
+
+---
+
 ## 48. `Merged-Teacher-Setup` offered InstaPay twice, one box ticked and one not, in both locales
 
 Found while redrawing the file, not by any marker — no dead word appears in it.
