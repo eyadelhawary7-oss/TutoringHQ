@@ -1056,6 +1056,42 @@ absence of an affordance.
 
 ---
 
+## 44. Two money surfaces read two different confirmation columns
+
+Entry 35 recorded that `payments.status` and `payments.confirmed` encode the same fact and already
+disagree on one row. Here is that split in production code, in two places that both report money:
+
+| Surface | Filter | File |
+|---|---|---|
+| Dashboard "Digital share" | `p.confirmed && p.paid_at` — **the boolean** | `dashboard/page.tsx:314` |
+| Student balance / roster / alerts | `status IN ('confirmed','pending','paid')` — **the text column** | `studentBalance.ts:154` |
+
+**Neither is wrong on its face and they cannot both be right.** The dashboard is the stricter of the
+two and closer to the model: it requires `confirmed`, so an unverified InstaPay upload does not enter
+the week's collected figure. The balance helper accepts `pending`, which is entry 33.
+
+They happen to agree on the one inconsistent row in the catalog today
+(`status='pending'`, `confirmed=true` — counted by both). **A row with the opposite skew —
+`status='paid'`, `confirmed=false` — would be counted by the balance and excluded from the
+dashboard**, and nothing prevents such a row, because only `api/payments/confirm` writes the two
+fields together.
+
+Fixing entry 33 by narrowing the status set does **not** resolve this. It leaves two independent
+definitions of "money that arrived" and makes them disagree on a different set of rows. Pick the
+authoritative column first.
+
+### Dead payment methods still bucketed
+
+`dashboard/page.tsx:311` seeds its split with
+`{ cash, instapay, vodafone, orange, fawry, bank, other }`. Four of those — `vodafone`, `orange`,
+`fawry`, `bank` — are exactly what the proposed constraint removes. **They already hold zero rows**
+(verified when the enum was checked), so the buckets are dead today and will be unreachable once the
+migration applies. Cleanup belongs in the same PR as the narrowing, not after it.
+
+*Source: `dashboard/page.tsx:308-316`, `studentBalance.ts:154`. 7 August 2026.*
+
+---
+
 ## 43. The old model survives in 11 of 25 design files, and in two of them it is whole screens
 
 Entry 42 found dead-model notifications in one file. Sweeping all 25 for the removed vocabulary —
