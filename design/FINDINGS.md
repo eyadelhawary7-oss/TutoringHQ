@@ -714,6 +714,12 @@ is present most of the time. Neither error was detectable from its own output: 2
 believable frame totals. **Mine only surfaced because `Public-Marketing` produced `EN = -2`, an
 impossible number** — the arithmetic broke before the assumption did.
 
+**Any residue number from that instrument is a FLOOR, not a total.** Ruled by Eyad 7 August 2026
+after entry 50. The marker list is English, the Arabic half of every file goes unmeasured, and no
+wider regex closes it — `تحويل` means transfer and transfers are live under the new model. So
+"N hits remain" always means "at least N", and a file whose English scores zero has not been
+measured. Quote these counts that way or not at all.
+
 **The rule: `class="phone"` is the frame. Count that and nothing else.** It is the one element
 present exactly once per frame in all 25 files, verified. `.frame`, `.cap` and `.ar` are all optional
 decoration that varies by file age.
@@ -1056,6 +1062,102 @@ absence of an affordance.
 
 ---
 
+## 52. The safe proposal directory already existed, and entry 39 concluded the opposite
+
+**Entry 39 is wrong in its conclusion and right in everything it measured.** It established that a
+`PROPOSAL_` filename prefix enforces nothing — schema-drift rebuilds from every file in
+`supabase/migrations/` and Supabase Branching applies them to the preview — and then closed with:
+
+> *"If proposals should genuinely not apply anywhere, they cannot live in `supabase/migrations/`. A
+> sibling directory the tooling does not scan is the only thing that would make the prefix mean what
+> it says."*
+>
+> *"The repo's actual convention is to accept this."*
+
+**`supabase/migrations_proposed/` already existed when that was written**, holding
+`PROPOSED_centers_address.sql` and `PROPOSED_drop_referral_reward_records.sql`. The second one opens:
+*"This file is deliberately OUTSIDE supabase/migrations/ so that no tool, branch preview, or CI step
+can pick it up."* Verified 7 August 2026: `.github/workflows/schema-drift.yml` triggers on
+`supabase/migrations/**` only, and nothing in `.github/` or `supabase/config.toml` names
+`migrations_proposed`.
+
+So the remedy entry 39 proposed as hypothetical was the standing convention, one directory across.
+The narrow-tuition proposal sat in `supabase/migrations/` and was consequently applied to the preview
+branch and rebuilt by CI — **not because the repo had chosen to accept that, but because the file was
+in the wrong folder.** Entry 39 saw two proposals living in `migrations/`, generalised a convention
+from them, and did not look for a counter-example. The counter-example was two directories deep in
+the same tree.
+
+`PROPOSED_drop_split_model_columns.sql` is filed correctly, in `migrations_proposed/`.
+
+### The split-model drop, proposed and not applied
+
+`public.transactions` is the teacher private-tuition ledger (entry 49) and still models a percentage
+cut the product does not take. Seven columns, **all NOT NULL DEFAULT 0, none with any writer**:
+`pg_proc.prosrc` for both `finish_class_and_bill` and `finish_center_class_and_bill` mentions none of
+them. `finish_class_and_bill` is live with 3 call sites; `finish_center_class_and_bill` has no
+`rpc()` caller in `src/` at all.
+
+Five of the seven have zero references in `src/`. Two have real readers —
+**`snap_teacher_pct` 17 code lines across 4 files, `teacher_net` 19 across 5** — and what they compute
+is the point: `teacherCut()` returns `teacher_net` when set, and since the column is `NOT NULL
+DEFAULT 0` that branch **returns a literal 0 for every database row**. The route's own comment says
+so and adds `cutBasisRows` so a caller can distinguish an unmeasured zero from a measured one.
+Dropping the columns removes an arithmetic that has only ever produced 0.
+
+A second group — `settlement_status`, `expected_settlement_at`, `settled_at`,
+`settlement_retry_count`, `paymob_split_ref` — is listed in the file and deliberately excluded. All
+five have zero real code references. They died with platform payouts rather than with the split,
+which makes them a different question.
+
+### Two rulings recorded so they are not re-litigated
+
+**`transactions.method` was narrowed, overriding the recommendation in entry 49, and the reasoning
+holds.** Eyad, 7 August 2026: *"the method question does not depend on the table question. Tuition is
+cash or InstaPay regardless of which table records it, and card/wallet/apple_pay/google_pay are gone
+either way."* Verified after apply, read back from `pg_constraint`: all three constraints are now
+`cash | instapay` — `payments_method_check`, `teacher_profiles_default_payment_method_chk`, and
+`transactions_method_chk` on both its status branches. **The entry-49 caution was scoped too widely:**
+a column can be settled while the table it sits on is not, and bundling the two would have held a
+correct narrowing hostage to an unrelated decision.
+
+### The third constraint is enforced in production and recorded nowhere
+
+A consequence of that override, found by reading the tree back afterwards rather than by being told.
+
+| | `transactions_method_chk` |
+|---|---|
+| Production (`pg_constraint`, 7 Aug) | **`cash \| instapay`** |
+| A rebuild from `supabase/migrations/` | the old wide set — `card`, `wallet`, `apple_pay`, `google_pay`, … |
+| `db/schema.snapshot:2566` | the same **old wide** set |
+
+The migration file narrows two constraints. **Nothing in `supabase/migrations/` narrows the third**,
+because it was applied by hand. Since the rebuild and the snapshot still agree with each other,
+**`schema-drift` passes** — and both disagree with production.
+
+**This is entry 39's warning in its more dangerous direction.** Its two earlier instances were
+proposals recorded in the tree and absent from production, so the tree *overstated* what was
+enforced. This one is the reverse: enforced in production, recorded nowhere, so the tree
+*understates* it. A green gate is reporting agreement between two artefacts that were both derived
+from the same stale source, which is the shape entry 40 named — *"two wrongs agreeing is what a
+parity check reports as correct."*
+
+`PROPOSED_record_transactions_method_narrowing.sql` reconciles it. Applying it to production is a
+no-op; its purpose is to make a rebuild match. **It has to move together with a
+`db/schema.snapshot` regeneration**, or the next PR fails schema-drift for a reason that looks
+unrelated.
+
+**`Merged-Admin-Money` §04's `WD-` rows and `Withdrawals` filter are referral payouts and stay.**
+Ruled 7 August 2026. Withdrawal of referral credit is live; tuition payouts are dead. This is the
+same distinction entry 46 drew for `Merged-Admin-Accounts`, now settled for the second file rather
+than left open as it was in that PR.
+
+*Source: `.github/workflows/schema-drift.yml`, `supabase/migrations_proposed/`, `pg_proc.prosrc` for
+both billing functions, `information_schema.columns`, `pg_constraint` read back after apply, and
+per-column reference counts over `src/`. 7 August 2026.*
+
+---
+
 ## 51. The last unexercised frame was never blocked by the reason recorded for it
 
 Entry 41 left one frame of `Merged-Center-Students` unexercised — **frame 11, import Review** — and
@@ -1182,6 +1284,20 @@ against the catalog. **Narrowing to two methods with one spelling each is what
 ends it**; correcting the spellings would have preserved the shape that keeps
 producing it.
 
+**Ruled the finding of the sweep by Eyad, 7 August 2026, and placed in the
+series:** this is the **sixth** check-measuring-the-wrong-thing — after the
+`substring(-11)` phone compare, the schema-drift gate that cannot see a REVOKE,
+the erasure comment that claims more than the code does, the two near-synonym
+`centers` status columns, and the `class="cap"` / `class="frame"` wrapper counts.
+
+**It is the first where the comment names the wrong source of truth out loud.**
+The other five were silent about what they measured and had to be inferred. This
+one wrote *"mirrors the client method picker"* directly above a set whose entire
+job is to agree with a database constraint. **The defect is stated in the code,
+in the line a reviewer reads as reassurance.** A comment that names its reference
+is only as trustworthy as the reference it names — and naming one at all is what
+made this both the easiest of the six to find and the longest-lived.
+
 ### `transactions` is the teacher private-tuition ledger, not Paymob platform billing
 
 The migration scoped `transactions_method_chk` out with this reason:
@@ -1282,6 +1398,17 @@ So the "2 hits left" was a plan, not a state. All four Center-Setup items entry 
 present, plus the fifth below. **This is `CLAUDE.md` rule 4 in a new costume:** the rule says PR state
 comes from the PR and not from a status note, and the same holds for file state. A carried-forward
 progress marker is a claim about memory, and the file is the only thing that knows.
+
+**Logged at Eyad's instruction, 7 August 2026, in his words:** *"The Center-Setup status I gave you
+was a plan carried forward as state. I relayed a previous session's intent as though it were done,
+which is the thing the handoff warns about, committed by me in the handoff itself."*
+
+That last clause is the part worth keeping. `docs/CLAUDE-CODE-HANDOFF.md` opens with *"Verify against
+reality, never against a report"* and lists five instances. **The handoff briefing was itself the
+report.** The document that exists to stop this failure is the channel that carried it, which is why
+no amount of care inside the document would have caught it — the check has to happen on the receiving
+side, against the file, every time, including when the claim arrives from the person who wrote the
+rule.
 
 ### Three items the classification does not contain
 
