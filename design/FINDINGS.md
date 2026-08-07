@@ -1056,6 +1056,53 @@ absence of an affordance.
 
 ---
 
+## 41. Frame diff results — `Merged-Center-Groups` 13 of 13, `Merged-Center-Students` 12 of 13
+
+Reported as **frames exercised out of frames drawn**, with blocked frames categorised.
+
+| File | Drawn | Exercisable | Exercised | Blocked |
+|---|---|---|---|---|
+| `Merged-Center-Groups` | 18 | 13 | **13** | 3 Branches (no table) · 2 empty states (by design) |
+| `Merged-Center-Students` | 14 | 13 | **12** | 1 empty state (by design) |
+
+The one unexercised frame is Students 11 (import **Review**), which needs the `Year` column mapped
+before the wizard advances. Not blocked — just not yet reached.
+
+### Divergences ruled against the design, per entry 32 (no action needed)
+
+Casing throughout — `RECENT SESSIONS`, `Avg Attendance`, `4 Rooms`, `Import Students`, `Next` for the
+design's `Continue` — is consistent across the live app and inconsistent in the drawings. **Live
+stands.** The Week grid is transposed (live puts hours on rows, days on columns); on a 390px phone
+seven day-columns fit and fifteen hour-columns do not, so **live stands** there too.
+
+### Divergences ruled against the app (logged as defects)
+
+| Frame | Defect |
+|---|---|
+| Groups 2 — detail | Join link renders as a raw 60-character URL ending in a UUID (`…/join/007/d6a17d09-6425-44ee-b47d-bc1a970fa375`) where the design draws a short `thq.eg/j/PHY10`. It overflows the frame and cannot be read aloud to a parent |
+| Groups 2 — detail | The **"Attendance · last 8 weeks" heatmap is absent entirely**, with its Less/More legend. The screen jumps from the average straight to recent sessions |
+| Students 12/13/14 — pending | Rows carry name, group and relative time only. The design draws **grade**, an `Invite link` / `Sign-up` **source chip**, and **Approve / Decline** per row. Same gap in both locales |
+| Students 14 — pending AR | `منذ ٨ ساعة` — third instance of entry 36. Arabic numerals 3–10 take the plural, so eight hours is `٨ ساعات` |
+
+### A divergence that is neither, and is already documented
+
+The import wizard's field list is `Name (required) · Phone · Parent Phone · Group · Skip`. **There is
+no Grade option**, so a roster's `Year` column cannot be mapped and the design's `Year → Grade`
+mapping — and its `Grade not recognised` skip reason — have no live equivalent.
+
+**This is deliberate and the code says so.** `students/import/page.tsx:227`: *"The design's other
+example, 'Grade not recognised', has no live equivalent: grade is not an import field. Not invented
+here."* The author found the gap and declined to fabricate a field to fill a drawing, which is the
+right call and the same instinct as the `/suspended` route being honest rather than optimistic.
+
+It remains a real gap: `students` carries grade, every roster row displays it, and a centre importing
+a spreadsheet loses it. **Whether grade becomes an import field is a build decision, not a design
+question** — recorded here rather than resolved.
+
+*Source: rendered diff at 390px against Test Center 333, 7 August 2026.*
+
+---
+
 ## 40. The privacy page said "collect", the corpus said "record", and the corpus's own Arabic said "collect"
 
 **"Record" is the model. "Collect" is the word `NEW-MODEL` removes** — the platform records and matches
