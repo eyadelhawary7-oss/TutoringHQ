@@ -1056,6 +1056,45 @@ absence of an affordance.
 
 ---
 
+## 39. The `PROPOSAL_` filename prefix protects nothing — CI and Supabase Branching both apply the file
+
+A migration named `20260806120000_PROPOSAL_narrow_tuition_payment_methods.sql` was written to be
+*proposed*, not applied: Eyad applies tuition-constraint changes to production by hand. **The prefix
+is a naming convention with no enforcement anywhere.**
+
+Opening PR #368 demonstrated both halves in under a minute:
+
+| Consumer | What it did with the "proposal" |
+|---|---|
+| `schema-drift` CI check | Rebuilt a fresh database from **every** file in `supabase/migrations/`, applied it, and **failed the build** because the rebuilt constraints no longer matched `db/schema.snapshot` |
+| Supabase Branching | Reported `Migrations ✅` against the preview branch — the narrowed constraint is live there |
+
+Only production apply is manual, exactly as `CLAUDE.md` rule 5 states. Everything short of production
+treats a proposal as a migration, because it *is* one — it sits in the migrations directory and the
+tooling reads the directory, not the name.
+
+**The repo's actual convention is to accept this.** Two earlier proposals already live there —
+`20260804140000_verification_records_proposal.sql` and `20260804150000_PROPOSAL_payout_system_1_ledger.sql`
+— and their objects are present in `db/schema.snapshot` (53 and 31 matching lines). So the established
+pattern is: proposal migrations live in `supabase/migrations/` **and the snapshot is regenerated to
+match them.** Drift was resolved here the same way, by rewriting the two constraint lines to exactly
+what the CI rebuild produced.
+
+**What that costs, stated plainly.** `db/schema.snapshot` now declares `payments_method_check` as
+`cash | instapay`, while **production still permits all six methods** until the migration is applied
+by hand. The snapshot describes what the migrations produce, not what production holds, and those two
+things are already divergent for the payout-ledger and verification proposals. Anyone reading the
+snapshot as a description of production will be wrong, and nothing in the file says so.
+
+If proposals should genuinely not apply anywhere, they cannot live in `supabase/migrations/`. A
+sibling directory the tooling does not scan is the only thing that would make the prefix mean what it
+says.
+
+*Source: PR #368 `schema-drift` run 31170871398 and the Supabase Branching status on the same PR.
+7 August 2026.*
+
+---
+
 ## 37. `?? 0` on money is pervasive, and 24 sites are the entry-33 shape
 
 Entry 33's second half is not confined to the student detail card. Across `src/`:
