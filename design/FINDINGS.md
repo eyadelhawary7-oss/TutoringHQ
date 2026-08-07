@@ -795,6 +795,45 @@ live insert/delete probe. 7 August 2026.*
 
 ---
 
+## 33. A student detail screen states "Paid up · 0 EGP" directly above a 2,400 EGP unpaid row
+
+**Found by rendering, not by reading. The summary and the list on the same screen disagree, and the
+list is the one that is right.**
+
+Adam Sherif, `/en/students/6c8deb63…`, rendered at 390px:
+
+| On screen | In the catalog |
+|---|---|
+| `Balance 0 EGP · Paid up` | **2,400 EGP outstanding** — one `pending`, unconfirmed InstaPay payment dated 5 Aug 2026 |
+| `Lifetime paid 0 EGP since Aug 2026` | **4,800 EGP** — two `paid`, confirmed payments (instapay 22 Jul, cash 8 Jul) |
+| Payments list: `2,400 EGP Unpaid`, `2,400 EGP Paid`, `2,400 EGP Paid` | **Correct.** All three rows match the catalog exactly |
+
+The same zero propagates to the roster: `/en/students` reports **`Unpaid 0 · 0 EGP due`** for a centre
+holding an outstanding 2,400.
+
+**Two separate mechanisms, both verified in code.**
+
+1. `src/lib/studentBalance.ts:154` sums payments whose status is in `PAID_PAYMENT_STATUSES`, and its
+   own comment says that set is *"confirmed + pending + paid"*. **A `pending`, unconfirmed payment is
+   therefore counted as money collected** and cancels the charge it has not yet settled.
+   **Under the new model this is exactly backwards.** The platform's whole job is to *record and match*
+   a parent's InstaPay transfer; an unmatched transfer is the one state that must not read as paid.
+2. `src/app/[locale]/students/[id]/page.tsx:329` sets the card from `b?.balance ?? 0`, and the sibling
+   lifetime figure the same way. **An absent value renders as a real `0 EGP`**, indistinguishable from
+   a genuine zero. The load is `.catch`-wrapped and best-effort, so a partial failure is silent.
+
+The second is the more dangerous shape and it is a money field: **`?? 0` turns "we do not know" into
+"you are owed nothing".** A student who owes money and a student whose balance failed to load are
+rendered identically, and the reassuring one is the default.
+
+Design frame 6 draws `Lifetime paid 4,800 EGP since Sep 2025`, so the field is specified to sum
+confirmed payments. It has the right shape and the wrong number.
+
+*Source: rendered `/en/students/6c8deb63…` in both locales, checked against `payments` in the live
+catalog. 7 August 2026.*
+
+---
+
 ## 32. Design-set corrections — settled rulings, so file 9 does not re-ask them
 
 **A divergence between a design frame and the live app is not automatically an app defect.** Six of
