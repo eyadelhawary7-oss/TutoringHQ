@@ -3,8 +3,12 @@
 **25 files. 110 screens. 503 frames.** Regenerated 6 August 2026, after the InstaPay model
 replaced online collection.
 
-Every screen exists in both English and Arabic as separate frames, so a file with 6 screens and 30
-frames holds roughly 15 states per language.
+**Every screen exists in both English and Arabic. Not every state does.** Some states were only ever
+drawn in English, so the two languages are not a 1:1 split of the frame count. Measured across the
+set on 6 August 2026: **503 frames, 284 English and 219 Arabic, 1.30:1.** Per-file ratios vary widely
+and `Center-Groups` (14:4) and `Center-Students` (11:3) are outliers, not the norm.
+
+Do not read a frame count as "half of these are Arabic".
 
 ---
 

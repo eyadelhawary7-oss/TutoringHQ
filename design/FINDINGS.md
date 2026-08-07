@@ -653,6 +653,49 @@ and not the other is invisible until two screens disagree about whether a studen
 
 ---
 
+---
+
+## 25. Arabic typography is a product rule, not a per-file one. Twelve design files use an older shorthand
+
+**Ruled 6 August 2026. Recorded here so it is not re-litigated on file 9 of 12.**
+
+`tutoringhq-public-design-system.md` §7 says an Arabic frame carries `dir="rtl"` **and**
+`class="ar"`, and that the `.ar` overrides are what switch the face, drop IBM Plex Mono for weight
+600, and reset tracking to `0`/`.02em`. `TOKEN-SPEC.md` §2 adds the one-step size bump for
+`text-xs` through `text-base`, headings unchanged.
+
+**Twelve of the 25 files express RTL with `dir="rtl"` alone**, with an inline `font-family` and no
+`.ar` class and no `.ar` CSS. Verified by counting `.ar` rule definitions in every file:
+
+**No `.ar` rules (12):** Admin-Accounts, Admin-Money, Admin-Platform, CEO, Center-Groups,
+Center-Orders, Center-Students, Center-WhatsApp, Lifecycle, Teacher-Groups, Teacher-Setup,
+Teacher-Students.
+
+**Has `.ar` rules (13):** Center-Attendance, Center-Home, Center-Insight, Center-Money, Center-Setup,
+Design-Patterns, Public-App, Public-Legal, Public-Marketing, Teacher-Home, Teacher-Insight,
+Teacher-Money, Teacher-WhatsApp.
+
+The split is by age, not by intent. The twelve predate the convention; the thirteen were rebuilt with
+it.
+
+### The ruling
+
+**Mirror from `dir="rtl"`, and apply the Arabic typography rules from `TOKEN-SPEC.md` §2 in every
+case, whether or not the design file carries `class="ar"`.**
+
+Dropping mono for weight 600, resetting tracking and the one-step size bump are rules about **the
+product**. A design file that expresses RTL with `dir` alone is using an older shorthand; it is not
+granting permission to skip them. **An Arabic screen rendering IBM Plex Mono digits is wrong whether
+or not the drawing said so.**
+
+This is a property of the design set, not a decision to take per file. Do not raise it again as a
+per-file question.
+
+*Source: re-diff preparation, Center-Groups and Center-Students. Verified across all 25 files
+6 August 2026.*
+
+---
+
 # Six the ledger called open and verification closed
 
 **Recorded so nobody re-opens them from an old copy of a deleted document.** Each was carried as an
