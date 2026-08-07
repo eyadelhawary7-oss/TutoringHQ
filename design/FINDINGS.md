@@ -1062,6 +1062,55 @@ absence of an affordance.
 
 ---
 
+## 53. The three held payout PRs all serve referral credit, and all three live
+
+Triaged 7 August 2026 against the test Eyad set for the `Merged-Admin-Money` `WD-` rows: **if the
+machinery serves referral credit it lives; if it serves tuition payouts it dies.** Applied to
+`#332`, `#334` and `#335`, which were held since 4 August against a spec — `design/PAYOUT-SYSTEM-SPEC.md`
+— that has since been deleted from the repository.
+
+**The deleted spec is not the test.** A file being removed says the document is stale, not that every
+line of code written against it is. Judging the PRs by their provenance would have killed three
+working branches; judging them by what they touch does not.
+
+### What each one actually reads and writes
+
+| PR | Touches | Verdict |
+|---|---|---|
+| **#334** payout approval path | `payout_requests` — and `src/app/api/referrals/payout/route.ts` reads `referral_commissions` at `:89` then writes `payout_requests` at `:125` | **referral. LIVES** |
+| **#332** withdrawal approval race | `withdrawal_requests`, `reserve_credits_atomic` / `cancel_reservation_atomic` against `centers.credit_balance` and `credit_reserved` | **referral credit. LIVES** |
+| **#335** stale reservation sweep | the same `withdrawal_requests` rows and the same `credit_reserved` counter | **referral credit. LIVES** |
+
+**Not one of the three reads `payments`, `transactions`, `lesson_fee`, any settlement column, or any
+Paymob split field.** `src/app/api/billing/withdrawal/route.ts` — which is on master today, not
+introduced by any of these branches — selects exactly `id, instapay_number, credit_balance,
+credit_reserved`. The destination is the provider's own InstaPay account and the source is a credit
+balance. Tuition is nowhere in it.
+
+So the vocabulary was the whole problem. **"Payout" and "withdrawal" name two unrelated mechanisms**
+— one dead, one live — and three branches were held for three days because the words matched the
+dead one. The same collision produced the `Merged-Admin-Accounts` false positive in entry 46 and the
+`WD-` question in the Admin-Money PR.
+
+### One thing that does need resolving, and it is not the code
+
+`NEW-MODEL.md` says referral credit **"cannot be withdrawn as cash"**, and lists under *Still open*:
+*"Whether referral credit can be cashed out. With the tax advisor."*
+
+These three PRs build a cash withdrawal path for exactly that credit, and the ruling that referral
+withdrawal is live is what makes them live. **The code and the model document disagree, and one of
+them has to move.** Recorded rather than resolved, because it is a tax question and not an
+engineering one. Nothing is exposed meanwhile: `withdrawal_requests` holds 0 rows and
+`credit_reserved` is 0.00 on both centres.
+
+**None was merged.** Each still carries its own by-hand migration and, for `#335`, a hard dependency
+on `#332` landing first.
+
+*Source: `api/referrals/payout/route.ts`, `api/billing/withdrawal/route.ts` on master, the changed-file
+lists of all three PRs, and `design/NEW-MODEL.md`. 7 August 2026.*
+
+---
+
 ## 52. The safe proposal directory already existed, and entry 39 concluded the opposite
 
 **Entry 39 is wrong in its conclusion and right in everything it measured.** It established that a
