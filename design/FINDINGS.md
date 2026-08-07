@@ -795,10 +795,90 @@ live insert/delete probe. 7 August 2026.*
 
 ---
 
-## 33. A student detail screen states "Paid up · 0 EGP" directly above a 2,400 EGP unpaid row
+## 33. BLOCKS THE INSTAPAY BUILD — the balance counts unconfirmed transfers as money in hand
 
-**Found by rendering, not by reading. The summary and the list on the same screen disagree, and the
-list is the one that is right.**
+**Not a screen defect. A violation of the rule the InstaPay flow exists to enforce, in the code the
+flow will read on its first day.**
+
+`design/NEW-MODEL.md:118` — *"**Never claim the platform verified a payment.** It read an image and
+compared it to an invoice. **Only the provider can confirm money arrived**, by looking at their own
+account. Every screen says so."*
+
+`src/lib/studentBalance.ts:154` sums payments whose status is in `PAID_PAYMENT_STATUSES`, a set its
+own comment describes as *"confirmed + pending + paid"*. **`pending` is the status of a transfer a
+parent has claimed and nobody has confirmed.** It is the exact state the model forbids treating as
+money, and the balance treats it as money.
+
+This is live today and it is not theoretical. Verified across all 16 students in Test Center 333:
+
+| Student | Truly owes | App shows | Payment row |
+|---|---|---|---|
+| Adam Sherif | **600 owed** | **1,800 credit** | `status='pending'`, `confirmed=false` |
+| Karim Fawzy | 0, settled | **3,200 credit** | `status='pending'`, **`confirmed=true`** |
+
+**These are two different faults, not one fault twice.** Only Adam's row is this entry: genuinely
+unconfirmed, counted as collected, flipping 600 owed into an 1,800 credit. Karim's row is
+`confirmed=true` with a `pending` status — a contradictory pair (see entry 35). If its boolean is the
+truth, his credit is arithmetically correct and not a defect at all.
+
+Centre-wide, outstanding reads **15,650 EGP against a true 16,250**, and Adam disappears from the
+overdue list entirely.
+
+### The stated justification is stale, so the fix is smaller than the comment implies
+
+`studentBalance.ts:24` defends including `pending`: *"nothing auto-confirms pending, so gating on
+'confirmed' would overstate debt forever."*
+
+**That is no longer true.** `src/app/api/payments/confirm/route.ts:50–61` is a live confirmation path
+and it writes `status: 'confirmed'` and `confirmed: true` together. The reason for the violation has
+been gone since that route landed, and the comment has outlived it — **entry 30's shape exactly, in a
+money helper: a frozen justification that nobody re-ran.**
+
+So the remedy needs no new infrastructure. Narrow the status set. Note while doing it that **zero of
+the 30 payment rows in the catalog carry `status='confirmed'`** — the status the helper lists first
+and the confirm route writes matches nothing today, so the route appears never to have been exercised.
+
+### Blast radius — 22 files, and it leaves the screen
+
+`getStudentBalances` / `studentBalance` is consumed by **22 files**, including:
+
+`api/cron/parent-balance-alerts` · `api/whatsapp/send-balance-reminder` · `api/students/at-risk` ·
+`api/analytics/revenue` · `api/payments/stats` · `api/dashboard/stats` · `api/parent/portal` ·
+`components/analytics/AgingReport.tsx` · `components/PrintStatementModal.tsx` · `lib/excel-export.ts`
+
+So an unconfirmed transfer does not merely mis-render a card. **It suppresses the parent's balance
+reminder, removes the student from at-risk detection, understates revenue and aging, and prints a
+wrong statement.** A debt the centre never chases because the platform recorded an unverified claim
+as money is the precise failure the model's confirmation rule exists to prevent.
+
+**Why it blocks rather than waits.** Today only two students carry a pending payment because only two
+were seeded that way. The InstaPay flow's *entire purpose* is to create that state — one row per
+uploaded receipt, held unconfirmed until the centre checks its own account. **Every upload would
+inflate the payer's balance the moment the flow ships**, and the more the feature is used the more
+wrong the number gets. Shipping the flow onto this helper converts a two-row seeding artefact into
+the normal case.
+
+Note for the fix: **negative balances are legitimate.** Five students hold genuine credits (−500,
+−1,800, −2,800, −3,600, −3,900) from real overpayment, so clamping negatives to zero is not the
+remedy. `pending` must be excluded from the collected sum, not the result floored.
+
+### The second half: `?? 0` on a money field
+
+`src/app/[locale]/students/[id]/page.tsx:329` sets the card from `b?.balance ?? 0`, and the lifetime
+figure the same way, inside a `.catch`-wrapped best-effort load. **A failed load renders as a real
+`0 EGP`.** A settled account and a balance that did not load are pixel-identical, and the default is
+the reassuring one.
+
+`NEW-MODEL.md:122` — *"**Never tell a parent they did not pay.** A failed read is a system problem,
+not an accusation."* The same principle inverts here and is broken in the other direction: **a failed
+read becomes the factual claim "nothing is owed."** A system problem is rendered as a settled account.
+
+Both halves must be fixed before the InstaPay flow is built on this helper, not after.
+
+### What the screen looked like when this surfaced
+
+Found by rendering, not reading. The summary and the list on the same screen disagreed, and the list
+was right.
 
 Adam Sherif, `/en/students/6c8deb63…`, rendered at 390px:
 
@@ -945,6 +1025,67 @@ absence of an affordance.
 
 *Source: retracted after rendering `/en/schedule` at 390px and counting dot elements in the DOM.
 7 August 2026.*
+
+---
+
+## 35. `payments.status` and `payments.confirmed` encode the same fact and already disagree
+
+Two columns carry confirmation state. `status` is text (`pending` / `paid` / `confirmed`) and
+`confirmed` is a boolean. Nothing reconciles them, and one row in thirty is already inconsistent:
+
+| `status` | `confirmed` | Rows | Total |
+|---|---|---|---|
+| `paid` | true | 28 | 73,200 |
+| `pending` | **true** | **1** | 3,200 |
+| `pending` | false | 1 | 2,400 |
+| `confirmed` | — | **0** | — |
+
+The `pending`/`confirmed=true` row cannot have come from `api/payments/confirm/route.ts`, which sets
+both fields in one update. Something else wrote the boolean without the status, so the pair drifts
+whenever a writer touches one and not the other.
+
+**This is load-bearing, not cosmetic.** `studentBalance.ts` reads `status` and ignores `confirmed`
+entirely. Whichever column a given consumer happens to read decides whether a payment is money, and
+the two answers differ for that row today. Entry 33's fix — narrowing the status set — makes this
+worse before it makes it better: a `pending`/`confirmed=true` row would then be excluded from the
+balance while still reading as confirmed to anything checking the boolean.
+
+Pick one column as authoritative and derive or drop the other. Doing it in the same PR as entry 33 is
+the cheaper order, because entry 33's narrowing is what turns the drift into a visible wrong number.
+
+Note also that `status='confirmed'` matches **zero rows** while being the first entry in
+`PAID_PAYMENT_STATUSES` — a third state that exists in code and in the confirm route but never in data.
+
+*Source: `select status, confirmed, count(*) from payments group by 1,2` against the live catalog,
+plus `api/payments/confirm/route.ts:50-61`. 7 August 2026.*
+
+---
+
+## 34. A join that fans out is a query measuring the wrong shape, and it survives by being absurd
+
+**Logged beside entry 31 because it is the same failure in a different tool, found the same day by
+the other person on this work.**
+
+The first attempt to verify entry 33 joined `payments` and `attendance_scans` in one statement. Both
+are one-to-many against `students`, so the rows multiplied: **20 payment rows for a student holding
+3**, and a **44,800 EGP credit that does not exist**. The query ran clean, returned plausible column
+names, and was wrong by roughly 10×.
+
+**It was caught only because the numbers were absurd.** A 44,800 credit on a centre whose largest
+genuine credit is 3,900 cannot be explained away. Had the fan-out been 2× rather than 10× — two
+payments against two scans — the output would have been a believable 4,800 and it would have been
+believed.
+
+Identical in shape to the detached-clone `innerText` (entry 31): the instrument did exactly what it
+was told, the thing it measured was not the thing being asked about, and the output stayed inside the
+range where nobody checks. Two people, two tools, one day, same family.
+
+**The habit that catches it, same as entry 26: derive a value with a floor and check the floor.**
+Here the check is a row count — a per-student payment count from a single-table query, compared with
+the count the joined query implies. Aggregating across two one-to-many joins in one statement needs
+sub-selects or CTEs per branch, never a single `join … join`.
+
+*Source: verification of entry 33, 7 August 2026. Recorded by Eyad.*
 
 ---
 
