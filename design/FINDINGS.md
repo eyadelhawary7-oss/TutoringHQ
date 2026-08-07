@@ -1056,6 +1056,44 @@ absence of an affordance.
 
 ---
 
+## 42. `Merged-Center-Home` notification frames still draw payouts, auto-collection and identity verification
+
+**The design set has not been fully swept for the old model.** Frames 3 (EN) and 4 (AR) of
+`Merged-Center-Home` are the owner's notification list, and both draw events the new model deleted.
+
+| Notification | Frame | Status under `NEW-MODEL` |
+|---|---|---|
+| `Payout requested` / *"Mr. Sherif Adel requested a payout"* | EN | **Dead.** Platform payouts ceased |
+| `1,350 EGP sent to your InstaPay` | EN | **Dead.** The platform never holds or remits tuition |
+| `Fee collected · auto` / *"Youssef Adel paid 300 EGP automatically"* | EN | **Dead.** Nothing is collected automatically |
+| `تم إرسال الصرف` / *"1,350 EGP sent to InstaPay"* | AR | **Dead.** Same payout event |
+| `تم تحصيل رسوم · تلقائي` | AR | **Dead.** Same auto-collection |
+| **`تم تأكيد الهوية`** / *"identity confirmed · payments and fee collection activated"* | **AR only** | **Dead.** Identity verification and Valify are gone |
+
+Both frames were **partially** updated. The English gained the new vocabulary — `Receipt uploaded`,
+`Receipt confirmed`, `InstaPay collection is on`, `8 unpaid links`, `InstaPay not received, retry
+sent` — and kept the payout and auto-collection rows beside it. The Arabic gained none of the receipt
+rows and additionally kept the identity-verification row the English dropped, **so the two locales
+are now out of sync with each other as well as with the model.**
+
+Anyone building this screen from either frame ships notifications for events that cannot occur.
+
+### How this was nearly got wrong, which is entry 38 repeating within the hour
+
+The first read was **"English updated, Arabic stale"** — because entry 40 had just established exactly
+that pattern in the legal corpus, and this looked like a second instance of it. It is not. The English
+is stale too, in three rows.
+
+The only reason it was caught is that a mechanical check printed `EN contains payout: true` and that
+line was followed up instead of skimmed past. **A freshly-confirmed pattern is the most dangerous
+possible prior**, because it makes the next observation feel already-verified. Entry 38 named this
+after a false positive; this is the same failure caught on the other side, where the pattern was real
+but the new instance did not fit it.
+
+*Source: frames 3 and 4 of `design/Merged-Center-Home.html`, extracted 7 August 2026.*
+
+---
+
 ## 41. Frame diff results — `Merged-Center-Groups` 13 of 13, `Merged-Center-Students` 12 of 13
 
 Reported as **frames exercised out of frames drawn**, with blocked frames categorised.
