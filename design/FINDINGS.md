@@ -1056,6 +1056,51 @@ absence of an affordance.
 
 ---
 
+## 51. The last unexercised frame was never blocked by the reason recorded for it
+
+Entry 41 left one frame of `Merged-Center-Students` unexercised — **frame 11, import Review** — and
+gave the reason:
+
+> *"which needs the `Year` column mapped before the wizard advances. Not blocked — just not yet
+> reached."*
+
+**The wizard does not require that, and reading the code settles it in two lines.**
+
+| `students/import/page.tsx` | What it does |
+|---|---|
+| `:127` — `if (!(h in map)) map[h] = 'skip'` | **Every unmapped column defaults to skip.** A `Year` column needs no action of any kind |
+| `:729` — `disabled={!hasNameMapping \|\| !centerId \|\| isLoading}` | The only mapping the Continue button requires is **Name** |
+
+So a roster carrying `Year` advances to Review untouched. The frame was not gated on the missing
+Grade field; it was simply not clicked. **"Not yet reached" was right and the clause before it was
+not**, and that clause is the part a future reader would act on — someone would go looking for a
+Grade import field that nothing is waiting for.
+
+Same shape as entry 30 and as the migration's `payments 0 rows`: the finding's *conclusion* held and
+the mechanism offered beside it was invented at the time of writing and never run.
+
+### The frame is still unexercised, and here is the actual reason
+
+**Not the wizard. The environment.** `/students/import` sits behind `AUTHENTICATED_ROUTE_PREFIXES`,
+and reaching Review additionally requires a live `student_groups` read (`:295`) before
+`setStep('preview')` at `:309`. This session has **no Supabase credentials** — the repository carries
+only `.env.example`, and `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` and
+`SUPABASE_SERVICE_ROLE_KEY` are all unset — so there is no session to authenticate with.
+
+Nor is there a login to borrow: **entry 19 established that the audit seed accounts are gone from
+`auth.users`** while the migration history still claims they were applied. That finding was filed as
+a tooling curiosity. It is the direct cause of a frame that cannot be exercised, which is worth
+knowing before the next session tries the same thing and reaches the same wall.
+
+**So it is reported as blocked rather than as passing, and the block is named.** A rendered frame is
+the standard (entry 29), a code read is not a substitute for one, and this entry does not claim
+otherwise.
+
+*Source: `src/app/[locale]/students/import/page.tsx` lines 127, 295, 309, 729; environment variable
+check; entry 19. 7 August 2026.*
+
+---
+
 ## 50. The residue sweep is an English instrument, and the Arabic half of the design set was never measured
 
 **Entry 43's marker list is English.** `payout`, `verify`, `auto-collect`, `split-90-10`, `7.5%`,

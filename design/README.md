@@ -1,8 +1,10 @@
 # design/
 
-**25 merged HTML files. 110 screens. 499 frames.** Regenerated 6 August 2026; frame count updated
-7 August 2026 when the four `verified` frames in `Merged-Teacher-Setup` and `Merged-Teacher-Home`
-were dropped, the two-state account model having ceased to exist. Screens are unchanged.
+**25 merged HTML files. 109 screens. 492 frames.** Regenerated 6 August 2026; recounted 7 August
+2026 after the dead-model sweep. It dropped **11 frames and one screen**: the four `verified`
+variants in `Merged-Teacher-Setup` and `Merged-Teacher-Home` and the two in `Merged-Teacher-Money`,
+the two-state account model having ceased to exist; `Merged-Center-Money`'s payout-statements frame;
+and `Merged-Admin-Money` §02 Admin Settlement entire, the biweekly provider payout run, 4 frames.
 
 This folder is the source of truth for what every screen looks like and what logic sits behind it.
 

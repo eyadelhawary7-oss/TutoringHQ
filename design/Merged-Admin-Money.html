@@ -5,9 +5,13 @@
  File: Merged-Admin-Money.html
  Admin · Money
 
- CONTENTS (6 screens):
+ CONTENTS (5 screens):
   01. Admin Fee Collection   <-  Screen-Admin-Fee-Collection.html
-  02. Admin Settlement   <-  Screen-Admin-Settlement.html
+  -- 02. Admin Settlement REMOVED 7 Aug 2026. The biweekly provider payout run;
+  --     the platform holds no tuition, so there is no settlement to run. The
+  --     numbering keeps its gap on purpose: NEEDS-DESIGN.md #12 distinguishes
+  --     internal staff salaries from "Merged-Admin-Money section 02", and
+  --     renumbering would silently repoint that reference at another screen.
   03. Admin Finance Health   <-  Screen-Admin-Finance-Health.html
   04. Admin Receipts   <-  Screen-Admin-Receipts.html
   05. Admin Unpaid Recovery   <-  Screen-Admin-Unpaid-Recovery.html
@@ -506,21 +510,9 @@ body{margin:0;background:#D8D3C6}
           <div class="drow"><span class="dk">Still unpaid · 8,420 EGP</span><span class="dv warn">29 &rsaquo;</span></div>
           <div class="drow"><span class="dk">Voided by the provider</span><span class="dv">14</span></div>
         </div>
-
-        <div class="sec">PAYOUTS</div>
-        <div class="flow">
-          <div class="drow"><span class="dk">Free monthly payouts used</span><span class="dv">38 of 61</span></div>
-          <div class="drow"><span class="dk">Extra payouts charged</span><span class="dv">17</span></div>
-          <div class="drow"><span class="dk">Instant payouts</span><span class="dv">9</span></div>
-          <div class="drow"><span class="dk">Payout fee revenue</span><span class="dv ok">6,240</span></div>
-        </div>
-
         <div class="sec">OPERATIONS</div>
         <div class="flow">
-          <div class="drow"><span class="dk">Verified providers</span><span class="dv">61</span></div>
-          <div class="drow"><span class="dk">Awaiting verification</span><span class="dv warn">7</span></div>
           <div class="drow"><span class="dk">Tax registered</span><span class="dv">18</span></div>
-          <div class="drow"><span class="dk">Next payout run</span><span class="dv">23/07</span></div>
         </div>
       </div>
       <div class="tabbar"><a class="tab"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span>Overview</span></a><a class="tab on"><svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>Money</span></a><a class="tab"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9"/></svg><span>Accounts</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg><span>Platform</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>More</span></a></div>
@@ -625,127 +617,15 @@ body{margin:0;background:#D8D3C6}
           <div class="drow"><span class="dk">ما زال غير مدفوع · ٨٬٤٢٠ ج.م</span><span class="dv warn">٢٩ &lsaquo;</span></div>
           <div class="drow"><span class="dk">أُلغي من مقدّم الخدمة</span><span class="dv">١٤</span></div>
         </div>
-
-        <div class="sec">التحويلات</div>
-        <div class="flow">
-          <div class="drow"><span class="dk">التحويل الشهري المجاني المستخدَم</span><span class="dv">٣٨ من ٦١</span></div>
-          <div class="drow"><span class="dk">تحويلات إضافية مدفوعة</span><span class="dv">١٧</span></div>
-          <div class="drow"><span class="dk">تحويلات فورية</span><span class="dv">٩</span></div>
-          <div class="drow"><span class="dk">إيراد رسوم التحويل</span><span class="dv ok">٦٬٢٤٠</span></div>
-        </div>
-
         <div class="sec">التشغيل</div>
         <div class="flow">
-          <div class="drow"><span class="dk">مقدّمو خدمة موثّقون</span><span class="dv">٦١</span></div>
-          <div class="drow"><span class="dk">بانتظار التوثيق</span><span class="dv warn">٧</span></div>
           <div class="drow"><span class="dk">مسجّلون ضريبيًا</span><span class="dv">١٨</span></div>
-          <div class="drow"><span class="dk">الدفعة القادمة</span><span class="dv">٢٣/٠٧</span></div>
         </div>
       </div>
       <div class="tabbar"><a class="tab"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span>نظرة عامة</span></a><a class="tab on"><svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>المال</span></a><a class="tab"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9"/></svg><span>الحسابات</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg><span>المنصة</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>المزيد</span></a></div>
     </div></div>
     <div class="cap">AR · الحالة</div>
     </div>
-
-  </div>
-</div></div>
-<div class="mgd-bar"><span class="mgd-num">02</span><span class="mgd-name">Admin Settlement</span><span class="mgd-src">Screen-Admin-Settlement.html</span></div>
-<div class="mgd2"><div class="board">
-  <div class="masthead">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px"><div style="width:26px;height:26px;border-radius:8px;background:linear-gradient(150deg,#0f766b,#083f39)"></div><span style="font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#5d635c">TutoringHQ · Reference Screen</span><span style="margin-inline-start:auto;font-size:11px;font-weight:600;color:#8a5e16;background:#f4ebd7;border:1px solid rgba(138,94,22,.2);padding:5px 11px;border-radius:999px">Internal · Admin</span></div>
-    <h1 style="margin:0 0 12px;font-size:44px;line-height:1.08;font-weight:700;letter-spacing:-.02em">Payout settlement</h1>
-    <p style="margin:0;max-width:80ch;font-size:17px;line-height:1.55;color:#5d635c">The biweekly teacher payout run: the cashflow behind it (settled in from Paymob, paid out to providers, what remains) and the batch itself, bank first with wallet fallback. Draft, pending legal and accountant review. English and Arabic. Design only.</p>
-  </div>
-  <div class="phones">
-
-    <!-- RUN · EN -->
-    <div class="frame"><span class="cap">EN · run</span>
-    <div class="phone"><div dir="ltr" class="screen">
-      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
-      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ttl">Payout run</div><span class="draft">Draft</span></div>
-      <div class="body">
-        <div class="cyc"><span class="cadge">Biweekly</span><div class="cyt">Cycle <b>07/07 to 20/07</b> · pays out <b>23/07</b></div></div>
-        <div class="flow">
-          <div class="fl0">Cashflow for this run</div>
-          <div class="flr"><span class="flk">Settled in from Paymob</span><span class="flv num">74,000</span></div>
-          <div class="flr"><span class="flk">Paying out to teachers</span><span class="flv num">−66,000</span></div>
-          <div class="flr flkeep"><span>Retained · our fees</span><span class="num">8,000</span></div>
-        </div>
-        <div class="kpis">
-          <div class="kpi"><div class="kl">Teachers this run</div><div class="kv num">24</div></div>
-          <div class="kpi"><div class="kl">Net to pay</div><div class="kv num">66,000</div></div>
-          <div class="kpi"><div class="kl">Collection fee</div><div class="kv num">8,000</div></div>
-          <div class="kpi"><div class="kl">Next run</div><div class="kv num">23/07</div></div>
-        </div>
-        <div class="note">Cash is settled and in the account before the run. What is held for teachers stays ring-fenced from platform revenue.</div>
-      </div>
-      <div class="tabbar"><a class="tab"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span>Overview</span></a><a class="tab on"><svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>Money</span></a><a class="tab"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9"/></svg><span>Accounts</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg><span>Platform</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>More</span></a></div>
-    </div></div></div>
-
-    <!-- BATCH · EN -->
-    <div class="frame"><span class="cap">EN · batch</span>
-    <div class="phone"><div dir="ltr" class="screen">
-      <div class="sbar"><span class="num">9:41</span><span style="letter-spacing:2px">••• ▾ ▮</span></div>
-      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div><div class="ttl">This run</div></div>
-      <div class="body">
-        <div class="glabel">24 TEACHERS · NET</div>
-        <div class="group">
-          <div class="srow"><div class="av">SA</div><div class="sl"><div class="snm">Sherif Adel</div><div class="ss">National ID on file</div></div><span class="meth mbank">Bank</span><span class="netv">5,900</span></div>
-          <div class="srow"><div class="av">DF</div><div class="sl"><div class="snm">Dina Fouad</div><div class="ss">National ID on file</div></div><span class="meth mbank">Bank</span><span class="netv">4,800</span></div>
-          <div class="srow"><div class="av">KS</div><div class="sl"><div class="snm">Karim Samir</div><div class="ss">National ID on file</div></div><span class="meth mbank">Bank</span><span class="netv">3,600</span></div>
-          <div class="srow"><div class="av">HK</div><div class="sl"><div class="snm">Hazem Kamal</div><div class="ss">No bank account</div></div><span class="meth mwallet">Wallet</span><span class="netv">2,100</span></div>
-          <div class="srow"><div class="av">RG</div><div class="sl"><div class="snm">Rana Gamal</div><div class="ss">Below minimum</div></div><span class="meth mroll">Rolls over</span><span class="netv" style="color:#80827a">340</span></div>
-        </div>
-        <div class="foot"><span>Our fees this run</span><span class="num">8,000</span></div>
-        <div class="run">Run batch · 66,000</div>
-      </div>
-      <div class="tabbar"><a class="tab"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span>Overview</span></a><a class="tab on"><svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>Money</span></a><a class="tab"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9"/></svg><span>Accounts</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg><span>Platform</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>More</span></a></div>
-    </div></div></div>
-
-    <!-- RUN · AR -->
-    <div class="frame"><span class="cap">AR · run</span>
-    <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
-      <div class="sbar"><span class="num">٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
-      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div><div class="ttl">دفعة الصرف</div><span class="draft">مسودة</span></div>
-      <div class="body">
-        <div class="cyc"><span class="cadge">كل أسبوعين</span><div class="cyt">الدورة <b dir="ltr">٠٧/٠٧ - ٢٠/٠٧</b> · تُصرف <b dir="ltr">٢٣/٠٧</b></div></div>
-        <div class="flow">
-          <div class="fl0">التدفق النقدي لهذه الدفعة</div>
-          <div class="flr"><span class="flk">وارد مُسوّى من Paymob</span><span class="flv num">٧٤٬٠٠٠</span></div>
-          <div class="flr"><span class="flk">مصروف للمعلمين</span><span class="flv num">−٦٦٬٠٠٠</span></div>
-          
-          <div class="flr flkeep"><span>المُحتفظ به · رسومنا</span><span class="num">٨٬٠٠٠</span></div>
-        </div>
-        <div class="kpis">
-          <div class="kpi"><div class="kl">معلمون هذه الدفعة</div><div class="kv num">٢٤</div></div>
-          <div class="kpi"><div class="kl">صافي الصرف</div><div class="kv num">٦٦٬٠٠٠</div></div>
-          <div class="kpi"><div class="kl">رسم التحصيل</div><div class="kv num">٨٬٠٠٠</div></div>
-          <div class="kpi"><div class="kl">الدفعة القادمة</div><div class="kv num" dir="ltr">٢٣/٠٧</div></div>
-        </div>
-        <div class="note">النقد مُسوّى وموجود في الحساب قبل الصرف. وما يُحتفظ به للمعلمين يظل معزولًا عن إيراد المنصة.</div>
-      </div>
-      <div class="tabbar"><a class="tab"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span>نظرة عامة</span></a><a class="tab on"><svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>المال</span></a><a class="tab"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9"/></svg><span>الحسابات</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg><span>المنصة</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>المزيد</span></a></div>
-    </div></div></div>
-
-    <!-- BATCH · AR -->
-    <div class="frame"><span class="cap">AR · batch</span>
-    <div class="phone"><div dir="rtl" class="screen" style="font-family:'IBM Plex Sans Arabic';letter-spacing:0">
-      <div class="sbar"><span class="num">٩:٤١</span><span style="letter-spacing:2px">▮ ▾ •••</span></div>
-      <div class="topbar"><div class="topbtn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div><div class="ttl">هذه الدفعة</div></div>
-      <div class="body">
-        <div class="glabel">٢٤ معلمًا · الصافي</div>
-        <div class="group">
-          <div class="srow"><div class="av">SA</div><div class="sl"><div class="snm">شريف عادل</div><div class="ss">الرقم القومي مُسجّل</div></div><span class="meth mbank">بنك</span><span class="netv">٥٬٩٠٠</span></div>
-          <div class="srow"><div class="av">DF</div><div class="sl"><div class="snm">دينا فؤاد</div><div class="ss">الرقم القومي مُسجّل</div></div><span class="meth mbank">بنك</span><span class="netv">٤٬٨٠٠</span></div>
-          <div class="srow"><div class="av">KS</div><div class="sl"><div class="snm">كريم سامي</div><div class="ss">الرقم القومي مُسجّل</div></div><span class="meth mbank">بنك</span><span class="netv">٣٬٦٠٠</span></div>
-          <div class="srow"><div class="av">HK</div><div class="sl"><div class="snm">حازم كمال</div><div class="ss">لا يوجد حساب بنكي</div></div><span class="meth mwallet">محفظة</span><span class="netv">٢٬١٠٠</span></div>
-          <div class="srow"><div class="av">RG</div><div class="sl"><div class="snm">رنا جمال</div><div class="ss">أقل من الحد الأدنى</div></div><span class="meth mroll">تُرحَّل</span><span class="netv" style="color:#80827a">٣٤٠</span></div>
-        </div>
-        <div class="foot"><span>الخصم المُحوّل</span><span class="num">٨٬٠٠٠</span></div>
-        <div class="run">تنفيذ الدفعة · ٦٦٬٠٠٠</div>
-      </div>
-      <div class="tabbar"><a class="tab"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg><span>نظرة عامة</span></a><a class="tab on"><svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>المال</span></a><a class="tab"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9"/></svg><span>الحسابات</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg><span>المنصة</span></a><a class="tab"><svg viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.5" fill="currentColor" stroke="none"/></svg><span>المزيد</span></a></div>
-    </div></div></div>
 
   </div>
 </div></div>
@@ -790,7 +670,7 @@ body{margin:0;background:#D8D3C6}
 
         <div class="glabel">FEE-COLLECTION REVENUE</div>
         <div class="group">
-          <div class="srow"><div style="flex:1"><div style="font-size:14.5px;font-weight:600">Net profit (pre-tax)</div><div class="sval" style="margin-top:1px">After teacher payout + gateway · this month</div></div><div style="text-align:end"><div class="num" style="font-weight:700;color:#0a514a">24,074</div><div class="sval">EGP</div></div></div>
+          <div class="srow"><div style="flex:1"><div style="font-size:14.5px;font-weight:600">Net profit (pre-tax)</div><div class="sval" style="margin-top:1px">After gateway · this month</div></div><div style="text-align:end"><div class="num" style="font-weight:700;color:#0a514a">24,074</div><div class="sval">EGP</div></div></div>
           <div class="srow"><div style="flex:1"><div style="font-size:14.5px;font-weight:600">Paymob gateway cost</div><div class="sval" style="margin-top:1px">Deducted on inflow</div></div><div style="text-align:end"><div class="num" style="font-weight:700;color:#5d635c">7,420</div><div class="sval">EGP</div></div></div>
           <div class="srow"><div style="flex:1"><div style="font-size:14.5px;font-weight:600">Remitted to ETA</div><div class="sval" style="margin-top:1px">VAT + withholding · pass-through</div></div><div style="text-align:end"><div class="num" style="font-weight:700;color:#5d635c">13,356</div><div class="sval">EGP</div></div></div>
         </div>
@@ -864,7 +744,7 @@ body{margin:0;background:#D8D3C6}
 
         <div class="glabel">إيرادات تحصيل الرسوم</div>
         <div class="group">
-          <div class="srow"><div style="flex:1"><div style="font-size:14.5px;font-weight:600">صافي الربح (قبل الضريبة)</div><div class="sval" style="margin-top:1px">بعد صرف المعلم + البوابة · هذا الشهر</div></div><div style="text-align:end"><div class="num" style="font-weight:700;color:#0a514a">٢٤٬٠٧٤</div><div class="sval">ج.م</div></div></div>
+          <div class="srow"><div style="flex:1"><div style="font-size:14.5px;font-weight:600">صافي الربح (قبل الضريبة)</div><div class="sval" style="margin-top:1px">بعد البوابة · هذا الشهر</div></div><div style="text-align:end"><div class="num" style="font-weight:700;color:#0a514a">٢٤٬٠٧٤</div><div class="sval">ج.م</div></div></div>
           <div class="srow"><div style="flex:1"><div style="font-size:14.5px;font-weight:600">تكلفة بوابة Paymob</div><div class="sval" style="margin-top:1px">تُخصم عند التحصيل</div></div><div style="text-align:end"><div class="num" style="font-weight:700;color:#5d635c">٧٬٤٢٠</div><div class="sval">ج.م</div></div></div>
           <div class="srow"><div style="flex:1"><div style="font-size:14.5px;font-weight:600">مُحوّل لمصلحة الضرائب</div><div class="sval" style="margin-top:1px">القيمة المضافة + الاقتطاع · تمرير</div></div><div style="text-align:end"><div class="num" style="font-weight:700;color:#5d635c">١٣٬٣٥٦</div><div class="sval">ج.م</div></div></div>
         </div>

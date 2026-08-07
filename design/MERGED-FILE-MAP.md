@@ -1,7 +1,10 @@
 # Merged file map
 
-**25 files. 110 screens. 503 frames.** Regenerated 6 August 2026, after the InstaPay model
-replaced online collection.
+**25 files. 109 screens. 492 frames.** Regenerated 6 August 2026, after the InstaPay model
+replaced online collection. Counts updated 7 August 2026 by the dead-model sweep, which dropped
+11 frames and one screen: the four two-state `verified` variants in `Teacher-Setup` and
+`Teacher-Home`, the two in `Teacher-Money`, `Center-Money`'s payout-statements frame, and
+`Admin-Money` §02 Admin Settlement entire (4 frames).
 
 **Every screen exists in both English and Arabic. Not every state does.** Some states were only ever
 drawn in English, so the two languages are not a 1:1 split of the frame count. Measured across the
@@ -17,14 +20,14 @@ Do not read a frame count as "half of these are Arabic".
 | File | Screens | Frames | Contents |
 |---|---|---|---|
 | `Merged-Admin-Accounts.html` | 4 | 16 | Admin Account Detail, Admin Staff, Admin Center Assignments, Admin Referrals |
-| `Merged-Admin-Money.html` | 6 | 25 | Admin Fee Collection, Admin Settlement, Admin Finance Health, Admin Receipts, Admin Unpaid Recovery, Admin Billing Pricing |
+| `Merged-Admin-Money.html` | 5 | 21 | Admin Fee Collection, Admin Finance Health, Admin Receipts, Admin Unpaid Recovery, Admin Billing Pricing |
 | `Merged-Admin-Platform.html` | 6 | 26 | Admin Overview, Admin Analytics, Admin Platform, Admin WhatsApp Pack, Admin Promo Codes, Admin Privacy Requests |
 | `Merged-CEO.html` | 3 | 12 | CEO Dashboard, CEO Teachers, CEO Centers Benchmark |
 | `Merged-Center-Attendance.html` | 2 | 13 | Center Attendance, Attendance Payment Default |
 | `Merged-Center-Groups.html` | 4 | 18 | Groups, Rooms, Branches, Schedule |
 | `Merged-Center-Home.html` | 3 | 8 | Center Dashboard, Notifications, Active Balance |
 | `Merged-Center-Insight.html` | 3 | 13 | Analytics, Benchmarks, Referral Program |
-| `Merged-Center-Money.html` | 13 | 51 | Payments, Center Payments, Billing, Center Receipts, InstaPay Invoice, InstaPay Uploaded Receipts, InstaPay Confirm, InstaPay Batch List, InstaPay Duplicate Reference, InstaPay Fee Total, Active Balance, Send Credit, Balance History |
+| `Merged-Center-Money.html` | 13 | 50 | Payments, Center Payments, Billing, Center Receipts, InstaPay Invoice, InstaPay Uploaded Receipts, InstaPay Confirm, InstaPay Batch List, InstaPay Duplicate Reference, InstaPay Fee Total, Active Balance, Send Credit, Balance History |
 | `Merged-Center-Orders.html` | 4 | 15 | Orders, Order Detail, Order Checkout, Card Orders Coming Soon |
 | `Merged-Center-Setup.html` | 10 | 41 | Onboarding, Settings, Settings Billing, Settings Center, Settings Notifications Support, Settings Scanner, Settings Team, Center Team, My Teachers, InstaPay Settings |
 | `Merged-Center-Students.html` | 3 | 14 | Students (Roster), Student Detail, Students Import Pending |
@@ -35,10 +38,10 @@ Do not read a frame count as "half of these are Arabic".
 | `Merged-Public-Legal.html` | 1 | 14 | Public Legal |
 | `Merged-Public-Marketing.html` | 4 | 12 | Public Landing, Public Audience, Public Pricing, Lead Capture |
 | `Merged-Teacher-Groups.html` | 4 | 17 | Teacher Groups, Teacher Group Detail, Teacher Group Invite Pending, Teacher Class Session |
-| `Merged-Teacher-Home.html` | 3 | 10 | Teacher Home, Teacher Schedule, Active Balance |
+| `Merged-Teacher-Home.html` | 3 | 8 | Teacher Home, Teacher Schedule, Active Balance |
 | `Merged-Teacher-Insight.html` | 2 | 8 | Teacher Analytics, Referral Program |
-| `Merged-Teacher-Money.html` | 9 | 36 | Teacher Income, Teacher Earnings Calculator, InstaPay Uploaded Receipts, InstaPay Batch List, InstaPay Fee Total, Active Balance, Send Credit, Balance History, Teacher Billing |
-| `Merged-Teacher-Setup.html` | 2 | 8 | Teacher Settings, Teacher Centers |
+| `Merged-Teacher-Money.html` | 9 | 34 | Teacher Income, Teacher Earnings Calculator, InstaPay Uploaded Receipts, InstaPay Batch List, InstaPay Fee Total, Active Balance, Send Credit, Balance History, Teacher Billing |
+| `Merged-Teacher-Setup.html` | 2 | 6 | Teacher Settings, Teacher Centers |
 | `Merged-Teacher-Students.html` | 2 | 4 | Teacher Students, Teacher Student Detail |
 | `Merged-Teacher-WhatsApp.html` | 1 | 6 | Teacher WhatsApp |
 
