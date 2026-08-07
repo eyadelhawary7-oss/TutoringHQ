@@ -835,20 +835,62 @@ script.
 
 ---
 
-## 29. On a Friday the schedule is empty and gives no sign the week is not
+## 29. RETRACTED — the Friday empty state does signal the week's load, and I missed it by reading text
 
-Cairo Friday is `jsWeekday` 5. No slot in Test Center 333 runs Friday, so the default view on a Friday
-renders **"No sessions on this day"** — correct, and indistinguishable from a centre with no schedule
-at all.
+**This entry was wrong when first written and is kept as a correction rather than deleted, so it is
+not raised again from an old copy.**
 
-The empty state describes the selected day but says nothing about the week around it. An owner opening
-the app on the Egyptian weekend sees what looks like an empty product. A count on the day chips, or an
-empty state reading "No sessions Friday — 9 this week", removes the ambiguity at no cost.
+The claim was: on a Friday the schedule renders "No sessions on this day" and gives no indication the
+week has sessions. **False.** The day chips carry a dot per session. Counted from the rendered DOM,
+not by eye:
 
-Not a defect. Recording it because it is invisible from the code and only appears if the app is opened
-on the right day, which is how it was found.
+| Sat 1 | Sun 2 | Mon 3 | Tue 4 | Wed 5 | Thu 6 | Fri 7 |
+|---|---|---|---|---|---|---|
+| 0 | 2 | 2 | 2 | 2 | 1 | 0 |
 
-*Source: observed running the app locally, Friday 7 August 2026.*
+Nine dots against the nine live slots, correct day by day. `Merged-Center-Groups` frame 15 specifies
+exactly this — *"the day view now shows the week's load as dots under each"* — and the app implements
+it. There is no gap. An owner opening the app on a Friday sees two bare chips and five dotted ones.
+
+**Why it was got wrong, which is the part worth keeping.** The observation came from a text capture.
+`No sessions on this day` is the whole of the visible *text*, and the signal that contradicts it is
+**graphical** — it has no text node to capture, so a text-based read cannot see it and reports its
+absence as a finding. The seventh wrong-thing instance in this pass and the same shape as the rest:
+the measurement was sound, the thing measured was not the thing claimed.
+
+**The rule: a claim that a UI fails to indicate something cannot be made from extracted text.** Text
+proves what a screen *says*. Only a rendered image proves what it *shows*. Absence of a string is not
+absence of an affordance.
+
+*Source: retracted after rendering `/en/schedule` at 390px and counting dot elements in the DOM.
+7 August 2026.*
+
+---
+
+## 31. A detached clone's `innerText` returns hidden text, which silently inflates any rendered diff
+
+The first frame-capture harness read page text by cloning `document.body`, stripping nav and header
+from the clone, and taking `innerText`. **`innerText` is CSS-aware only for attached nodes.** A
+detached clone has no layout, so it degrades to something close to `textContent` and returns every
+hidden panel as though it were on screen.
+
+The effect was not subtle. `/en/schedule` came back carrying a **full week grid** — a time axis, every
+session, and the string *"Red outline marks a room clash · swipe for Fri–Sat"*. None of it was
+visible. The rendered page shows the Day view and the words "No sessions on this day". Had that
+capture been trusted, `Merged-Center-Groups` frame 17 (Week view) would have been recorded as
+**adopted, with matching legend copy**, on the strength of markup that no user can see.
+
+The fix is to mutate the live DOM instead of a clone — remove `nav, aside, header, script` from the
+attached document and read `document.body.innerText`, which keeps layout intact and hidden things
+hidden.
+
+**Every text-derived observation in this re-diff predating the fix is void** and was re-taken. The
+screenshots were never affected; they render what renders.
+
+*Source: `.rediff/cap.mjs`, caught by comparing its output against the screenshot of the same page.
+7 August 2026.*
+
+---
 
 ---
 
