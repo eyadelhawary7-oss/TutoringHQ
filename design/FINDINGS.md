@@ -1056,6 +1056,60 @@ absence of an affordance.
 
 ---
 
+## 43. The old model survives in 11 of 25 design files, and in two of them it is whole screens
+
+Entry 42 found dead-model notifications in one file. Sweeping all 25 for the removed vocabulary —
+platform payouts, identity verification, automatic collection, the 90/10 split, the 7.5% markup, the
+1.5% parent fee — shows it is not isolated.
+
+| File | Hits | Markers |
+|---|---|---|
+| `Merged-Admin-Money` **(protected)** | 16 | payout |
+| `Merged-Center-Money` **(protected)** | 8 | payout |
+| `Merged-Center-Home` | 7 | payout ×4, verify ×1, auto-collect ×2 |
+| `Merged-Teacher-Home` | 7 | payout |
+| `Merged-Teacher-Setup` | 6 | payout |
+| `Merged-Center-Setup` | 5 | payout |
+| `Merged-Teacher-Money` **(protected)** | 5 | payout |
+| `Merged-Design-Patterns` **(protected)** | 4 | payout ×3, split-90-10 ×1 |
+| `Merged-Public-Marketing` | 3 | payout |
+| `Merged-Admin-Accounts` | 2 | payout |
+| `Merged-Admin-Platform` | 2 | payout |
+
+**11 files of 25. 32 marker hits in non-protected files, 33 in protected ones.** These are raw
+marker counts, not verified-dead instances — "payout" is live for referral and staff payouts and dead
+only for tuition, so each hit needs its context. The ones checked so far are all genuinely dead:
+
+- **`Merged-Teacher-Home`** draws a complete payout ledger — *"Your balance 4,250 EGP · Available,
+  ready for your next payout"*, *"Pending 1,700 EGP · Next processed Thu"*, *"Recent payouts — Bank
+  payout 25/06/2026 · CIB ••4821 · 3,400 EGP Paid"*. **The platform holding a teacher balance and
+  remitting it to a bank account is the model's central deletion.**
+- **`Merged-Teacher-Setup`** gates collection on identity: *"when **verified** the collect toggle is
+  on and it becomes **Payout details** (where we send their money)"* and *"Collect payments for me —
+  On. **We invoice parents and process your payout** straight to your account."* Its own caption
+  admits *"the verified payout is draft, pending legal review."*
+- **`Merged-Center-Setup`** puts *"Verify to enable payouts"* on the welcome screen and *"Only the
+  owner can withdraw money or change the payout account"* on the team screen.
+
+### Why this changes the order of the work
+
+**These files cannot usefully be frame-diffed until they are swept.** Diffing `Merged-Teacher-Home`
+against the app would report its payout ledger as an unbuilt screen and its balance card as a missing
+feature — findings for a product that must not exist. The diff would generate work rather than
+measure it.
+
+`Merged-Teacher-Setup` is the sharpest case: identity verification and platform collection are not a
+section of that file, they are its premise. There is no partial edit; the screens need redrawing.
+
+Four of the eleven are **protected** (`Admin-Money`, `Center-Money`, `Teacher-Money`,
+`Design-Patterns`) and carry 33 of the 65 hits, `Admin-Money` alone holding 16. Those go to Eyad
+regardless.
+
+*Source: `.rediff/sweep.mjs` over `design/Merged-*.html`, plus context reads of the three largest
+non-protected files. 7 August 2026.*
+
+---
+
 ## 42. `Merged-Center-Home` notification frames still draw payouts, auto-collection and identity verification
 
 **The design set has not been fully swept for the old model.** Frames 3 (EN) and 4 (AR) of
