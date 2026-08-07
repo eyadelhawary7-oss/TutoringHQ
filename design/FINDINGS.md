@@ -1056,6 +1056,74 @@ absence of an affordance.
 
 ---
 
+## 47. The sweep classification was itself a survey, and executing it corrected it three times
+
+**Entry 46 read every hit in context and was right about every hit it read. It was incomplete about
+which hits existed** — because it inherited the marker list from entry 43's grep, and that grep did
+not look for the Arabic vocabulary. Executing the classification against the files found three things
+the classification does not contain, one of them a direct contradiction of entry 42.
+
+### The status carried into this session did not match the repository
+
+The brief said `Center-Setup` was **partial, with 2 hits left and "the other 8 elements" already
+handled by line removal**. `git log --oneline -3 -- design/Merged-Center-Setup.html` returns
+`cd92da4c Add files via upload` as its most recent commit: **the file had never been edited.**
+`git diff --stat c99e7b75 57930a88 -- design/Merged-*.html` shows PR #368 touched exactly three
+merged files — `Admin-Platform`, `Public-Legal`, `Public-Marketing` — and Center-Setup is not among
+them.
+
+So the "2 hits left" was a plan, not a state. All four Center-Setup items entry 46 lists were still
+present, plus the fifth below. **This is `CLAUDE.md` rule 4 in a new costume:** the rule says PR state
+comes from the PR and not from a status note, and the same holds for file state. A carried-forward
+progress marker is a claim about memory, and the file is the only thing that knows.
+
+### Three items the classification does not contain
+
+| Where | What | Why entry 46 missed it |
+|---|---|---|
+| `Center-Setup` screen 02, AR settings list | A row reading **`التحقق من الهوية`** — identity verification — with a shield-check badge. **The English row in the same slot, same icon, same badge markup, already reads `InstaPay account`** | The marker list was English-only. No English string in that row is dead, so no grep found it |
+| `Center-Setup` screen 10, lead | *"...flags every incoming receipt until it is confirmed, **the same rule as a payout destination**"* | A live sentence whose simile points at a deleted concept. Reads as product copy, not as residue |
+| `Center-Home` EN notification feed | The `Receipt uploaded` row is **the identity-verification row, retitled and not replaced** | Its title is on-model, so a title-based read clears it |
+
+### The third one contradicts entry 42, which called that row AR-only
+
+Entry 42 lists `تم تأكيد الهوية` under **"AR only"** and records the English as having dropped it.
+The English did not drop it. It kept the row and changed its title.
+
+**Established by two attributes that survive a retitle, not by reading the copy:**
+
+- **The icon.** Both rows carry `M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z` plus `M9 12l2 2 4-4` —
+  a shield with a check. It appears on **no other row in either feed.**
+- **The timestamp.** EN `5m`, AR `٥ د`. Both `unread`.
+
+Same icon, same age, same unread state. The English subtitle *"InstaPay collection is on"* is the
+verification row's *"payments and fee collection activated"* reworded, sitting under a new title.
+
+**This is entry 45 in the direction that catches you out.** Entry 42 was written while entry 40 had
+just established "English updated, Arabic stale", and it caught itself half-way — it recorded that the
+English was stale in three rows. It then classified this row as AR-only anyway, because the English
+title looked new. The prior was not wrong about the file; it was wrong about *one row*, and the row it
+was wrong about is the one whose English had been edited most.
+
+### What the drawing said about itself, and what it drew
+
+Counted from the markup, both feeds, before any edit here:
+
+| | Rows | Unread | Header claims |
+|---|---|---|---|
+| EN | 13 | 6 | **3 unread** |
+| AR | 10 | 4 | **٣ غير مقروءة** |
+
+Three separate disagreements: each header against its own list, and the two locales against each
+other. The header mismatch **pre-dates this session** — verified by running the same count against
+`git show HEAD:design/Merged-Center-Home.html`. Both feeds now hold **10 rows and 6 unread** in the
+same order, and both headers read 6.
+
+*Source: `sweepctx.mjs` over both files, `git log` / `git diff --stat` against #368, icon and
+timestamp comparison across the two notification feeds, row counts before and after. 7 August 2026.*
+
+---
+
 ## 46. Sweep classification — every residue hit in the seven files, checked in context
 
 **Raw marker counts were never the work; this is.** Entry 43 reported 32 hits across seven
