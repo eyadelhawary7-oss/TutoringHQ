@@ -1056,6 +1056,41 @@ absence of an affordance.
 
 ---
 
+## 45. Inherited credibility — a claim that fits a confirmed pattern is believed without earning it
+
+**A distinct failure from measuring the wrong thing, and it needs its own name.**
+
+Entries 26, 31 and 34 are all one fault: *the instrument measured something other than what was
+claimed* — a wrapper instead of a frame, a detached clone instead of a rendered page, a fanned-out
+join instead of a row set. Each was caught by checking the instrument.
+
+This is different. **Here the instrument is fine and the reasoning is fine. What fails is the prior.**
+A pattern that was just confirmed makes the next observation feel already-verified, so it is not
+checked. Three instances in one day, all mine:
+
+| Observation | Why it felt safe | What it actually was |
+|---|---|---|
+| `Waiting 0` beside `Waitlist · 1` (entry 38) | Entry 33 had just confirmed "summary disagrees with list" as real in this codebase | **Not a defect.** Both read the same `waitlist.length`; re-tested at three settle times, both read 1 |
+| `Merged-Center-Home`: "English updated, Arabic stale" (entry 42) | Entry 40 had just confirmed exactly that pattern in the legal corpus | **Half wrong.** The English is stale too, in three rows. The real fault was bigger and differently shaped |
+| `/teacher/students` showing `18,600 EGP` — the design frame's exact total | `README.md` warns against fabricated data, and a design-matching total looks like copied mock content | **Not fabricated.** `dashboard/page.tsx:324` computes it from real payments; the seed mirrors the design |
+
+In each case the observation was **plausible, consistent with verified fact, and wrong** — and in each
+case a single cheap check settled it. The cost of skipping the check is not a wrong measurement, it is
+**a false entry that a future reader cannot reproduce**, sitting beside true ones and borrowing their
+credibility in turn.
+
+**The rule: a pattern raises how plausible the next instance feels and changes nothing about whether
+it is true.** Treat the second and third instance of a known pattern as *less* verified than the
+first, not more — the first earned its evidence, the later ones are inheriting it.
+
+The practical tell is the phrase "this is another one of those." When that sentence forms, the check
+has already been skipped in thought and only needs to be skipped in fact.
+
+*Source: three near-misses across `Merged-Center-Groups`, `Merged-Center-Home` and `/teacher/students`,
+7 August 2026. Named at Eyad's instruction.*
+
+---
+
 ## 44. Two money surfaces read two different confirmation columns
 
 Entry 35 recorded that `payments.status` and `payments.confirmed` encode the same fact and already
