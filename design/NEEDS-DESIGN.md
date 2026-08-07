@@ -49,9 +49,11 @@ public pay-by-link page that does not exist yet.
 | 15 | `/{locale}/admin/plan-requests` | Queue of center plan-change requests | Internal | **`money` `state`** |
 | 16 | `/{locale}/admin/demo-requests` | Inbound demo-request queue — pending / contacted / approved / rejected | Internal, sales | `layout` |
 
-**#12 is easy to confuse with `Merged-Admin-Money` §02 Admin Settlement.** That design is the
-biweekly *provider* payout run. This route is *our own staff's salaries*. Different money, different
-audience.
+**#12 used to be easy to confuse with `Merged-Admin-Money` §02 Admin Settlement.** That design was
+the biweekly *provider* payout run, and it was removed on 7 August 2026 because the platform holds
+no tuition and has nothing to settle. **This route survives it**: it is *our own staff's salaries*,
+which the platform does pay. The section number stays vacant in that file so this reference cannot
+quietly repoint at another screen.
 
 **#16 is the receiving end of the lead-capture form** (`Merged-Public-Marketing` §04, feature A1).
 Designing one without the other leaves the funnel half-drawn.
