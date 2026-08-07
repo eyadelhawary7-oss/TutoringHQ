@@ -1062,6 +1062,55 @@ absence of an affordance.
 
 ---
 
+## 53. The three held payout PRs all serve referral credit, and all three live
+
+Triaged 7 August 2026 against the test Eyad set for the `Merged-Admin-Money` `WD-` rows: **if the
+machinery serves referral credit it lives; if it serves tuition payouts it dies.** Applied to
+`#332`, `#334` and `#335`, which were held since 4 August against a spec — `design/PAYOUT-SYSTEM-SPEC.md`
+— that has since been deleted from the repository.
+
+**The deleted spec is not the test.** A file being removed says the document is stale, not that every
+line of code written against it is. Judging the PRs by their provenance would have killed three
+working branches; judging them by what they touch does not.
+
+### What each one actually reads and writes
+
+| PR | Touches | Verdict |
+|---|---|---|
+| **#334** payout approval path | `payout_requests` — and `src/app/api/referrals/payout/route.ts` reads `referral_commissions` at `:89` then writes `payout_requests` at `:125` | **referral. LIVES** |
+| **#332** withdrawal approval race | `withdrawal_requests`, `reserve_credits_atomic` / `cancel_reservation_atomic` against `centers.credit_balance` and `credit_reserved` | **referral credit. LIVES** |
+| **#335** stale reservation sweep | the same `withdrawal_requests` rows and the same `credit_reserved` counter | **referral credit. LIVES** |
+
+**Not one of the three reads `payments`, `transactions`, `lesson_fee`, any settlement column, or any
+Paymob split field.** `src/app/api/billing/withdrawal/route.ts` — which is on master today, not
+introduced by any of these branches — selects exactly `id, instapay_number, credit_balance,
+credit_reserved`. The destination is the provider's own InstaPay account and the source is a credit
+balance. Tuition is nowhere in it.
+
+So the vocabulary was the whole problem. **"Payout" and "withdrawal" name two unrelated mechanisms**
+— one dead, one live — and three branches were held for three days because the words matched the
+dead one. The same collision produced the `Merged-Admin-Accounts` false positive in entry 46 and the
+`WD-` question in the Admin-Money PR.
+
+### One thing that does need resolving, and it is not the code
+
+`NEW-MODEL.md` says referral credit **"cannot be withdrawn as cash"**, and lists under *Still open*:
+*"Whether referral credit can be cashed out. With the tax advisor."*
+
+These three PRs build a cash withdrawal path for exactly that credit, and the ruling that referral
+withdrawal is live is what makes them live. **The code and the model document disagree, and one of
+them has to move.** Recorded rather than resolved, because it is a tax question and not an
+engineering one. Nothing is exposed meanwhile: `withdrawal_requests` holds 0 rows and
+`credit_reserved` is 0.00 on both centres.
+
+**None was merged.** Each still carries its own by-hand migration and, for `#335`, a hard dependency
+on `#332` landing first.
+
+*Source: `api/referrals/payout/route.ts`, `api/billing/withdrawal/route.ts` on master, the changed-file
+lists of all three PRs, and `design/NEW-MODEL.md`. 7 August 2026.*
+
+---
+
 ## 52. The safe proposal directory already existed, and entry 39 concluded the opposite
 
 **Entry 39 is wrong in its conclusion and right in everything it measured.** It established that a
@@ -1142,10 +1191,33 @@ enforced. This one is the reverse: enforced in production, recorded nowhere, so 
 from the same stale source, which is the shape entry 40 named — *"two wrongs agreeing is what a
 parity check reports as correct."*
 
-`PROPOSED_record_transactions_method_narrowing.sql` reconciles it. Applying it to production is a
-no-op; its purpose is to make a rebuild match. **It has to move together with a
-`db/schema.snapshot` regeneration**, or the next PR fails schema-drift for a reason that looks
-unrelated.
+### RESOLVED, and the cause was the tool rather than the hand
+
+Eyad, 7 August 2026: *"I applied it through the Supabase MCP tool, which wrote it into production's
+ledger as `20260807185735_narrow_tuition_payment_methods` but left the repo with no file."*
+
+**Confirmed against `supabase_migrations.schema_migrations`:** version `20260807185735` is present,
+1 row of 268 — and **`20260806120000` is absent, 0 rows.** So the file that has sat in
+`supabase/migrations/` since 6 August was never applied at all, and the DDL it describes reached
+production by a different route that recorded a different version. Entry 21 warned that a filename is
+not its recorded version; this is the sharper case — **a recorded version with no filename anywhere.**
+
+`supabase/migrations/20260807185735_narrow_tuition_payment_methods.sql` now records all three
+constraints, and `db/schema.snapshot` was regenerated to match.
+
+**The snapshot was regenerated, not hand-edited, and the harness was calibrated before it was
+trusted.** CI runs `postgres:17`; PostgreSQL 17 was installed locally to match, and
+`scripts/schema/rebuild.sh` was first run against the *unchanged* migrations — it reproduced the
+committed snapshot **byte-identically, 6484 lines**. Only then was the new migration added. The
+rebuild then differed in exactly **one line**, `transactions_method_chk`, and each of the three
+constraint definitions was compared mechanically against production's `pg_get_constraintdef`: all
+three **MATCH**. Each CHECK body in the migration is production's own `pg_get_expr` output
+transcribed, so the rebuild normalises to what production holds rather than to something merely
+equivalent.
+
+That calibration step is the point worth keeping. A snapshot regenerated by an uncalibrated harness
+is a second artefact of unknown provenance being compared against the first — which is the very
+failure this entry records, committed again one layer up.
 
 **`Merged-Admin-Money` §04's `WD-` rows and `Withdrawals` filter are referral payouts and stay.**
 Ruled 7 August 2026. Withdrawal of referral credit is live; tuition payouts are dead. This is the
@@ -1771,6 +1843,28 @@ Opening PR #368 demonstrated both halves in under a minute:
 Only production apply is manual, exactly as `CLAUDE.md` rule 5 states. Everything short of production
 treats a proposal as a migration, because it *is* one — it sits in the migrations directory and the
 tooling reads the directory, not the name.
+
+> ### CORRECTED IN PLACE, 7 August 2026 — the paragraph below is wrong, and it is kept because how
+> ### it went wrong is the useful part.
+>
+> **`supabase/migrations_proposed/` already existed when this was written**, holding
+> `PROPOSED_centers_address.sql` and `PROPOSED_drop_referral_reward_records.sql`, the second opening
+> *"deliberately OUTSIDE supabase/migrations/ so that no tool, branch preview, or CI step can pick it
+> up."* Verified: `schema-drift.yml` triggers on `supabase/migrations/**` only, and nothing in
+> `.github/` or `supabase/config.toml` names `migrations_proposed`.
+>
+> So the sibling directory this entry proposed as the hypothetical remedy **was the standing
+> convention, one directory across.** The narrow-tuition proposal was applied to the preview branch
+> and rebuilt by CI because it was in the wrong folder — not because the repo had chosen to accept
+> that.
+>
+> **The mechanism of the error: a convention was inferred from two examples and confirmed by not
+> looking for a third.** Two proposals sat in `migrations/`, and that was read as the pattern. The
+> counter-example was two directories deep in the same tree and one `ls` away. This is the shape of
+> entry 45 — a conclusion that fits what has just been observed feels settled, so the cheap check that
+> would overturn it never gets run — applied to a *convention* rather than to a measurement. **An
+> absence is the hardest thing to verify, and this entry never tried: it concluded a directory did not
+> exist without looking for one.**
 
 **The repo's actual convention is to accept this.** Two earlier proposals already live there —
 `20260804140000_verification_records_proposal.sql` and `20260804150000_PROPOSAL_payout_system_1_ledger.sql`

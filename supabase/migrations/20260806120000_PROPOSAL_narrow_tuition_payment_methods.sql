@@ -1,19 +1,22 @@
--- APPLIED TO PRODUCTION BY HAND, 7 August 2026, after the eight code sites
--- merged. Verified the same day by reading pg_constraint back:
---   payments_method_check                        cash | instapay
---   teacher_profiles_default_payment_method_chk  NULL | cash | instapay
+-- SUPERSEDED BY 20260807185735_narrow_tuition_payment_methods.sql. THIS FILE
+-- WAS NEVER APPLIED, AND ITS VERSION IS NOT IN THE PRODUCTION LEDGER.
 --
--- A THIRD constraint was narrowed in the same pass and IS NOT IN THIS FILE:
--- transactions_method_chk is now cash | instapay in production. Nothing in
--- supabase/migrations/ produces that, so a rebuild from migrations still yields
--- the old wide set and db/schema.snapshot still records it. See
--- supabase/migrations_proposed/PROPOSED_record_transactions_method_narrowing.sql
--- and FINDINGS entry 52. Do not read this file as the whole of what production
--- enforces.
+-- What actually happened on 7 August 2026, verified against
+-- supabase_migrations.schema_migrations the same day: the narrowing went in
+-- through the Supabase MCP tool, which recorded version `20260807185735`
+-- (1 row of 268). **`20260806120000` is absent — 0 rows.** So the DDL this file
+-- describes is in production, and this file is not what put it there.
 --
--- The header below is kept as written, because the ordering condition it
--- imposed is the reason the apply was safe and is worth reading before the next
--- constraint change.
+-- That sibling file narrows all THREE constraints, including
+-- transactions_method_chk, which this one deliberately spared on a premise that
+-- turned out to be wrong (see FINDINGS entry 49). Read the sibling for what
+-- production enforces. Read this one for the ORDERING CONDITION below, which is
+-- why the apply was safe and is the part worth carrying to the next constraint
+-- change.
+--
+-- Kept rather than deleted because FINDINGS entries 39, 49 and 52 cite it, and
+-- because a rebuild applying it before its successor is harmless: both are
+-- DROP IF EXISTS + ADD, and the later file wins.
 --
 -- PROPOSAL — NOT APPLIED. Eyad applies this by hand.
 --
