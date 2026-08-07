@@ -1028,6 +1028,51 @@ absence of an affordance.
 
 ---
 
+## 36. Pluralisation is a two-key idiom, and Arabic has six plural forms — the scheme cannot reach the language
+
+The three plural bugs found in the rendered diff — `across 1 branches`, `في ١ فروع`, `منذ ٨ ساعة` —
+are not three typos. They are the ceiling of the scheme.
+
+Measured across both message files (8,518 keys each, identical count):
+
+| | EN | AR |
+|---|---|---|
+| Strings interpolating a count | **263** | **261** |
+| …using ICU `plural,` | **9** | **9** |
+| Keys carrying a manual variant suffix (`…One`, `…Plural`, `…_other`) | **8** | **8** |
+
+So the overwhelming majority of count-bearing strings have **no plural handling of any kind**, and the
+handful that do use a hand-rolled two-key pattern: `pendingClassesCount` beside
+`pendingClassesCountOne`, `cardOrderCartSelected` beside `cardOrderCartSelectedPlural`.
+
+**A two-key scheme is sufficient for English and structurally cannot serve Arabic.** Arabic has six
+CLDR plural categories — `zero`, `one`, `two`, `few`, `many`, `other` — and the noun inflects
+differently in each. `منذ ٨ ساعة` is wrong because 3–10 takes `few` (`ساعات`); 11 and above takes
+`many` (`ساعة`); two takes a dual form that no key in this codebase expresses at all. **A singular
+key and a plural key cannot encode that no matter how carefully each is written.**
+
+The fix is not to correct the three observed strings. It is ICU `plural` with Arabic categories, at
+which point `next-intl` selects the right form from the number and the three bugs disappear together
+with the ones nobody has rendered yet.
+
+### The gate cannot catch any of this
+
+`scripts/check-i18n.ts` flattens both files to **key sets** and compares them — `missingEn`,
+`missingAr`, `onlyEn`, `onlyAr`. It never reads a string's *value*. So a translation that drops a
+placeholder, inflects a noun wrongly, or hardcodes a quantity **passes the build gate**, which is why
+these reached a rendered screen.
+
+Placeholder drift specifically: exactly **2** keys present in both files carry a `{count}` in English
+and none in Arabic — `students.cardOrderCartSelected` and
+`teacherPortal.studentsList.pendingClassesCountOne`. **Both are correct**, because each is the "one"
+half of a manual pair and Arabic's `طالب واحد` / `حصة واحدة` already carry the quantity as a word.
+Recorded because the automated check flags them and a future reader will otherwise re-raise them:
+**placeholder drift is a signal, not a verdict.**
+
+*Source: `messages/en.json`, `messages/ar.json`, `scripts/check-i18n.ts`, counted 7 August 2026.*
+
+---
+
 ## 35. `payments.status` and `payments.confirmed` encode the same fact and already disagree
 
 Two columns carry confirmation state. `status` is text (`pending` / `paid` / `confirmed`) and
