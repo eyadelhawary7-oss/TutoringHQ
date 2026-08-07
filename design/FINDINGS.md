@@ -1056,6 +1056,42 @@ absence of an affordance.
 
 ---
 
+## 48. `Merged-Teacher-Setup` offered InstaPay twice, one box ticked and one not, in both locales
+
+Found while redrawing the file, not by any marker — no dead word appears in it.
+
+The **Methods you accept** checklist on Teacher Settings read `Cash ✓ · InstaPay ✓ · InstaPay ☐ ·
+Other ☐`. Two rows, same label, different state, **in the English frame and the Arabic frame
+alike** (`إنستاباي ✓` then `إنستاباي ☐`). The likeliest history is that an earlier sweep renamed a
+dead wallet method — Vodafone Cash, Fawry or Orange — to InstaPay and produced a duplicate rather
+than a deletion, which is what a rename does when the real edit was a removal.
+
+**Why no sweep would ever have found it.** Every marker in the residue vocabulary describes the *old*
+model. A row that has already been renamed to on-model text is invisible to all of them, and the
+defect it leaves — an unchecked duplicate of a checked option — reads as a design decision. The same
+shape appeared in `Merged-Center-Home`, where the identity-verification notification was retitled
+`Receipt uploaded` and kept its shield icon (entry 47). **Twice now, a rename has been the thing that
+hid a deletion.**
+
+Both files also carried `Default method: Cash` beside it, which contradicts `NEW-MODEL`: InstaPay is
+the default for every student once the account is configured, and there is no picker. Two controls
+for one decision, disagreeing.
+
+Now `Cash · InstaPay` only, with the one-way rule in place of the default-method field.
+
+### Recorded and not fixed
+
+`Merged-Teacher-Home` section 03 is the **center's** Active Balance screen, unedited: it names
+`Nile Prep Academy` in the topbar and its masthead reads *"so a center with enough credit pays
+nothing"*. `NEW-FEATURES` §7 lists the balance under both Center-Home and Teacher-Home, so the screen
+belongs in this file; the sample data does not. Left alone because it is a copy-paste artefact rather
+than dead-model residue, and folding it into a sweep PR would hide it.
+
+*Source: `Merged-Teacher-Setup.html` methods checklist in both frames, `Merged-Teacher-Home.html`
+section 03. 7 August 2026.*
+
+---
+
 ## 47. The sweep classification was itself a survey, and executing it corrected it three times
 
 **Entry 46 read every hit in context and was right about every hit it read. It was incomplete about
