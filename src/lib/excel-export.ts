@@ -49,15 +49,10 @@ interface StudentExport {
   last_payment_method?: string | null;
 }
 
+// Two tuition methods only — design/NEW-MODEL.md.
 const METHOD_LABELS: Record<string, string> = {
   cash: 'كاش',
   instapay: 'إنستاباي',
-  vodafone_cash: 'فودافون كاش',
-  vodacash: 'فودافون كاش',
-  orange: 'أورانج',
-  fawry: 'فوري',
-  bank_transfer: 'تحويل بنكي',
-  bank: 'تحويل بنكي',
 };
 
 export async function exportToExcel(students: StudentExport[], filename?: string): Promise<void> {

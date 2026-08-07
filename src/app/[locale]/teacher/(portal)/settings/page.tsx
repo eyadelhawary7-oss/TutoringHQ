@@ -38,7 +38,11 @@ type SubscriptionStatus = {
 
 const SIX_DIGITS = /^\d{6}$/;
 
-const PAYMENT_METHODS = ['cash', 'instapay', 'vodafone_cash', 'other'] as const;
+// Two tuition methods only — design/NEW-MODEL.md. These feed
+// teacher_profiles.default_payment_method, which the tuition-narrowing
+// migration constrains to cash | instapay | NULL, so anything wider here
+// becomes a save that fails at the database.
+const PAYMENT_METHODS = ['cash', 'instapay'] as const;
 type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
 type PaymentDetails = {

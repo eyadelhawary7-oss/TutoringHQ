@@ -44,15 +44,16 @@ const STATUS_FILTER_KEYS: Record<ListStatusFilter, FilterPillKey> = {
   month: 'filter_month',
 };
 
-type MethodPillFilter = 'all' | 'cash' | 'instapay' | 'vodafone_cash' | 'orange_cash' | 'fawry' | 'bank_transfer';
+// Tuition is cash or InstaPay only. design/NEW-MODEL.md, "What died": Fawry,
+// Vodafone Cash and card ceased to be tuition methods when InstaPay replaced
+// the gateway. Paymob still offers a Fawry reference for a centre paying its
+// OWN subscription — that is the platform charging its customer, not a parent
+// paying a centre, and it is not this screen.
+type MethodPillFilter = 'all' | 'cash' | 'instapay';
 
 const METHOD_CONFIG: Record<string, { color: string; bg: string }> = {
   cash: { color: '#10b981', bg: 'rgba(16,185,129,0.12)' },
   instapay: { color: '#6366f1', bg: 'rgba(99,102,241,0.12)' },
-  vodafone_cash: { color: '#ef4444', bg: 'rgba(239,68,68,0.12)' },
-  orange_cash: { color: '#f97316', bg: 'rgba(249,115,22,0.12)' },
-  fawry: { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)' },
-  bank_transfer: { color: '#3b82f6', bg: 'rgba(59,130,246,0.12)' },
 };
 
 function getTodayISO() {
@@ -62,40 +63,24 @@ function getTodayISO() {
 
 function methodConfigKey(method: string): keyof typeof METHOD_CONFIG | null {
   const m = (method ?? '').toLowerCase();
-  if (m === 'vodacash' || m === 'vodafone_cash') return 'vodafone_cash';
-  if (m === 'orange' || m === 'orange_cash') return 'orange_cash';
-  if (m === 'bank' || m === 'bank_transfer') return 'bank_transfer';
   if (m === 'cash' || m === 'نقدي' || m === 'كاش') return 'cash';
   if (m === 'instapay') return 'instapay';
-  if (m === 'fawry') return 'fawry';
+  // Anything else renders in the neutral grey at the call site rather than
+  // borrowing a colour that means something.
   return null;
 }
 
-type PaymentsMethodKey =
-  | 'method_cash'
-  | 'method_instapay'
-  | 'method_vodafone_cash'
-  | 'method_orange_cash'
-  | 'method_fawry'
-  | 'method_bank_transfer';
+type PaymentsMethodKey = 'method_cash' | 'method_instapay';
 
 function methodTpKey(method: string): PaymentsMethodKey {
   const m = (method ?? '').toLowerCase();
-  if (m === 'vodacash' || m === 'vodafone_cash') return 'method_vodafone_cash';
-  if (m === 'orange' || m === 'orange_cash') return 'method_orange_cash';
-  if (m === 'bank' || m === 'bank_transfer') return 'method_bank_transfer';
   if (m === 'instapay') return 'method_instapay';
-  if (m === 'fawry') return 'method_fawry';
   return 'method_cash';
 }
 
 function paymentMatchesMethodFilter(pMethod: string, filter: MethodPillFilter): boolean {
   if (filter === 'all') return true;
-  const pm = (pMethod ?? '').toLowerCase();
-  if (filter === 'vodafone_cash') return pm === 'vodacash' || pm === 'vodafone_cash';
-  if (filter === 'orange_cash') return pm === 'orange' || pm === 'orange_cash';
-  if (filter === 'bank_transfer') return pm === 'bank' || pm === 'bank_transfer';
-  return pm === filter;
+  return (pMethod ?? '').toLowerCase() === filter;
 }
 
 function isPaymentConfirmed(p: PaymentRecord): boolean {
@@ -159,7 +144,10 @@ export default function PaymentsPage() {
   const [showCollectModal, setShowCollectModal] = useState(false);
   const [collectStudentId, setCollectStudentId] = useState('');
   const [collectAmount, setCollectAmount] = useState('');
-  const [collectMethod, setCollectMethod] = useState<'cash' | 'instapay' | 'bank_transfer'>('cash');
+  // 'bank_transfer' used to be offered here and could never be recorded: the
+  // server allow-list accepted it and payments_method_check does not have that
+  // spelling, so the insert 500'd every time. Two methods, one spelling each.
+  const [collectMethod, setCollectMethod] = useState<'cash' | 'instapay'>('cash');
   const [collectSubmitting, setCollectSubmitting] = useState(false);
 
   const loadData = useCallback(async () => {
@@ -604,7 +592,7 @@ export default function PaymentsPage() {
 
         <div className="flex flex-wrap items-center gap-2 px-4 pb-3 max-w-3xl mx-auto w-full">
           <span className="text-xs font-medium text-[var(--color-text-secondary)] me-1">{tp('method')}</span>
-          {(['all', 'cash', 'instapay', 'vodafone_cash', 'orange_cash', 'fawry', 'bank_transfer'] as const).map((m) => {
+          {(['all', 'cash', 'instapay'] as const).map((m) => {
             const cfg = METHOD_CONFIG[m];
             const isActive = methodFilter === m;
             return (
@@ -859,7 +847,7 @@ export default function PaymentsPage() {
               <div>
                 <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">{tp('paymentMethod')}</label>
                 <div className="flex flex-wrap gap-2">
-                  {(['cash', 'instapay', 'bank_transfer'] as const).map((m) => (
+                  {(['cash', 'instapay'] as const).map((m) => (
                     <button
                       key={m}
                       type="button"

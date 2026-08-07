@@ -2,8 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { requireTeacherAuth } from '@/lib/centerAuth';
 
-/** Payment methods the teacher can accept (parent pays the teacher directly). */
-const PAYMENT_METHODS = ['cash', 'instapay', 'vodafone_cash', 'other'] as const;
+/**
+ * Payment methods the teacher can accept (parent pays the teacher directly).
+ * Two only — design/NEW-MODEL.md. This gates writes to
+ * teacher_profiles.default_payment_method, which the tuition-narrowing
+ * migration constrains to cash | instapay | NULL.
+ */
+const PAYMENT_METHODS = ['cash', 'instapay'] as const;
 type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
 function isPaymentMethod(v: unknown): v is PaymentMethod {

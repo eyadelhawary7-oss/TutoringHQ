@@ -3,16 +3,19 @@ import { validateCSRFRequest } from '@/lib/csrf';
 import { requireCenterAuth } from '@/lib/centerAuth';
 import { parseBodyWithLimit } from '@/lib/validate';
 
-// Allowed collection methods (mirrors the client method picker). Anything else
-// is rejected server-side rather than trusted from the request body.
-const ALLOWED_METHODS = new Set([
-  'cash',
-  'instapay',
-  'vodafone_cash',
-  'orange_cash',
-  'fawry',
-  'bank_transfer',
-]);
+// Allowed collection methods. Anything else is rejected server-side rather than
+// trusted from the request body.
+//
+// These MUST be spellings `payments_method_check` accepts, not merely a mirror
+// of the client picker. This set previously held 'vodafone_cash', 'orange_cash'
+// and 'bank_transfer', none of which the constraint has ever permitted — it
+// spells them 'vodacash', 'orange' and 'bank'. So three of the six passed the
+// gate and were then rejected by the database, and 'bank_transfer' was the one
+// the collect modal actually offered: every Bank Transfer collection returned
+// 500 with nothing on screen saying why.
+//
+// Two tuition methods, one spelling each — design/NEW-MODEL.md.
+const ALLOWED_METHODS = new Set(['cash', 'instapay']);
 
 /**
  * Record (collect) a student payment.

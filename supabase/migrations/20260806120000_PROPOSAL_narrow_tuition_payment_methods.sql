@@ -14,21 +14,41 @@
 --   "Fawry, Vodafone Cash, card as tuition methods — InstaPay covers wallets.
 --    Two tuition methods only."
 --
--- SAFETY, verified against the live catalog on 6 August 2026:
---   payments                                 0 rows
---   teacher_profiles                         3 rows, default_payment_method NULL in all 3,
---                                            accepted_methods empty array in all 3
---   attendance_scans                         3 rows, payment_method NULL in all 3
+-- SAFETY. RE-RUN against the live catalog on 7 August 2026, because the block
+-- below was written on 6 August and one line of it had already gone stale --
+-- it said "payments 0 rows", and payments now holds 30. Still safe, but the
+-- number was doing the reassuring rather than the checking:
+--   payments                                 30 rows: 19 'cash', 11 'instapay'
+--   teacher_profiles                         3 rows, default_payment_method NULL in all 3
 --   transactions                             3 rows, method: 1 'cash', 2 NULL
---   invoices                                 2 rows, payment_method NULL
---   renewal_history, payout_requests         0 rows
--- No row anywhere uses vodacash, vodafone_cash, orange, fawry or bank.
+-- No row uses vodacash, vodafone_cash, orange, fawry or bank.
 -- Nothing is rewritten and no backfill is required.
+-- Re-run before applying. A count in a comment is not a measurement, it is a
+-- record of one, and nothing fails when it drifts.
 --
--- WHY TWO CONSTRAINTS AND NOT THREE:
--- transactions_method_chk is deliberately untouched. It governs the platform
--- charging its own customers through Paymob, where card, wallet, apple_pay and
--- google_pay are legitimate. That is not tuition.
+-- WHY TWO CONSTRAINTS AND NOT THREE -- THE ORIGINAL REASON WAS WRONG:
+--
+-- This file previously said transactions_method_chk "governs the platform
+-- charging its own customers through Paymob ... That is not tuition."
+-- Checked against the catalog on 7 August 2026, that is not what the table is.
+-- public.transactions carries student_id, group_id, teacher_id, lesson_fee,
+-- payer_type, payer_phone, teacher_net and snap_teacher_pct, and almost every
+-- one of its readers sits under src/app/api/teacher/private/*. It is the
+-- TEACHER PRIVATE-TUITION LEDGER -- a student paying a teacher for a lesson --
+-- and it is therefore squarely tuition.
+--
+-- Its constraint still admits card, wallet, apple_pay, google_pay,
+-- vodafone_cash and other. Under design/NEW-MODEL.md the first four died with
+-- the gateway and vodafone_cash died with the wallets.
+--
+-- It is still NOT narrowed here, and now for a stated reason rather than a
+-- mistaken one: the table also carries customer_commission_amt,
+-- teacher_commission_amt, platform_gross, snap_customer_pct, settlement_status
+-- and paymob_split_ref -- the 90/10 split and platform settlement that the new
+-- model deletes outright. Narrowing one column of a table whose shape is
+-- pending a larger removal would settle the small question and leave the big
+-- one open. It needs Eyad's decision on the table, not a constraint edit.
+-- Recorded in design/FINDINGS.md entry 49.
 --
 -- A NOTE ON SPELLING, because it caused a real bug:
 -- payments spells it 'vodacash'; teacher_profiles and transactions spell it
@@ -83,10 +103,30 @@ NOTIFY pgrst, 'reload schema';
 --     that is built, not before the shape is settled.
 --   - teacher_profiles.accepted_methods (text[]) has NO constraint. Empty in all
 --     three live rows. Constraining array membership is a different exercise.
--- THE CODE PR THAT MUST MERGE FIRST, five sites, all still offering six methods:
---   src/lib/validations.ts:90                        the Zod enum
+-- THE CODE PR THAT MUST MERGE FIRST. The list below said five sites; it was
+-- eight. DONE and merged as of 7 August 2026 -- this file is now clear to
+-- apply. The five originally named:
+--   src/lib/validations.ts                           the Zod enum
 --   src/app/[locale]/payments/page.tsx               METHOD_CONFIG + MethodPillFilter
 --   src/components/ScanResultScreen.tsx              PAYMENT_METHODS buttons
 --   src/components/shared/MethodBadge.tsx            label + colour maps
 --   src/lib/excel-export.ts                          Arabic method labels
--- Narrow each to cash and instapay, merge, then apply this file.
+-- and three the list did not have, each gated by a constraint THIS FILE
+-- narrows, so each would have broken on apply:
+--   src/app/api/payments/collect/route.ts            ALLOWED_METHODS. The server
+--       allow-list, and the one that decides what reaches payments.method. It
+--       held 'vodafone_cash', 'orange_cash' and 'bank_transfer' -- three
+--       spellings payments_method_check has NEVER accepted (it spells them
+--       'vodacash', 'orange', 'bank'). So they passed the gate and the database
+--       rejected them. 'bank_transfer' was the one the collect modal offered,
+--       so every Bank Transfer collection 500'd. Same spelling split as the
+--       ScanResultScreen bug described above, one layer further in.
+--   src/app/[locale]/teacher/(portal)/settings/page.tsx  PAYMENT_METHODS
+--   src/app/api/teacher/profile/route.ts                 PAYMENT_METHODS
+--       Both write teacher_profiles.default_payment_method, which constraint 2
+--       below narrows. Both offered 'vodafone_cash' and 'other'.
+--
+-- NOT narrowed, and deliberately: the teacher private-tuition surfaces that
+-- write transactions.method (api/teacher/private/*, IncomeView, the session
+-- mark-paid buttons). They follow the transactions decision above, not this
+-- migration.
