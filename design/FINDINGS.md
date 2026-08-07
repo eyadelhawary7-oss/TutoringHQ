@@ -696,6 +696,37 @@ per-file question.
 
 ---
 
+---
+
+## 26. Count `class="phone"`. Two people measured the wrapper on the same day
+
+**The fifth check-measuring-the-wrong-thing in this pass, and the first that happened to two people
+independently, in the same file set, within hours.**
+
+| Who | Counted | Lost | Why |
+|---|---|---|---|
+| Eyad | `class="cap"` | **151 of 503** | The older files carry no caption element at all. `Center-Groups` and `Center-Students` have **zero** `class="cap"` between them |
+| This session | `class="frame"` | **8 of 503** | `Merged-Public-Marketing` nests **12** `class="phone"` inside a single `class="phones"` container and uses only 4 `.frame` wrappers |
+
+Both counts were of a **wrapper** that usually accompanies a frame rather than of the frame itself.
+Both were wrong in the same direction, undercounting, and both looked plausible because the wrapper
+is present most of the time. Neither error was detectable from its own output: 276 and 352 are both
+believable frame totals. **Mine only surfaced because `Public-Marketing` produced `EN = -2`, an
+impossible number** — the arithmetic broke before the assumption did.
+
+**The rule: `class="phone"` is the frame. Count that and nothing else.** It is the one element
+present exactly once per frame in all 25 files, verified. `.frame`, `.cap` and `.ar` are all optional
+decoration that varies by file age.
+
+**The generalisable part**, which is why this is here and not a footnote: when a count feels routine,
+the thing being counted is usually a proxy for the thing that matters, and a proxy that holds in most
+files is the hardest kind to catch. An impossible intermediate value is worth more than a plausible
+total.
+
+*Source: re-diff frame enumeration. Verified across all 25 files 6 August 2026.*
+
+---
+
 # Six the ledger called open and verification closed
 
 **Recorded so nobody re-opens them from an old copy of a deleted document.** Each was carried as an
