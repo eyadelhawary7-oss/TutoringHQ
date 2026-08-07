@@ -1,3 +1,20 @@
+-- APPLIED TO PRODUCTION BY HAND, 7 August 2026, after the eight code sites
+-- merged. Verified the same day by reading pg_constraint back:
+--   payments_method_check                        cash | instapay
+--   teacher_profiles_default_payment_method_chk  NULL | cash | instapay
+--
+-- A THIRD constraint was narrowed in the same pass and IS NOT IN THIS FILE:
+-- transactions_method_chk is now cash | instapay in production. Nothing in
+-- supabase/migrations/ produces that, so a rebuild from migrations still yields
+-- the old wide set and db/schema.snapshot still records it. See
+-- supabase/migrations_proposed/PROPOSED_record_transactions_method_narrowing.sql
+-- and FINDINGS entry 52. Do not read this file as the whole of what production
+-- enforces.
+--
+-- The header below is kept as written, because the ordering condition it
+-- imposed is the reason the apply was safe and is worth reading before the next
+-- constraint change.
+--
 -- PROPOSAL — NOT APPLIED. Eyad applies this by hand.
 --
 -- APPROVED 6 August 2026, WITH AN ORDERING CONDITION.
