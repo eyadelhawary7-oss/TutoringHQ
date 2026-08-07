@@ -718,10 +718,20 @@ impossible number** — the arithmetic broke before the assumption did.
 present exactly once per frame in all 25 files, verified. `.frame`, `.cap` and `.ar` are all optional
 decoration that varies by file age.
 
-**The generalisable part**, which is why this is here and not a footnote: when a count feels routine,
-the thing being counted is usually a proxy for the thing that matters, and a proxy that holds in most
-files is the hardest kind to catch. An impossible intermediate value is worth more than a plausible
-total.
+**Why the rule exists, which matters more than the rule.** Neither of us had a number that looked
+wrong. 276 and 352 are both entirely plausible frame totals for this set, so no amount of staring at
+either would have exposed the selector. **A plausible total hides a bad selector. An impossible
+intermediate exposes it.** Mine broke only because `Public-Marketing` yielded `EN = frames − AR = -2`,
+and a negative count of English frames cannot be explained away. The arithmetic failed before the
+assumption did, and that is the only reason the selector was ever questioned.
+
+So the practical habit is not "count carefully". It is **derive a value that has a floor and check the
+floor**: a subtraction that cannot go negative, a sum that must equal a known total, a ratio with a
+known bound. A total you cannot sanity-check is a total you cannot trust, however carefully you
+counted it.
+
+When a count feels routine, the thing being counted is usually a proxy for the thing that matters,
+and a proxy that holds in most files is the hardest kind to catch.
 
 *Source: re-diff frame enumeration. Verified across all 25 files 6 August 2026.*
 
