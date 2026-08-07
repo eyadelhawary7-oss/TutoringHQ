@@ -134,6 +134,37 @@ establishes nothing.
 **Test Owner Center is not a test centre, it is a row.** Zero users means it cannot be logged into at
 all. Give it an owner or delete it; it should not sit in the count as though it were usable.
 
+### Frame coverage, measured before diffing (6 August 2026)
+
+Both files' frames were enumerated from the HTML and each checked against the seeded data in Test
+Center 333. **20 of 32 frames can be produced. 12 cannot, for three different reasons that need three
+different fixes.**
+
+| File | Frames | Exercisable | Blocked |
+|---|---|---|---|
+| `Merged-Center-Groups` | 18 | **10** | 8 |
+| `Merged-Center-Students` | 14 | **10** | 4 |
+
+**Schema-blocked, 3 frames.** All of `Merged-Center-Groups` §03 Branches: overview-one-expanded, add
+branch, and the Arabic frame. No branch table exists. **A migration proposal, not a seed.**
+
+**Data-blocked, 6 frames.** Each needs rows that do not exist yet:
+
+- Groups §01 Detail · Waitlist — `students.waitlist_group_id` is set on **0** students
+- Groups §04 Day-by-time conflict flag, EN and AR — **0** overlapping same-room slots exist. All 8 slots have a room and none collide
+- Students §03 pending requests, request details, and the Arabic frame — `pending_enrollments` holds **0** rows
+
+**Empty-state-blocked, 3 frames.** Groups §01 Empty, Groups §02 Rooms empty state, Students §01
+Empty. These need a centre with an owner and no data. Test Center 333 cannot produce them without
+destroying the seed, and **Test Owner Center could never have produced them either** — it had zero
+users, so it could not be logged into. A second centre with an owner and an empty roster is the
+vehicle, and it does not exist yet.
+
+**Report frames exercised out of frames drawn on every file, and name which of these three categories
+each blocked frame falls into.** A frame blocked on schema is a migration; a frame blocked on data is
+a seed; a frame blocked on emptiness is a second tenant. Collapsing them into one number hides which
+fix applies.
+
 **Two screens need a migration, not data.** `Merged-Center-Groups`' Branches screen has **no backing
 table of any kind** — the only branch-shaped table in `public` is `branch_user_assignments`. That is a
 design with no schema behind it, so it needs a migration proposal before it can be built, and no
