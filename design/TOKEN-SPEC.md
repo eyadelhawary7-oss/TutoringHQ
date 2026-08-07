@@ -2,7 +2,7 @@
 
 **Written 27 July 2026. This is the source of truth for the token layer.**
 
-The 26 design files were drawn screen by screen over several weeks, and they drifted: 38 font sizes,
+The 25 design files were drawn screen by screen over several weeks, and they drifted: 38 font sizes,
 33 spacing values, 25 radii, 170 colours. That is not a system, it is a pile of literals. This
 collapses them to a scale.
 
@@ -51,31 +51,10 @@ Eight steps, from 38. 39% of uses shift, worst single jump 6px.
 | `text-lg` | 17 | 311 | section headings |
 | `text-xl` | 22 | 132 | screen titles |
 | `text-2xl` | 30 | 71 | display |
-| `text-3xl` | ~~44~~ **30** | 105 | ~~reference-file mastheads only~~ **KPI values, display** — see correction below |
+| `text-3xl` | 44 | 105 | reference-file mastheads only |
 
 The distribution already had peaks at these values. The halves and neighbours were noise, not
 intent.
-
-### Correction, 28 July 2026 — `text-3xl` is 30, not 44
-
-**Eyad's correction, on evidence found while wiring the token layer (PR #209).**
-
-The 44 came from 105 uses in the design files, and those uses are almost entirely reference-file
-mastheads — a thing that does not exist in the product. In the app the same token backs **KPI
-figures**, in 14 places: the Center Home headline number, Benchmarks, the four teacher income
-views, and `ScanResultScreen`. This table mapped a design-file role onto a product token and
-conflated the two.
-
-**`text-3xl` is 30px. That is the KPI value, and it is the only role this token has in the
-product.** 44 is reference-file chrome and stays in the design files where it belongs.
-
-There is deliberately **no second alias** for 44. One token, one meaning. If a real masthead ever
-appears in the product it gets its own token then, on evidence rather than on speculation.
-
-Known consequence, recorded rather than acted on: `text-2xl` and `text-3xl` are now both 30px, so
-the ~20 `text-2xl md:text-3xl` pairs stop changing at the `md` breakpoint. Nothing breaks — the
-responsive step flattens. Whether the two names collapse into one is a restyle decision, not a
-token one.
 
 **A nine-step scale was tested and rejected.** It reduced the worst jump by nothing and the widest
 buckets are at 30 and 44, where the values are one-off page titles rather than a working scale.
@@ -116,7 +95,7 @@ radii and must not become tokens.
 
 ## 4. Colour
 
-**170 distinct hexes collapse to 18 named tokens.** This is the largest cleanup in the document and
+**170 distinct hexes collapse to 20 named tokens.** This is the largest cleanup in the document and
 the one most likely to be resisted mid-build, because a near-match always looks close enough.
 
 | Token | Hex | Role |
@@ -134,6 +113,7 @@ the one most likely to be resisted mid-build, because a near-match always looks 
 | `faint` | `#A09A8E` | placeholders, disabled |
 | `accent` | `#0E6B61` | primary action |
 | `accent-deep` | `#0A514A` | pressed, text on mint |
+| `good` | `#1A6D4D` | Paid, success text. The PAID state on any session, payment or student row. |
 | `mint` | `#DFEEEB` | accent fill |
 | `mint-deep` | `#BFE3DD` | accent border |
 | `ground` | `#083F39` | darkest teal, gradients |
@@ -160,7 +140,7 @@ Anything not in this table is a drift and gets mapped to its nearest token, not 
 
 ## 6. Order of work
 
-1. **Regenerate the 26 design files against this spec.** Done in the design chat, where the render harness and verification scripts already exist. The drawings then speak in tokens and no conversion table is needed.
+1. **Regenerate the 25 design files against this spec.** Done in the design chat, where the render harness and verification scripts already exist. The drawings then speak in tokens and no conversion table is needed.
 2. **Claude Code wires the token layer into the app**, replacing Tailwind's defaults. One PR, alone, because every screen shifts the moment it lands.
 3. **Screens get restyled against it**, one merged file at a time.
 

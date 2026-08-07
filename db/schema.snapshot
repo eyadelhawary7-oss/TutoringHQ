@@ -2298,7 +2298,7 @@ CONSTRAINT parent_portal_tokens.parent_portal_tokens_student_id_fkey type=f def=
 CONSTRAINT payments.payments_amount_nonneg type=c def=CHECK ((amount >= (0)::numeric))
 CONSTRAINT payments.payments_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE RESTRICT
 CONSTRAINT payments.payments_group_id_fkey type=f def=FOREIGN KEY (group_id) REFERENCES student_groups(id) ON DELETE SET NULL
-CONSTRAINT payments.payments_method_check type=c def=CHECK ((method = ANY (ARRAY['cash'::text, 'instapay'::text, 'vodacash'::text, 'orange'::text, 'fawry'::text, 'bank'::text])))
+CONSTRAINT payments.payments_method_check type=c def=CHECK ((method = ANY (ARRAY['cash'::text, 'instapay'::text])))
 CONSTRAINT payments.payments_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT payments.payments_recorded_by_fkey type=f def=FOREIGN KEY (recorded_by) REFERENCES users(id) ON DELETE SET NULL
 CONSTRAINT payments.payments_student_id_fkey type=f def=FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE RESTRICT
@@ -2535,7 +2535,7 @@ CONSTRAINT teacher_center_requests.teacher_center_requests_status_check type=c d
 CONSTRAINT teacher_center_requests.teacher_center_requests_teacher_id_fkey type=f def=FOREIGN KEY (teacher_id) REFERENCES auth.users(id) ON DELETE CASCADE
 CONSTRAINT teacher_profiles.teacher_profiles_blast_credits_purchased_check type=c def=CHECK ((blast_credits_purchased >= (0)::numeric))
 CONSTRAINT teacher_profiles.teacher_profiles_blast_credits_subscription_check type=c def=CHECK ((blast_credits_subscription >= (0)::numeric))
-CONSTRAINT teacher_profiles.teacher_profiles_default_payment_method_chk type=c def=CHECK (((default_payment_method IS NULL) OR (default_payment_method = ANY (ARRAY['cash'::text, 'instapay'::text, 'vodafone_cash'::text, 'other'::text]))))
+CONSTRAINT teacher_profiles.teacher_profiles_default_payment_method_chk type=c def=CHECK (((default_payment_method IS NULL) OR (default_payment_method = ANY (ARRAY['cash'::text, 'instapay'::text]))))
 CONSTRAINT teacher_profiles.teacher_profiles_override_range_chk type=c def=CHECK (((commission_total_override_pct IS NULL) OR ((commission_total_override_pct >= (0)::numeric) AND (commission_total_override_pct <= (100)::numeric))))
 CONSTRAINT teacher_profiles.teacher_profiles_pkey type=p def=PRIMARY KEY (user_id)
 CONSTRAINT teacher_profiles.teacher_profiles_plan_key_chk type=c def=CHECK (((plan_key IS NULL) OR (plan_key = ANY (ARRAY['teacher_standard'::text, 'teacher_pro'::text, 'teacher_scale'::text]))))

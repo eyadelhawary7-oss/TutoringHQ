@@ -134,12 +134,12 @@ const PRIVACY: LegalDocument = {
   meta: { en: '', ar: '' }, // computed from DOC_VERSION
   sections: [
     {
-      title: { en: 'What data we collect', ar: 'البيانات اللي بنجمعها' },
+      title: { en: 'What data we record', ar: 'البيانات اللي بنسجّلها' },
       blocks: [
         {
           kind: 'p',
-          en: 'We collect what you give us: names, phone numbers, billing address, and a 6-digit PIN stored only as a secure hash, never in plain text. Center owners and staff also enter student and parent contact details on behalf of their center.',
-          ar: 'بنجمع اللي إنت بتديهولنا: الأسماء وأرقام الموبايل وعنوان الفوترة، ورقم سري من ٦ أرقام بيتخزن مشفّر بس، من غير ما يتحفظ كنص واضح أبدًا. أصحاب السناتر والموظفين كمان بيدخّلوا بيانات الطلاب وأولياء الأمور نيابةً عن السنتر.',
+          en: 'We record what you give us: names, phone numbers, billing address, and a 6-digit PIN stored only as a secure hash, never in plain text. Center owners and staff also enter student and parent contact details on behalf of their center.',
+          ar: 'بنسجّل اللي إنت بتديهولنا: الأسماء وأرقام الموبايل وعنوان الفوترة، ورقم سري من ٦ أرقام بيتخزن مشفّر بس، من غير ما يتحفظ كنص واضح أبدًا. أصحاب السناتر والموظفين كمان بيدخّلوا بيانات الطلاب وأولياء الأمور نيابةً عن السنتر.',
         },
         {
           kind: 'p',

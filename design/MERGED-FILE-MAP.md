@@ -1,104 +1,89 @@
-# TutoringHQ - Merged file map
+# Merged file map
 
-**103 screen files merged into 26.** Last rebuilt 25 July 2026. Every original is kept in `_originals/`; nothing was deleted.
+**25 files. 110 screens. 503 frames.** Regenerated 6 August 2026, after the InstaPay model
+replaced online collection.
 
-Each merged file is one standalone HTML page: a title block, a table of contents, then one numbered section per screen. Every screen keeps its own CSS, scoped under a wrapper class so screens cannot restyle each other.
+**Every screen exists in both English and Arabic. Not every state does.** Some states were only ever
+drawn in English, so the two languages are not a 1:1 split of the frame count. Measured across the
+set on 6 August 2026: **503 frames, 284 English and 219 Arabic, 1.30:1.** Per-file ratios vary widely
+and `Center-Groups` (14:4) and `Center-Students` (11:3) are outliers, not the norm.
 
-Every file opens with a comment block for whoever implements it, listing the screens inside and seven rules for reading the file. The one that matters most: **CSS is scoped, so `.mgd4 .pins` means `.pins`, and the `.mgdN` prefix must be stripped before the styles reach the codebase.**
+Do not read a frame count as "half of these are Arabic".
 
+---
 
-## Public
+## The files
 
-Everything a stranger sees before signing in
+| File | Screens | Frames | Contents |
+|---|---|---|---|
+| `Merged-Admin-Accounts.html` | 4 | 16 | Admin Account Detail, Admin Staff, Admin Center Assignments, Admin Referrals |
+| `Merged-Admin-Money.html` | 6 | 25 | Admin Fee Collection, Admin Settlement, Admin Finance Health, Admin Receipts, Admin Unpaid Recovery, Admin Billing Pricing |
+| `Merged-Admin-Platform.html` | 6 | 26 | Admin Overview, Admin Analytics, Admin Platform, Admin WhatsApp Pack, Admin Promo Codes, Admin Privacy Requests |
+| `Merged-CEO.html` | 3 | 12 | CEO Dashboard, CEO Teachers, CEO Centers Benchmark |
+| `Merged-Center-Attendance.html` | 2 | 13 | Center Attendance, Attendance Payment Default |
+| `Merged-Center-Groups.html` | 4 | 18 | Groups, Rooms, Branches, Schedule |
+| `Merged-Center-Home.html` | 3 | 8 | Center Dashboard, Notifications, Active Balance |
+| `Merged-Center-Insight.html` | 3 | 13 | Analytics, Benchmarks, Referral Program |
+| `Merged-Center-Money.html` | 13 | 51 | Payments, Center Payments, Billing, Center Receipts, InstaPay Invoice, InstaPay Uploaded Receipts, InstaPay Confirm, InstaPay Batch List, InstaPay Duplicate Reference, InstaPay Fee Total, Active Balance, Send Credit, Balance History |
+| `Merged-Center-Orders.html` | 4 | 15 | Orders, Order Detail, Order Checkout, Card Orders Coming Soon |
+| `Merged-Center-Setup.html` | 10 | 41 | Onboarding, Settings, Settings Billing, Settings Center, Settings Notifications Support, Settings Scanner, Settings Team, Center Team, My Teachers, InstaPay Settings |
+| `Merged-Center-Students.html` | 3 | 14 | Students (Roster), Student Detail, Students Import Pending |
+| `Merged-Center-WhatsApp.html` | 3 | 12 | WhatsApp, WhatsApp Pack, WhatsApp Custom Flow |
+| `Merged-Design-Patterns.html` | 6 | 44 | Empty States, Loading States, Row action patterns, Quick menu rows, Group actions, Expand sheet merge |
+| `Merged-Lifecycle.html` | 6 | 18 | Lifecycle Access, Lifecycle States, Lifecycle Status, Center Resubscribe, Teacher Resubscribe, Coming Soon |
+| `Merged-Public-App.html` | 6 | 62 | Public Auth, Public Join, Public Self Enrollment, InstaPay Upload, Referral Landing, Offline |
+| `Merged-Public-Legal.html` | 1 | 14 | Public Legal |
+| `Merged-Public-Marketing.html` | 4 | 12 | Public Landing, Public Audience, Public Pricing, Lead Capture |
+| `Merged-Teacher-Groups.html` | 4 | 17 | Teacher Groups, Teacher Group Detail, Teacher Group Invite Pending, Teacher Class Session |
+| `Merged-Teacher-Home.html` | 3 | 10 | Teacher Home, Teacher Schedule, Active Balance |
+| `Merged-Teacher-Insight.html` | 2 | 8 | Teacher Analytics, Referral Program |
+| `Merged-Teacher-Money.html` | 9 | 36 | Teacher Income, Teacher Earnings Calculator, InstaPay Uploaded Receipts, InstaPay Batch List, InstaPay Fee Total, Active Balance, Send Credit, Balance History, Teacher Billing |
+| `Merged-Teacher-Setup.html` | 2 | 8 | Teacher Settings, Teacher Centers |
+| `Merged-Teacher-Students.html` | 2 | 4 | Teacher Students, Teacher Student Detail |
+| `Merged-Teacher-WhatsApp.html` | 1 | 6 | Teacher WhatsApp |
 
-| File | Screens | Size | ~Tokens | Contains |
-|---|---|---|---|---|
-| **Merged-Public-Marketing** | 4 | 150k | 46,616 | Public Landing · Public Audience · Public Pricing · Lead Capture |
-| **Merged-Public-App** | 6 | 149k | 46,395 | Public Auth · Public Join · Public Self Enrollment · Parent Payment · Referral Landing · Offline |
-| **Merged-Public-Legal** | 1 | 44k | 13,921 | Public Legal |
+---
 
-## Center
+## How to read a merged file
 
-The owner and assistant portal
+**CSS is scoped with `.mgdN`.** Strip it. It never reaches code.
 
-| File | Screens | Size | ~Tokens | Contains |
-|---|---|---|---|---|
-| **Merged-Center-Home** | 2 | 36k | 11,193 | Center Dashboard Verified · Notifications |
-| **Merged-Center-Students** | 4 | 126k | 39,215 | Students (Roster) · Student Detail · Center Students Verified · Students Import Pending |
-| **Merged-Center-Groups** | 5 | 131k | 40,950 | Groups · Center Groups Verified · Rooms · Branches · Schedule |
-| **Merged-Center-Attendance** | 2 | 53k | 16,658 | Center Attendance Verified · Center Collect ForMe |
-| **Merged-Center-Money** | 5 | 118k | 36,889 | Payments · Center Payments Verified · Billing · Center Withdrawal Verified · Center Receipts Verified |
-| **Merged-Center-Insight** | 3 | 74k | 23,113 | Analytics · Benchmarks · Referrals |
-| **Merged-Center-WhatsApp** | 3 | 59k | 18,431 | WhatsApp · WhatsApp Pack · WhatsApp Custom Flow |
-| **Merged-Center-Orders** | 4 | 81k | 25,442 | Orders · Order Detail · Order Checkout · Card Orders Coming Soon |
-| **Merged-Center-Setup** | 9 | 180k | 56,109 | Onboarding · Settings · Settings Billing · Settings Center · Settings Notifications Support · Settings Scanner · Settings Team · Center Team Verified · My Teachers |
+**One section is one screen.** The bar above each section carries its number, name, and the source
+file it came from.
 
-## Teacher
+**Frames are states, not pages.** Four frames under one screen usually means two states in two
+languages, not four screens.
 
-The independent teacher portal
+**The two languages are separate screens, not a toggle.** Arabic frames mirror in RTL, use Eastern
+Arabic numerals, and drop IBM Plex Mono in favour of weight 600. Do not build one and flip it.
 
-| File | Screens | Size | ~Tokens | Contains |
-|---|---|---|---|---|
-| **Merged-Teacher-Home** | 2 | 51k | 15,952 | Teacher Home · Teacher Schedule |
-| **Merged-Teacher-Students** | 2 | 33k | 10,544 | Teacher Students · Teacher Student Detail |
-| **Merged-Teacher-Groups** | 5 | 117k | 36,572 | Teacher Groups · Teacher Group Detail · Teacher Group Invite Pending · Teacher Class Session · Teacher Class Session Verified |
-| **Merged-Teacher-Money** | 5 | 113k | 35,163 | Teacher Income · Teacher Earnings Calculator · Teacher Billing · Teacher Instant Payout · Teacher Collect Optin |
-| **Merged-Teacher-Insight** | 2 | 64k | 19,890 | Teacher Analytics · Teacher Referrals |
-| **Merged-Teacher-WhatsApp** | 1 | 27k | 8,533 | Teacher WhatsApp |
-| **Merged-Teacher-Setup** | 2 | 70k | 21,846 | Teacher Settings · Teacher Centers |
+**Sample data is placeholder.** Names, amounts, and dates are illustrative. Never ship them.
 
-## Admin and CEO
+**Any UI change bumps `SW_VERSION` in `public/sw.js`.**
 
-Internal only, never seen by a customer
+---
 
-| File | Screens | Size | ~Tokens | Contains |
-|---|---|---|---|---|
-| **Merged-Admin-Money** | 7 | 169k | 52,519 | Admin Fee Collection · Admin Settlement · Admin Finance Health · Admin Receipts · Admin Withdrawals Analytics · Admin Unpaid Recovery · Admin Billing Pricing |
-| **Merged-Admin-Accounts** | 4 | 103k | 32,069 | Admin Account Detail · Admin Staff · Admin Center Assignments · Admin Referrals |
-| **Merged-Admin-Platform** | 6 | 146k | 45,539 | Admin Overview · Admin Analytics · Admin Platform · Admin WhatsApp Pack · Admin Promo Codes · Admin Privacy Requests |
-| **Merged-CEO** | 3 | 59k | 18,440 | CEO Dashboard · CEO Teachers · CEO Centers Benchmark |
+## What changed on 6 August
 
-## Shared
+`Merged-Verification-Payouts.html` was **deleted**. Identity verification and platform payouts both
+ceased to exist when tuition stopped passing through the platform.
 
-Surfaces that belong to more than one role
+Three files gained screens:
 
-| File | Screens | Size | ~Tokens | Contains |
-|---|---|---|---|---|
-| **Merged-Lifecycle** | 6 | 71k | 22,194 | Lifecycle Access · Lifecycle States · Lifecycle Status · Center Resubscribe · Teacher Resubscribe · Coming Soon |
-| **Merged-Verification-Payouts** | 6 | 111k | 34,735 | Settings Verification · Verification In Context · Payout Verification · Withdrawal Payout Details · Center Teacher Payouts · Receipts |
-| **Merged-Design-Patterns** | 4 | 85k | 26,657 | Row action patterns · Quick menu rows · Group actions · Expand sheet merge |
+- **Center-Attendance** gained the InstaPay default and the one-way lock states.
+- **Center-Money** and **Teacher-Money** gained the InstaPay flow, the credit balance, sending
+  credit, and the balance ledger.
+- **Public-App** gained the parent upload page and lost the card checkout.
 
-## Totals
+`Merged-Center-Insight` and `Merged-Teacher-Insight` gained the referral programme.
 
-| | |
-|---|---|
-| Files | 26 |
-| Screens | 103 |
-| Largest | Merged-Center-Setup, 9 screens, ~56,000 tokens |
-| Smallest | Merged-Teacher-WhatsApp, 1 screen, ~8,500 tokens |
-| Every file fits a working context | yes, all under 60,000 tokens |
+---
 
-## Why Public is three files
+## The six protected files
 
-Public was one 83,000 token file, too large to open and still have room to write code against it.
-It split along a real seam:
+These carry money or auth. They never auto-merge and every PR comes to Eyad regardless of size.
 
-- **Marketing** is the pages a stranger reads in a browser: landing, the two audience pages, pricing, and the lead capture form.
-- **App** is what behaves like the app: sign up and log in, join by link, self enrollment by code, parent payment, referral landing, offline fallback.
-- **Legal** is the four documents the footer opens plus the data rights form. Separate because a lawyer opens it alone and it changes with the law, not with marketing.
+`Merged-Public-App` · `Merged-Center-Money` · `Merged-Teacher-Money` · `Merged-Admin-Money` ·
+`Merged-Lifecycle` · `Merged-Design-Patterns`
 
-## Why the portals were not combined further
-
-Combining the nine Center files into one produces a 257,000 token file, past the point where an
-implementer can read it at all. The current shape keeps every file openable while still grouping
-screens by the area a person actually works on.
-
-## If you need to change one screen
-
-Open the merged file, find the screen by its section bar, and edit inside its `mgdN` wrapper.
-The original single screen is still in `_originals/` if you would rather work on it alone and re-merge.
-
-## Naming
-
-Five source files use spaces around the dash (`Screen - Groups`) rather than the house style.
-They sit inside the merges, so the inconsistency does not show at the top level.
+`Merged-Verification-Payouts` was the seventh and no longer exists.
