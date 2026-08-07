@@ -767,18 +767,54 @@ Nothing rejects such a row at any of the three layers:
 | Server | `dbInsertSchemas` in `validations.ts:323` | **5 keys** — `attendance_overrides`, `students`, `student_groups`, `payments`, `card_orders`. `schedule_slots` is not one of them, so `api/db/route.ts:132` finds no schema and validates nothing. `dbProxyScope.ts:35` scopes it by `center_id` only, which is tenancy, not shape |
 | Database | `pg_constraint` where `contype = 'c'` on `schedule_slots` | **0 rows.** No CHECK constraint of any kind |
 
-**What is executed fact and what is not.** The guard behaviour, the 0 CHECK constraints and the
-5-key schema list were each produced by a command run in this session. That no layer rejects the row
-is read from all three layers rather than proven by a write — no probe row was inserted. The
-remaining step is one insert against the running dev server and a delete; it needs a word first
-because it perturbs seeded data.
+**Proven by write, not by inference.** The three-layer read above was upgraded to a live probe: an
+`INSERT` into `schedule_slots` for day 6, `23:00` to `01:00`, was **accepted — 1 row**. The row was
+then deleted and the centre re-counted from the catalog independently of the probe: **9 slots, 0 rows
+with `end_time <= start_time`, 0 rows on day 6, 0 CHECK constraints.** Clean. So every layer is now an
+executed fact rather than a reading: the client has no relative `min`/`max`, the server has no
+`schedule_slots` entry in `dbInsertSchemas`, and the database has no constraint. **Nothing anywhere
+rejects a slot that ends before it starts.**
 
-**A stale count inside the fix.** The comment at `:485` reads *"0 of 1 slots has a null room_id"*.
-That was true when the centre held one slot. It holds nine today and the figure is still 0, so the
-claim survives by luck, not by being maintained. A live measurement frozen into a code comment is a
-number nobody will re-run.
+**The cleanup itself produced a sixth wrong-thing instance.** The first probe put the `DELETE` in a
+CTE alongside the `INSERT`. Both arms of a data-modifying CTE read the **same pre-statement snapshot**,
+so the `DELETE` could not see the row the `INSERT` was creating and removed nothing. The statement
+reported success and the probe row survived; it took a separate `DELETE` to clear it. Same family as
+the rest of this list — the statement did exactly what was written, and what was written measured a
+snapshot that did not contain the target yet. A cleanup that reports success is not a cleanup that
+happened; **re-count from the catalog afterwards**, which is what caught it.
 
-*Source: `.rediff/build-guard.mjs` → `.rediff/run-guard.mts`, `.rediff/edge-guard.mts`, live catalog. 7 August 2026.*
+**The fix needs a product decision before a constraint.** `CHECK (end_time > start_time)` is the
+obvious shape and it is proposed with the Branches migration, not applied. But it only holds if this
+product never supports a genuinely overnight session. **If overnight sessions are ever a thing, the
+constraint is wrong and the guard is what needs changing** — it would need the wrap-around case,
+comparing across a midnight boundary rather than forbidding one. Decide that first; the two fixes are
+mutually exclusive.
+
+*Source: `.rediff/build-guard.mjs` → `.rediff/run-guard.mts`, `.rediff/edge-guard.mts`, live catalog,
+live insert/delete probe. 7 August 2026.*
+
+---
+
+## 30. A live measurement written into a code comment is a number nobody re-runs
+
+The comment at `schedule/page.tsx:485`, inside the F38 fix, reads:
+
+> *"No such row exists live today (0 of 1 slots has a null room_id) — this is closing the hole, not
+> fixing a visible number."*
+
+The centre held one slot when that was written. It holds **nine** now. The figure is still 0, so the
+claim is still true — **by luck, not by maintenance.** Nothing re-runs a count that lives in a comment,
+and nothing fails when it drifts.
+
+The sentence was doing honest work: it recorded that the fix closed a hole rather than corrected a
+visible number, which is exactly the distinction worth writing down. The defect is the parenthesis.
+**Say what the measurement established, not what it counted** — "no live row exercises this branch"
+survives the data changing; "0 of 1" is stale the moment a tenth slot lands and stays stale silently.
+
+Same failure as citing a count that was never run, one step removed: here the count *was* run, and
+then frozen where it could rot.
+
+*Source: read at `schedule/page.tsx:485` against a live count of 9. 7 August 2026.*
 
 ---
 
