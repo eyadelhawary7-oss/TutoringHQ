@@ -24,7 +24,7 @@
  *
  * The exclusions are byte-for-byte the ones `studentBalance.ts` applies (absent
  * scans skipped, teacher-private `billable=true` skipped, payments filtered to
- * PAID_PAYMENT_STATUSES) and the net figure comes from `computeBalance` in that
+ * `payments.confirmed`) and the net figure comes from `computeBalance` in that
  * module — imported, not re-implemented — so the two can never disagree.
  *
  * DAY ARITHMETIC IS CAIRO, NOT `new Date()`. `startOfCairoDay` anchors both ends
@@ -35,7 +35,7 @@
  */
 
 import { startOfCairoDay } from '@/lib/cairo/day';
-import { computeBalance, PAID_PAYMENT_STATUSES } from '@/lib/studentBalance';
+import { computeBalance, isNonCollection } from '@/lib/studentBalance';
 
 /**
  * Days a positive balance must have been outstanding before "At risk" becomes
@@ -237,14 +237,19 @@ export async function getStudentStandings(
     session_date: string | null;
   }[];
 
-  let payQ = build('payments', 'student_id, amount, status, paid_at')
+  // `confirmed` is authoritative, matching studentBalance.ts. Standing and
+  // balance MUST read the same definition of collected money — a student whose
+  // balance says settled while standing says overdue is the screen
+  // contradicting itself, and that is what two filters guarantee eventually.
+  let payQ = build('payments', 'student_id, amount, confirmed, status, paid_at')
     .in('student_id', ids)
-    .in('status', PAID_PAYMENT_STATUSES);
+    .eq('confirmed', true);
   if (centerId) payQ = payQ.eq('center_id', centerId);
   const payRows = (((await payQ) as { data?: unknown }).data ?? []) as {
     student_id: string;
     amount: number | null;
-    status: string;
+    confirmed: boolean | null;
+    status: string | null;
   }[];
 
   const chargesByStudent = new Map<string, ChargeRow[]>();
@@ -267,6 +272,10 @@ export async function getStudentStandings(
 
   const paidTotals = new Map<string, number>();
   for (const p of payRows) {
+    // Same rule as studentBalance: confirmed says money arrived, status says
+    // what the row is. Keep these two folds identical or standing and balance
+    // drift apart again.
+    if (isNonCollection(p.status)) continue;
     paidTotals.set(p.student_id, (paidTotals.get(p.student_id) ?? 0) + (Number(p.amount) || 0));
   }
 
