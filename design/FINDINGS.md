@@ -1056,6 +1056,51 @@ absence of an affordance.
 
 ---
 
+## 40. The privacy page said "collect", the corpus said "record", and the corpus's own Arabic said "collect"
+
+**"Record" is the model. "Collect" is the word `NEW-MODEL` removes** — the platform records and matches
+a transfer, it does not collect money or gather data. A published privacy page claiming otherwise
+makes the one assertion the new model exists to retract.
+
+Surfaced by a pre-existing `Unit Tests (Vitest)` failure on `master`:
+`tests/unit/legalCorpusParity.test.ts` compares `legalContent.ts` against
+`design/Merged-Public-Legal.html` and had been red since before this branch.
+
+### A blanket find-and-replace would have been wrong
+
+Four occurrences of "collect" exist on the legal surface. **The corpus keeps two of them**, and it is
+right to:
+
+| Text | Corpus | Action |
+|---|---|---|
+| "What data we **collect**" (heading) | says **record** | changed |
+| "We **collect** what you give us: names, phone numbers…" | says **record** | changed |
+| "we do not **collect** anything from third parties" | says **collect** | **kept** |
+| "We never **collect** or store your card details" (Terms / Paymob) | says **collect** | **kept** |
+
+The distinction is precise and worth preserving: **`record` is the affirmative act the platform
+performs; `collect` survives only in the denials.** Saying "we never record your card details" would
+have been a *weaker* claim, since recording is exactly what the platform does elsewhere. Sweeping all
+four would have broken parity in the opposite direction.
+
+### The corpus was updated in English only
+
+The source of truth is itself inconsistent. Its English headings read "What data we record" while its
+**Arabic still read `البيانات اللي بنجمعها`** — "the data we gather". The parity test compares both
+locales, so the Arabic passed only because the app carried the same stale word. **Two wrongs agreeing
+is what a parity check reports as correct**, which is why the English half failed loudly and the
+Arabic half was silent.
+
+Fixed in both files together: affirmative Arabic is now `بنسجّلها` / `بنسجّل`, and the two negations
+(`مابنجمعش`) are untouched in each.
+
+Verified: `legalCorpusParity` 14 of 14 pass; full suite 211 files / 2,089 tests pass;
+`i18n:check`, `check:bidi`, `check:tolocale` all OK.
+
+*Source: `legalContent.ts`, `design/Merged-Public-Legal.html`, run 7 August 2026.*
+
+---
+
 ## 39. The `PROPOSAL_` filename prefix protects nothing — CI and Supabase Branching both apply the file
 
 A migration named `20260806120000_PROPOSAL_narrow_tuition_payment_methods.sql` was written to be
