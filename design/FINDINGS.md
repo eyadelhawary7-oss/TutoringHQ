@@ -229,6 +229,153 @@ no timer is how this becomes a false statement rather than a gap.
 
 ---
 
+## 55. THE FINDING OF THIS ROUND — `DROP COLUMN` cascaded, took two money guards with it, and reported nothing
+
+**The snapshot rebuild is real verification, not ceremony. This is the entry that proves it.**
+
+Dropping the seven split-model columns from `public.transactions` (8 August 2026, version
+`20260808020632`) also dropped **two CHECK constraints**, because Postgres removes any CHECK that
+references a dropped column:
+
+```
+transactions_customer_sum_chk
+  CHECK (kind <> 'lesson' OR (lesson_fee + customer_commission_amt
+                              + processing_fee_amt) = amount_billed)
+
+transactions_nonneg_chk
+  CHECK (lesson_fee >= 0 AND customer_commission_amt >= 0 AND processing_fee_amt >= 0
+         AND amount_billed >= 0 AND teacher_commission_amt >= 0 AND teacher_net >= 0
+         AND platform_gross >= 0 AND platform_net >= 0 AND snap_vat_amount >= 0
+         AND settlement_retry_count >= 0)
+```
+
+**Only the commission terms were meant to go.** What actually went with them: the ledger lost its
+**non-negativity guard on `lesson_fee`, `processing_fee_amt`, `amount_billed` and
+`snap_vat_amount`**, and its **total invariant on a lesson row**. A money table that will accept a
+negative fee, on a product whose whole job is recording money.
+
+### Nothing reported it. That is the point.
+
+| Signal | What it said |
+|---|---|
+| The `ALTER TABLE` | succeeded |
+| The migration tool | `{"success": true}` |
+| Post-drop column check (`information_schema`) | correct — 0 of the 7 remain, 3 rows intact |
+| `pg_constraint`, had it been queried on its own | would have shown 8 CHECKs where there had been 10 — **but only if you already knew to count** |
+
+Every check aimed at the *thing being changed* passed. The damage was to something adjacent that
+nobody thought to look at, and there is no error, warning or log line anywhere in that path.
+
+**It surfaced from one place only: diffing the rebuilt `db/schema.snapshot` against the committed
+one.** The column removals were expected and boring; two rewritten `CONSTRAINT` lines in the same
+diff were not. Without that rebuild the constraints would have been gone silently, and the next
+person to find out would have been whoever wrote a negative `lesson_fee`.
+
+### Why this is the argument for the rebuild, specifically
+
+The rebuild is easy to file as bookkeeping — regenerate the artefact, satisfy `schema-drift`, move
+on. It is not. **It is the only instrument in this repo that reports on what a change did rather
+than on what it was aimed at.** A catalog query answers the question you thought to ask; the
+snapshot diff answers the question you did not.
+
+The same run demonstrated the other half, and the two belong together:
+
+**The harness was calibrated before it was trusted.** CI runs `postgres:17` and the box had 16.
+PostgreSQL 17.10 was installed to match, and `scripts/schema/rebuild.sh` was run first against the
+**unchanged** migrations — it reproduced the committed snapshot **byte-identically, 6484 lines**.
+Only then were the new migrations added. The rebuild then came out at **6477 lines**: 6484 minus
+the 7 dropped columns, with the 2 constraint lines rewritten, and the semantic diff (normalising
+`ord=` renumbering away) was exactly 9 lines and nothing else. Both rebuilt constraint definitions
+were then compared against production's own `pg_get_constraintdef` output and matched exactly, so
+the snapshot normalises to what production **holds** rather than to something merely equivalent.
+
+**An uncalibrated rebuild would have been worse than none**: a second artefact of unknown
+provenance compared against the first, which is entry 52's failure committed one layer up. The
+calibration is what turns the diff from a suggestion into evidence.
+
+### The fix, and what it does not restore
+
+Both constraints re-added narrowed to the surviving columns, version `20260808021251`:
+
+```
+transactions_nonneg_chk        lesson_fee, processing_fee_amt, amount_billed,
+                               snap_vat_amount, settlement_retry_count  >= 0
+transactions_customer_sum_chk  kind <> 'lesson' OR (lesson_fee + processing_fee_amt) = amount_billed
+```
+
+Verified against all 3 live rows **before** applying — sum invariant held 3 of 3, non-negativity
+3 of 3 — and read back from `pg_get_constraintdef` after. Production ends at **33 columns, 0 of the
+7 split columns, 3 rows intact, 10 CHECK constraints**.
+
+The commission terms are gone for good and should be: there is no percentage of tuition.
+
+### What to do differently, stated as a rule
+
+**Before any `DROP COLUMN`, list the constraints, indexes, triggers, views and policies that
+reference the column, and state which of them you intend to lose.** `pg_constraint`, `pg_index`,
+`pg_trigger` and `pg_depend` all answer this in one query. The proposal for this drop was unusually
+careful — it re-ran row counts, checked `pg_proc.prosrc` for writers, counted code references per
+column, and insisted the code merge first — **and it still did not mention the cascade**, because
+the question it asked was "is anything reading these columns" and not "what else is attached to
+them."
+
+*Touches money and data integrity. Source: `pg_constraint` before and after, the calibrated
+snapshot rebuild, and the semantic diff of `db/schema.snapshot`. Verified 8 August 2026.*
+
+---
+
+## 56. The third render site did not exist, and the instrument was a grep for a string
+
+**Same shape as the `Center-Setup` status error in entry 47, and worth logging beside it because
+the two failed in opposite directions from the same cause.**
+
+The brief to remove the dead identity-verification badge named three surfaces: `dashboard`,
+`attendance`, and the join flow at `join/g/[groupId]/JoinFlowClient.tsx:167`. The three line numbers
+came from a grep for the string `"Verification unavailable"`.
+
+**Read in place, only one of the three was a render site.**
+
+| Cited | What is actually there |
+|---|---|
+| `dashboard/page.tsx:581` | a **comment** describing the badge. The render is at `:603` |
+| `attendance/page.tsx:68` | a **comment** describing the badge. The render is at `:102` |
+| `JoinFlowClient.tsx:167` | an **OTP error-code map**, not the badge and not identity verification |
+
+That third line is:
+
+```ts
+verification_unavailable: 'verificationUnavailable',
+```
+
+and its emitter is `api/join/g/[groupId]/verify-otp/route.ts:65` and `:73`, which return `503` when
+`getUpstashRedis()` is falsy — **the brute-force limiter failing closed**, exactly as `/api/login`
+does. It is **phone verification for a parent enrolling a student**, it is live product under the
+new model, and removing it would have deleted an honest error path on the enrolment flow.
+
+Meanwhile the same grep **missed** the two real render sites it did not name:
+`teacher/(portal)/page.tsx:291` and `teacher/(portal)/settings/page.tsx:391`.
+
+**So the instrument was wrong in both directions at once** — it returned two comments and a false
+positive as targets, and omitted two genuine ones. A string grep cannot distinguish a render from a
+comment from an unrelated identifier that happens to share a word, and `verification` is a word this
+product uses for two unrelated mechanisms: **identity** verification, which is dead, and **phone**
+verification, which is live.
+
+This is entry 50's problem in English rather than Arabic. There, `تحويل` meant both the dead payout
+and the live transfer, so no regex could separate them. Here, `verification` means both the dead
+Valify gate and the live OTP. **When one word names both a dead mechanism and a surviving one, the
+count is never the work** — every hit has to be read in place, and the shape of the code around it
+is what settles it, not the string.
+
+The practical rule: **to find where a component renders, grep for the component, not for its
+output.** `grep -rn "VerificationBadge" src/` returns four render sites and zero comments about
+strings, which is the list that was actually wanted.
+
+*Source: read in place at all five cited and uncited sites, plus `verify-otp/route.ts:65,73`.
+Verified 8 August 2026.*
+
+---
+
 ## 4. `requireSuperAdminRow` does not require a row
 
 **`src/lib/admin-access.ts`.** The function computes
@@ -631,6 +778,23 @@ product, is a trap that will be sprung again.
 **What to establish, and it is not answered here:** whether `centers.subscription_status` has any
 live reader at all, or is a third source of truth for a state already held in two places.
 
+> ### ANSWERED 8 August 2026 — it is emphatically not dead, and that makes this worse, not better.
+>
+> `centers.subscription_status` has **12 filter-reads across 9 files**. It is a third source of
+> truth, and it is the one the *automations* use while the middleware uses `status`.
+>
+> The operational consequence, not the column count, is the finding: **Test Center 333 is fully
+> usable in the UI and silently excluded from every automation gated on
+> `subscription_status = 'active'`** — daily summary, parent absence alerts, parent balance alerts,
+> nudges. `ceo/dashboard/route.ts` filters on *both* columns in one query, already treating them as
+> independent facts.
+>
+> So a centre can be live to its owner and invisible to every cron that serves its parents, with
+> nothing anywhere reporting the split.
+>
+> *Source: re-diff of `Merged-Lifecycle`, reading `proxy.ts` and the catalog rather than the column
+> name. 8 August 2026.*
+
 *Source: verification of the re-diff readiness question. Verified 6 August 2026.*
 
 ---
@@ -811,7 +975,20 @@ live insert/delete probe. 7 August 2026.*
 
 ---
 
-## 33. BLOCKS THE INSTAPAY BUILD — the balance counts unconfirmed transfers as money in hand
+## 33. ~~BLOCKS THE INSTAPAY BUILD~~ — the balance counted unconfirmed transfers as money in hand
+
+> ### NO LONGER BLOCKING — verified fixed 8 August 2026. Do not re-fix.
+>
+> `src/lib/studentBalance.ts` now filters `.eq('confirmed', true)`, and `PAID_PAYMENT_STATUSES` has
+> exactly **2** references left in `src/` — its own declaration and a *comment* in `sync.ts`. The
+> `?? 0` half is fixed too: `students/[id]/page.tsx` sets `null` on both the miss and the `.catch`
+> path, so a failed read no longer renders a confident `0 EGP · Paid up`.
+>
+> Found while re-diffing `Merged-Center-Money`, by reading the helper rather than trusting this
+> entry. **The entry stays because the reasoning below is still why the rule exists** — but its
+> headline was a live claim that had stopped being true, which is the exact shape entry 47 names.
+> A finding with no re-verification date beside it should be read as unverified in *both*
+> directions.
 
 **Not a screen defect. A violation of the rule the InstaPay flow exists to enforce, in the code the
 flow will read on its first day.**
@@ -981,8 +1158,20 @@ Note on the fee column: `student_groups.fee_per_class` is the live billing colum
 the catalog; only the first is read by the groups list. Do not conflate them.
 
 `center_cut_egp` is **populated on all seven groups** in Test Center 333 (45, 50, 40, 60, 10, 30, 30).
-"Do not build the attribution line" therefore leaves a live, non-null column with **no reader**. That
-is a loose end for the percentage-model removal, not a display question.
+
+> **CORRECTED 8 August 2026 — the "no reader" half is wrong, and acting on it would have deleted
+> live product.** `center_cut_egp` has **32 lines across 10 files** in `src/`, including **3 selects
+> and 5 write-payload sites**: `groups/page.tsx` reads it, renders it as a percent and writes it on
+> group create and edit; `api/center/teacher-monitor`, `api/teacher/group-slots` and
+> `api/teacher/joinable-groups` all select it; `ceoTeachers.ts`, `ceoTeachersView.ts`,
+> `ceo/teachers/page.tsx` and `teacher/GroupSlotsSection.tsx` read it.
+>
+> It is also **not the dead model**. `center_cut_egp` is a flat EGP amount in the **centre↔teacher**
+> arrangement, not the platform's 90/10 share of tuition. The percentage the drawing shows beside a
+> teacher's name is that arrangement, and it survives.
+>
+> The original claim conflated two different things because they share the word "cut". Same failure
+> as entry 56: one word naming a dead mechanism and a live one.
 
 ### The app is wrong. These are defects to fix.
 
