@@ -8,8 +8,6 @@ import { supabase } from '@/lib/supabase';
 import ScanTab from '@/components/attendance/ScanTab';
 import ChecklistTab from '@/components/attendance/ChecklistTab';
 import { RejectedScansBanner } from '@/components/scanner/RejectedScansBanner';
-import VerificationBadge from '@/components/verification/VerificationBadge';
-import { useVerificationState } from '@/hooks/useVerificationState';
 
 type AttendanceTab = 'scan' | 'checklist';
 
@@ -24,7 +22,6 @@ function AttendanceSurface() {
   const params = useSearchParams();
   // Imported, never re-derived — the one state machine, same as the dashboard's
   // badge. See the comment on the badge slot below.
-  const { state: verification } = useVerificationState();
 
   const groupId = params?.get('group') ?? null;
   const initialTab: AttendanceTab = params?.get('tab') === 'checklist' ? 'checklist' : 'scan';
@@ -58,19 +55,14 @@ function AttendanceSurface() {
 
   return (
     <div className="min-h-screen w-full bg-[var(--color-surface-0)]">
-      {/* `Merged-Center-Attendance` §01 draws a "Verified" pill in the topbar of
-          all five of its frames, with no unverified twin anywhere in the file —
-          a design-side fabrication, and the reason V6 called this screen blocked
-          wholesale. The slot is no longer empty: it renders the REAL state from
-          the one state machine (`useVerificationState` →
-          `/api/verification/status`), exactly as `/dashboard` already does.
-
-          Today it reads "Verification unavailable", because the Valify
-          credentials are placeholders and `verification_records` does not exist
-          — re-confirmed live against project lczmjpnbuhnsislcvzar on 5 August
-          2026, querying information_schema.tables for `verification_records` and
-          `verification_attempts`: neither is present. It can only ever read
-          "Verified" once an HMAC-verified webhook has said so. */}
+      {/* `Merged-Center-Attendance` §01 draws a "Verified" pill in this topbar
+          in all five of its frames, with no unverified twin anywhere in the
+          file. Both the drawing and the badge are dead: identity verification
+          ceased to exist on 6 August 2026 (design/NEW-MODEL.md, "What died"),
+          having existed only to enable a collection flow that no longer
+          happens. The slot is deliberately empty rather than refilled — there
+          is no trust signal to render, so drawing one would be the
+          fabrication the drawing already committed. */}
       <div className="sticky top-0 z-[11] border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]/95 px-4 pt-[max(12px,env(safe-area-inset-top,0px))] pb-2 backdrop-blur">
         <div className="mx-auto flex w-full max-w-lg items-center gap-2">
           <div
@@ -99,7 +91,6 @@ function AttendanceSurface() {
               );
             })}
           </div>
-          <VerificationBadge state={verification} />
         </div>
       </div>
 
