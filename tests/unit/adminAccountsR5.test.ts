@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { initialsOf } from '@/lib/initials';
 import { centerAttendanceRate, countAddOns } from '@/lib/centerAccountMetrics';
-import { COMMISSION_TIERS, cairoMonthBounds } from '@/lib/referralProgram';
+import { COMMISSION_TIERS, cairoMonthBounds, rateForMonth } from '@/lib/referralProgram';
 import { cairoDateKey } from '@/lib/cairo/day';
 
 describe('initialsOf — Merged-Admin-Accounts avatar mark', () => {
@@ -88,38 +88,42 @@ describe('countAddOns', () => {
   });
 });
 
-describe('COMMISSION_TIERS — design correction D2, live wins', () => {
+describe('COMMISSION_TIERS — the NEW-MODEL ladder', () => {
   /**
-   * The single source of truth is /api/referrals/process-commission:
-   *   months === 1        → 0.25
-   *   months <= 12        → 0.10
-   *   else                → 0.05
-   * The design draws "months 2 to 6" and "month 7 onward"; that is wrong and is
-   * correction D2. This test is what stops the screen drifting back to it.
+   * design/NEW-MODEL.md: "25% the first month, 10% months 2 to 6, then 5%".
+   *
+   * Month 6 is 10%. Month 7 is 5%. The bands touch and do not overlap.
+   *
+   * This ran 10% through month 12 under design correction D2 ("live wins"),
+   * which was right on 29 July and went stale on 6 August when NEW-MODEL
+   * restated the ladder. Ruled back to the model 8 August 2026.
+   *
+   * These assertions exercise `rateForMonth`, the exported function every
+   * caller uses — NOT a local re-implementation of the lookup. A test that
+   * re-derives the ladder can agree with itself while the shipped function is
+   * wrong, which is the shape that let the old boundary survive.
    */
-  const liveRate = (months: number) => (months === 1 ? 25 : months <= 12 ? 10 : 5);
+  const modelPct = (months: number) => (months === 1 ? 25 : months <= 6 ? 10 : 5);
 
-  const tierFor = (month: number) => {
-    const t = COMMISSION_TIERS.find(
-      (x) => month >= x.fromMonth && (x.toMonth == null || month <= x.toMonth),
-    );
-    if (!t) throw new Error(`no tier covers month ${month}`);
-    return t.ratePct;
-  };
-
-  it('matches the live ladder at every month from 1 to 36', () => {
+  it('matches the model ladder at every month from 1 to 36', () => {
     for (let m = 1; m <= 36; m++) {
-      expect(tierFor(m), `month ${m}`).toBe(liveRate(m));
+      expect(rateForMonth(m) * 100, `month ${m}`).toBeCloseTo(modelPct(m), 10);
     }
   });
 
-  it('drops to 10% at month 2 and holds it through month 12', () => {
-    expect(tierFor(2)).toBe(10);
-    expect(tierFor(6)).toBe(10);
-    // The month the design gets wrong: month 7 is still 10%, not 5%.
-    expect(tierFor(7)).toBe(10);
-    expect(tierFor(12)).toBe(10);
-    expect(tierFor(13)).toBe(5);
+  it('pins the band boundary: month 6 is 10%, month 7 is 5%', () => {
+    expect(rateForMonth(1) * 100).toBe(25);
+    expect(rateForMonth(2) * 100).toBe(10);
+    expect(rateForMonth(6) * 100).toBe(10);
+    expect(rateForMonth(7) * 100).toBe(5);
+    expect(rateForMonth(13) * 100).toBe(5);
+    expect(rateForMonth(120) * 100).toBe(5);
+  });
+
+  it('rejects a month below 1 rather than paying the top rate', () => {
+    expect(() => rateForMonth(0)).toThrow();
+    expect(() => rateForMonth(-1)).toThrow();
+    expect(() => rateForMonth(Number.NaN)).toThrow();
   });
 
   it('covers every month with exactly one tier', () => {
@@ -129,6 +133,18 @@ describe('COMMISSION_TIERS — design correction D2, live wins', () => {
       );
       expect(hits.length, `month ${m}`).toBe(1);
     }
+  });
+
+  it('keeps the table and the function in step — no gap between the bands', () => {
+    for (let i = 1; i < COMMISSION_TIERS.length; i++) {
+      const prev = COMMISSION_TIERS[i - 1];
+      const cur = COMMISSION_TIERS[i];
+      expect(prev.toMonth, `tier ${i} must be closed`).not.toBeNull();
+      expect(cur.fromMonth, `tier ${i} must start the month after tier ${i - 1} ends`).toBe(
+        (prev.toMonth as number) + 1,
+      );
+    }
+    expect(COMMISSION_TIERS[COMMISSION_TIERS.length - 1].toMonth).toBeNull();
   });
 });
 

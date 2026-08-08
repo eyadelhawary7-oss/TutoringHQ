@@ -210,7 +210,7 @@ function taxBoxHtml(): string {
 function referralStripHtml(qrDataUrl: string, codeSpaced: string, referUrl: string): string {
   return `<div style="margin-top:28px;padding-top:20px;border-top:1px solid ${BORDER};page-break-inside:avoid;" dir="rtl">
   <div style="font-size:15px;font-weight:700;color:#0f172a;font-family:Cairo,sans-serif;margin-bottom:8px;">تعرف على سنتر تاني؟ اكسب كل شهر.</div>
-  <div style="font-size:12px;color:#64748b;margin-bottom:14px;font-family:Cairo,sans-serif;">شهر 1: 25% | شهر 2-12: 10% | +13: 5% دائمة</div>
+  <div style="font-size:12px;color:#64748b;margin-bottom:14px;font-family:Cairo,sans-serif;">شهر 1: 25% | شهور 2 إلى 6: 10% | من شهر 7: 5% دائمة</div>
   <div style="display:flex;flex-wrap:wrap;align-items:center;gap:20px;">
     <div style="font-family:system-ui,monospace;font-size:18px;letter-spacing:0.35em;font-weight:700;color:${TEAL};border:2px dashed ${TEAL};padding:10px 16px;border-radius:8px;">${esc(codeSpaced)}</div>
     <div style="flex:1;min-width:200px;">

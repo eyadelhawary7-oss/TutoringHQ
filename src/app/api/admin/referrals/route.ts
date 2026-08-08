@@ -57,10 +57,10 @@ export async function GET(request: NextRequest) {
 
     // ── Merged-Admin-Accounts §04 · program figures + top referrers ──────────
     //
-    // The commission ladder is READ FROM THE LIVE RULE, not from the drawing.
-    // /api/referrals/process-commission computes 25% in month 1, 10% for months
-    // 2–12 and 5% from month 13; the design's "months 2 to 6 / month 7 onward"
-    // is wrong and is design correction D2 ("live wins, 10% for twelve months").
+    // The commission ladder comes from COMMISSION_TIERS (referralProgram.ts),
+    // the one source: 25% month 1, 10% months 2 to 6, 5% month 7 onward. That
+    // matches NEW-MODEL and every drawing. It ran 10% through month 12 under
+    // design correction D2 until 8 August 2026; see CHANGE-LOG.md D2.
     //
     // The design's SIGNUP REWARD row — "New customer credit · 100 EGP applied
     // to the referred account" — is NOT built. No such credit exists anywhere:

@@ -458,11 +458,35 @@ let an internal operator attach any teacher to any centre and hand that centre t
 The consent step is the control that prevents it, so the admin form opens the same pending request
 with `initiated_by='center'`. This is a deliberate divergence from the drawn "Save assignment".
 
-**The commission ladder is read from the live rule.** `/api/referrals/process-commission` computes
-25% in month 1, 10% for months 2–12 and 5% from month 13. The design draws "months 2 to 6" and
-"month 7 onward"; that is design correction **D2 — live wins, 10% for twelve months**.
-`tests/unit/adminAccountsR5.test.ts` asserts the tier table against the live rule at every month
-from 1 to 36, so the screen cannot drift back to the drawing.
+**The commission ladder is read from `COMMISSION_TIERS`, the one source.**
+25% in month 1, 10% for months 2 to 6, 5% from month 7. Month 6 is 10%, month 7 is 5%; the bands
+touch and do not overlap. `tests/unit/adminAccountsR5.test.ts` asserts `rateForMonth()` — the
+exported function every caller uses, not a re-derived copy — at every month from 1 to 36.
+
+> ### D2 — OVERTURNED 8 August 2026. Kept in place, not deleted, for the reason it went wrong.
+>
+> D2 read **"live wins, 10% for twelve months"**, and it was *correct when written* on 29 July:
+> the code paid 10% through month 12 and the drawing disagreed, so the drawing was the stale half.
+>
+> It went stale on **6 August**, when `NEW-MODEL.md` restated the ladder as *"25% the first month,
+> 10% months 2 to 6, then 5%"* — eight days later, and authoritative over anything older. From that
+> date the correction was pointing at the wrong half, and nothing re-ran it. Ruled back to the model
+> by Eyad on 8 August 2026.
+>
+> **The lesson, which is why this entry survives instead of being replaced:** a correction that
+> cites *"live wins"* records a verdict about a moment, not a rule. It keeps reading as settled long
+> after the thing it compared against has moved, and it is quoted by later code as though it were
+> the rule itself — this one was cited in four places. A correction needs the date it was true and a
+> pointer to what would overturn it, or it outlives its own evidence.
+>
+> Cost of leaving it: months 7 to 12 paid **10% instead of 5%** — double — on every referral that
+> reached month seven. Nothing had to be unwound. `referral_commissions` held **0 rows** when this
+> was fixed, and `commission_rate` is stamped per row, so any existing cohort would have kept its
+> own rate regardless.
+>
+> Corrected in the same pass: the ladder was written in **two** places. `process-commission/route.ts`
+> carried its own hardcoded `months <= 12` copy rather than reading `COMMISSION_TIERS`, so the
+> boundary could be — and was — fixed in one and left in the other. It now calls `rateForMonth()`.
 
 **Teachers are shown in free months, not EGP.** `grantReferralReward` pays +1 free month to each
 side when a referred teacher clears their first real charge. A teacher referrer never has a cash
