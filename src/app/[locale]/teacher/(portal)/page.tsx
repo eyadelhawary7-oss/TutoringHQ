@@ -35,12 +35,12 @@ type Summary = {
    */
   centersOutstanding: number | null;
   /**
-   * How many center_fee rows behind `centersOutstanding` carried a basis a cut
-   * could be computed from. 0 means the figure rests on nothing, so it is an
-   * absence rather than a measurement and must not be rendered as money.
+   * How many center_fee rows sit behind `centersOutstanding`. 0 means the
+   * figure rests on nothing, so it is an absence rather than a measurement and
+   * must not be rendered as money.
    * See the evidence block in `src/app/api/teacher/center-cuts/route.ts`.
    */
-  centersCutBasisRows: number;
+  centersLedgerRows: number;
   income: { collected: number; outstanding: number } | null;
   groups: { count: number; students: number } | null;
   sub: {
@@ -167,7 +167,7 @@ export default function TeacherDashboardPage() {
       if (cancelled) return;
 
       const cuts = cutsRes?.ok
-        ? ((await cutsRes.json()) as { totalOutstanding?: number; cutBasisRows?: number })
+        ? ((await cutsRes.json()) as { totalOutstanding?: number; ledgerRows?: number })
         : null;
       // Read it once, and only accept a finite number. Anything else — the
       // request failed, the body was missing the field, the field was a string
@@ -180,9 +180,9 @@ export default function TeacherDashboardPage() {
       // Absent field from an older deploy is treated as 0 (unmeasured), which
       // withholds the figure. Failing towards "we cannot say" is the safe way
       // for this one to be wrong.
-      const centersCutBasisRows =
-        cuts != null && Number.isFinite(Number(cuts.cutBasisRows))
-          ? Number(cuts.cutBasisRows)
+      const centersLedgerRows =
+        cuts != null && Number.isFinite(Number(cuts.ledgerRows))
+          ? Number(cuts.ledgerRows)
           : 0;
       const subJson = subRes?.ok
         ? ((await subRes.json()) as {
@@ -225,7 +225,7 @@ export default function TeacherDashboardPage() {
       setSummary({
         displayName: profile?.displayName ?? null,
         centersOutstanding,
-        centersCutBasisRows,
+        centersLedgerRows,
         income: income ? { collected: Number(income.collectedThisMonth) || 0, outstanding: Number(income.outstanding) || 0 } : null,
         groups: priv
           ? {
@@ -318,9 +318,9 @@ export default function TeacherDashboardPage() {
             // skeleton the tile already shows while loading. A 0 off a failed
             // fetch is a fabrication, not a friendly default.
             placeholder
-          ) : summary.centersCutBasisRows === 0 ? (
-            /* No center_fee row behind this teacher carries a cut basis, so the
-               sum is an absence, not a measurement — see the evidence block in
+          ) : summary.centersLedgerRows === 0 ? (
+            /* No center_fee row sits behind this teacher, so the sum is an
+               absence, not a measurement — see the evidence block in
                `src/app/api/teacher/center-cuts/route.ts`. Show no figure and no
                settlement claim. "0 EGP" under a tile headed "What centers owe
                me" is itself a money statement ("they owe you nothing"), and it

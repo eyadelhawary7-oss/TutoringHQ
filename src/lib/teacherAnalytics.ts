@@ -5,8 +5,11 @@
  * that teacher's own groups. Never a full-table scan.
  *
  * Definitions are kept in lock-step with the rest of the private engine:
- *   - Revenue is the teacher's KEPT earnings: transactions.teacher_net, only
- *     paid + non-test + kind='lesson'. NOT amount_billed / lesson_fee.
+ *   - Revenue is the teacher's KEPT earnings: transactions.amount_billed, only
+ *     paid + non-test + kind='lesson'. The teacher keeps the whole fee they
+ *     set — the platform takes no percentage of tuition (design/NEW-MODEL.md).
+ *     This read `teacher_net` until 8 Aug 2026; that column was NOT NULL
+ *     DEFAULT 0 with no writer, so every teacher's revenue was a literal 0.
  *   - Per-class fee is student_groups.fee_per_class (NOT the legacy `fee`).
  *   - "Active private group" and "enrolled" mirror src/lib/teacherCap.ts
  *     countActiveNonGuestStudents: kind='private', status='active', distinct
@@ -148,12 +151,12 @@ export function projectNextMonthIncome(groups: ProjectionGroupInput[]): Projecti
 }
 
 // ---------------------------------------------------------------------------
-// #2 / #3 Revenue (teacher_net) by group and by month
+// #2 / #3 Revenue (amount_billed) by group and by month
 // ---------------------------------------------------------------------------
 
 export type PaidLessonRow = {
   group_id: string | null;
-  teacher_net: number | string | null;
+  amount_billed: number | string | null;
   paid_at: string | null;
 };
 
@@ -171,7 +174,7 @@ export type RevenueResult = {
  * Revenue split for the analytics surface. `byGroupThisMonth` zero-fills every
  * active group (so the WORST group can legitimately be an idle EGP 0 group —
  * usually the signal a teacher wants). `trend` is the trailing-N-month total of
- * teacher_net, Cairo-bucketed by paid_at.
+ * amount_billed, Cairo-bucketed by paid_at.
  */
 export function computeRevenue(
   paidLessons: PaidLessonRow[],
@@ -185,7 +188,7 @@ export function computeRevenue(
   const totalByMonth = new Map<string, number>();
   for (const r of paidLessons) {
     if (!r.paid_at) continue;
-    const net = Number(r.teacher_net) || 0;
+    const net = Number(r.amount_billed) || 0;
     const { y, m } = cairoYmOfIso(r.paid_at);
     const mk = ymKey(y, m);
     totalByMonth.set(mk, (totalByMonth.get(mk) ?? 0) + net);
@@ -699,11 +702,11 @@ export async function buildTeacherAnalytics(
     })),
   );
 
-  // 5. Paid lesson revenue (teacher_net), paginated, bucketed in JS.
+  // 5. Paid lesson revenue (amount_billed), paginated, bucketed in JS.
   const paidLessons = await fetchPaged<PaidLessonRow>((from, to) =>
     admin
       .from('transactions')
-      .select('group_id, teacher_net, paid_at')
+      .select('group_id, amount_billed, paid_at')
       .eq('teacher_id', teacherId)
       .eq('kind', 'lesson')
       .eq('status', 'paid')

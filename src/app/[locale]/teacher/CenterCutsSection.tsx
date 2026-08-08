@@ -7,7 +7,7 @@ import { useRouter } from '@/i18n/routing';
 import { EmptyState } from '@/components/shared';
 import { supabase } from '@/lib/supabase';
 import { getCsrfHeaders } from '@/lib/csrf-client';
-import { formatCurrency, formatPercent } from '@/lib/formatNumber';
+import { formatCurrency } from '@/lib/formatNumber';
 import CenterRequestsTracker from './CenterRequestsTracker';
 
 type GroupCut = {
@@ -15,7 +15,6 @@ type GroupCut = {
   name: string | null;
   collectedThisMonth: number;
   outstanding: number;
-  snapTeacherPct: number | null;
 };
 
 type CenterCut = {
@@ -275,11 +274,6 @@ export default function CenterCutsSection({
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span className="text-sm font-medium text-[var(--color-text-primary)]">
                         {g.name}
-                        {g.snapTeacherPct != null && (
-                          <span className="num ms-2 text-xs text-[var(--color-text-muted)]">
-                            {t('cutLabel', { pct: formatPercent(g.snapTeacherPct, locale) })}
-                          </span>
-                        )}
                       </span>
                       <span className="num text-sm text-[var(--color-text-secondary)]">
                         {formatCurrency(g.outstanding, locale)}
