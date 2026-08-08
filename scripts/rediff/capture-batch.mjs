@@ -12,7 +12,14 @@
 // absent feature. `ok:false` in the manifest means "not measured", which is a
 // different claim from "not built" and must never be collapsed into it.
 //
-// Usage: node scripts/rediff/capture-batch.mjs <outDir> <route[,route...]> [waitMs]
+// Usage: node scripts/rediff/capture-batch.mjs <outDir> <route[,route...]> [waitMs] [stateFile]
+//
+// stateFile selects the ROLE. The re-diff runs three of them and they are not
+// interchangeable — an admin screen captured with the owner's session redirects
+// to /login, which reads as an absent feature unless the manifest catches it:
+//   /tmp/state333.json    centre owner of Test Center 333   (default)
+//   /tmp/state-teacher.json  teacher, Aly Shady
+//   /tmp/state-admin.json    super-admin
 import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -20,8 +27,9 @@ import { join } from 'node:path';
 const outDir = process.argv[2];
 const routes = (process.argv[3] || '').split(',').map((r) => r.trim()).filter(Boolean);
 const wait = Number(process.argv[4] || 5000);
+const stateFile = process.argv[5] || process.env.REDIFF_STATE || '/tmp/state333.json';
 if (!outDir || routes.length === 0) {
-  console.error('usage: capture-batch.mjs <outDir> <route[,route...]> [waitMs]');
+  console.error('usage: capture-batch.mjs <outDir> <route[,route...]> [waitMs] [stateFile]');
   process.exit(2);
 }
 mkdirSync(outDir, { recursive: true });
@@ -33,9 +41,11 @@ const browser = await chromium.launch({
 });
 const ctx = await browser.newContext({
   viewport: { width: 390, height: 844 },
-  storageState: '/tmp/state333.json',
+  storageState: stateFile,
   deviceScaleFactor: 2,
 });
+
+console.log(`role state: ${stateFile}`);
 
 const manifest = [];
 for (const route of routes) {
@@ -53,7 +63,11 @@ for (const route of routes) {
   try {
     await page.goto(`http://localhost:3000${route}`, {
       waitUntil: 'domcontentloaded',
-      timeout: 60000,
+      // Dev-mode FIRST compiles on this box have taken 109s and 194s. A 60s
+      // timeout turns an uncompiled route into a `tooling` failure that reads
+      // like a broken screen, so the ceiling is well above the worst observed
+      // compile rather than just above the typical one.
+      timeout: 240000,
     });
     // Dev compiles client bundles lazily, so a fixed sleep photographs skeleton
     // cards and a "Compiling…" pill. Wait for the network to settle first; if it
