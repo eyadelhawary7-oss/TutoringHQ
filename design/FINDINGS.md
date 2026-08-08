@@ -361,6 +361,85 @@ after the code was fixed, which is the step that turns "fixed the screens" into 
 
 ---
 
+## 59. The instrument inside the measurement — one class, three faults in a single session
+
+**Named as a class rather than logged three times, because the instances look unrelated and the
+defect is identical.** A process query, a DOM read and a log grep have nothing in common on the
+surface. All three failed the same way: **the instrument was inside the thing it was measuring, so it
+saw itself.**
+
+| # | Instrument | What it was inside | What it returned |
+|---|---|---|---|
+| 1 | `pgrep -f "next dev"` / `pkill -f "next"` | the process table — which contains the shell running the query | `pkill` killed its own shell (twice). `pgrep` reported a **dead** dev server as **alive**, because it matched its own command line |
+| 2 | `querySelectorAll('nav,aside,header')` then `innerText` | the same DOM about to be read — and this app renders the centre name, plan chip and verification badge **inside `<header>`** | `/en/dashboard` captured **15 characters** and read as an empty screen |
+| 3 | `grep -icE "429\|too many\|rate.?limit"` over a request log | a log line where durations and status codes share one unstructured field | matched **`1429ms`** — a duration on a `200` response — and reported a rate-limit incident that never happened. Real 429s: **0** |
+
+Instance 2 is the second in its own file: entry 31 records the earlier version, where `innerText` was
+taken from a **detached clone** and returned hidden panels as visible. Same file, same function, same
+class, months apart.
+
+### Why two of the three survived, and one did not
+
+**The detection had nothing to do with care and everything to do with whether the wrong answer was
+plausible.**
+
+- Instance 2 was caught within seconds. A dashboard returning **15 characters** is impossible, and no
+  amount of wanting it to be fine makes 15 look like a page.
+- Instances 1 and 3 returned entirely believable answers. "The server is running" is what a running
+  server looks like. "One rate-limit match" is what one rate-limit match looks like. Both were caught
+  only by asking the same question with a **different instrument** — an HTTP request instead of the
+  process table, an anchored pattern instead of a bare number.
+
+This is entry 26's rule arriving in a third domain: *a plausible total hides a bad selector; an
+impossible intermediate exposes it.* There, `EN = frames − AR = -2` broke the arithmetic before the
+assumption. Here, `chars=15` broke it. In the two cases with no impossible intermediate, nothing
+broke, and the wrong answer was simply carried forward.
+
+### The aggravating factor, and it is entry 45
+
+Instance 3 did not arrive as an open question. It arrived with a hypothesis attached — *ten agents
+authenticating at once is exactly the shape that trips a fail-closed limiter* — which is **true**, and
+is precisely why a single plausible-looking match was enough. A confirming prior plus a match that
+looks right is believed without the check that would overturn it.
+
+The check cost one command: grep for the actual status code (`' 429 in '`) and for the literal
+string the limiter emits. Both returned **0**. The hypothesis was sound and the evidence for it was
+an artefact.
+
+### The rule
+
+> **Measure from outside the system you are measuring.** If the instrument can appear in its own
+> result set, it will.
+
+Concretely, for the three shapes that have now bitten:
+
+| Question | Do not | Do |
+|---|---|---|
+| Is the server up? | `pgrep`/`pkill` on a pattern naming the thing | **make an HTTP request.** It cannot match itself |
+| What does the page say? | mutate the DOM you are about to read | read first, or strip only what provably holds no content (`script`, `style`) |
+| Did status X occur? | grep a bare number | anchor the pattern to its field — `' 429 in '`, not `429` |
+
+And the general form: **when a check can only be run from inside, run a second check from outside and
+require them to agree.** One instrument that can see itself is not made reliable by running it twice.
+
+### Why this is worth a class entry
+
+Six of the seven earlier check-measuring-the-wrong-thing instances were about a check aimed at the
+**wrong target** — the phone compare, the schema-drift gate that cannot see a REVOKE, the erasure
+comment, the two near-synonym `centers` columns, the wrapper counts, `ALLOWED_METHODS` checked
+against the picker. Those are fixed by aiming better.
+
+**This class is not fixed by aiming better**, because the aim is correct. `pgrep -f "next dev"` is
+exactly the right query for "is next dev running". It fails on *contamination*, not on aim, and the
+remedy is isolation rather than precision. Filing three instances separately would have produced
+three notes about greps and lost the only thing they share.
+
+*Source: `pgrep`/`pkill` self-matches during the wave-2 post-mortem, `scripts/rediff/capture-batch.mjs`
+before its header fix, and a `grep -icE "429..."` over `/tmp/dev.log` re-checked against
+`grep -cE ' 429 in '` (0) and `grep -ci 'too many requests'` (0). Verified 8 August 2026.*
+
+---
+
 ## 55. `DROP COLUMN` cascaded, took two money guards with it, and reported nothing
 
 **The snapshot rebuild is real verification, not ceremony. This is the entry that proves it.**
