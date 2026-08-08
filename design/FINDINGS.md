@@ -229,9 +229,144 @@ no timer is how this becomes a false statement rather than a gap.
 
 ---
 
-## 55. THE FINDING OF THIS ROUND — `DROP COLUMN` cascaded, took two money guards with it, and reported nothing
+## 57. THE FINDING OF THIS ROUND — a test that re-implements the logic under test is not a test
+
+**The rule, and it generalises past this instance:**
+
+> **A test must call the shipped function.** If it re-derives the behaviour it is checking, it
+> asserts that two copies of the same idea agree — which they will, right up until the shipped one
+> is wrong. That is not a weak test. It is a check measuring the wrong thing, in the one place built
+> to prevent exactly this.
+
+### The instance
+
+`tests/unit/adminAccountsR5.test.ts` covered the referral commission ladder thoroughly. It ran the
+table across every month from 1 to 36, asserted a single tier covers each month, and named itself
+*"what stops the screen drifting back to the drawing."* It looked like the strongest guard in the
+file.
+
+It compared `COMMISSION_TIERS` against this:
+
+```ts
+const liveRate = (months: number) => (months === 1 ? 25 : months <= 12 ? 10 : 5);
+```
+
+A **local re-derivation of the same ladder**, written in the test file. Both halves said 10% through
+month 12. Both halves were wrong. The suite was green for as long as they stayed wrong *together*,
+and it would have gone red the moment somebody fixed only one of them — punishing the correction
+rather than the defect.
+
+It also never touched the shipped code path. `/api/referrals/process-commission` carried its own
+third copy of the ladder, hardcoded, and no test asserted anything about it at all. The route that
+actually decides what a referrer gets paid was the one thing not under test.
+
+**Cost, had it survived: months 7 to 12 paying 10% instead of 5% — double — on every referral that
+reached month seven.**
+
+### Why this outranks the fix it came from
+
+The rate was one wrong number and took minutes to correct. The test is the reason the wrong number
+was *safe* — it had a passing guard pointing at it, so nobody looked. **A defect with a green test
+over it is harder to find than a defect with no test at all**, because the test converts "unchecked"
+into "checked and fine" for every future reader.
+
+This is the seventh check-measuring-the-wrong-thing in this series, after the `substring(-11)` phone
+compare, the schema-drift gate that cannot see a REVOKE, the erasure comment that claims more than
+the code does, the two near-synonym `centers` status columns, the `class="cap"` / `class="frame"`
+wrapper counts, and the `ALLOWED_METHODS` set checked against the client picker instead of the
+column. **It is the first one inside a test**, which is the worst place for it: every other instance
+was silent about what it measured, and a test is a claim, in writing, that something specific was
+verified.
+
+### What a correct version looks like
+
+The rewritten block asserts `rateForMonth()` — the exported function every caller now uses — at
+every month 1 to 36, pins the boundary explicitly (month 6 is 10%, month 7 is 5%), checks that a
+month below 1 throws rather than quietly paying the top rate, and asserts the bands leave no gap.
+No ladder is re-derived anywhere in the test.
+
+### The tell, so this is findable next time
+
+**A test that contains a second implementation of the thing it is testing.** In this file it was a
+one-line arrow function, which is exactly why it read as a fixture rather than as a duplicate rule.
+Look for: a lookup table restated as a ternary, a formula restated as arithmetic, an enum restated
+as a string union, a state machine restated as an if-chain. If the test would still pass after the
+shipped function was deleted and replaced by the test's own copy, the test is measuring itself.
+
+**A related, milder version worth catching in the same sweep:** the test also carried its own
+`tierFor()` helper that re-implemented the tier *lookup*, separate from the rate. Two
+re-implementations in one twenty-line block, neither of them noticed, in code specifically written
+to guard a money rule.
+
+*Source: `tests/unit/adminAccountsR5.test.ts` as it stood before 8 August 2026, and
+`api/referrals/process-commission/route.ts`. Verified 8 August 2026.*
+
+---
+
+## 58. The commission ladder was written twice, and it is the same shape as `payments.status` vs `payments.confirmed`
+
+**Two entries, one failure mode, and both were found the same way — by reading the second writer
+rather than the first.**
+
+`COMMISSION_TIERS` held the ladder. `api/referrals/process-commission/route.ts` held a second copy:
+
+```ts
+if (months === 1) rate = 0.25;
+else if (months <= 12) rate = 0.1;
+else rate = 0.05;
+```
+
+The table was what every screen rendered. The hardcoded copy was what actually set
+`referral_commissions.commission_rate`. **So the number a referrer saw and the number a referrer was
+paid came from two different places**, and correcting either one alone would have made them
+disagree rather than fixing anything.
+
+Entry 35 records the identical shape one layer down: `payments.status` and `payments.confirmed`
+encode the same fact, nothing reconciles them, and whichever a given consumer happens to read
+decides whether a payment is money. There the two sources are columns; here they are a constant and
+a branch. **The consequence is the same either way — the answer depends on which source you asked.**
+
+**Both surfaced the same way, and it is not the way either was designed to be found.** Neither a
+test nor a type nor a lint rule can see that two expressions encode one rule; they can only check
+each against itself. Both were caught by someone tracing what *writes* the value — `pg_constraint`
+and a `group by` in entry 35's case, the route that stamps `commission_rate` in this one — rather
+than by reading the definition that looked authoritative.
+
+**The rule: when a value has a canonical definition, find every writer before trusting it.** A
+constant named like a source of truth is a claim about intent, not a guarantee about behaviour. The
+guarantee only exists once nothing else can produce the value, which is why the fix here was to
+delete the second copy and export `rateForMonth()` rather than to correct the second copy in place.
+
+### Where it would have cost, and it is outside the product
+
+Two of the eight sites carrying the wrong ladder were **customer-facing documents**:
+
+| File | Surface |
+|---|---|
+| `src/lib/generateInvoicePdf.ts` | the referral strip on the **invoice PDF** |
+| `src/lib/invoiceTemplates.ts` | the referral footer on the **invoice email** |
+
+Both printed the ladder in Arabic — `شهر 2-12: 10%` — on artefacts that leave the platform entirely.
+**Nobody diffs a PDF a customer already has.** A wrong figure on a screen is corrected by the next
+deploy; a wrong figure on an emailed invoice is a document in a referrer's inbox, quotable back at
+you, with no mechanism to retract it. The re-diff pipeline cannot reach these at all — it renders
+routes, and neither of these is a route.
+
+**So the sweep that finds a stale rule has to include the documents the product emits, not just the
+screens it draws.** Those two sites were found by grepping the whole of `src/` for the boundary
+after the code was fixed, which is the step that turns "fixed the screens" into "fixed the rule".
+
+*Source: `referralProgram.ts`, `api/referrals/process-commission/route.ts`,
+`lib/generateInvoicePdf.ts`, `lib/invoiceTemplates.ts`, and entry 35. Verified 8 August 2026.*
+
+---
+
+## 55. `DROP COLUMN` cascaded, took two money guards with it, and reported nothing
 
 **The snapshot rebuild is real verification, not ceremony. This is the entry that proves it.**
+
+*(Ranked second in this round, behind entry 57. Only one entry can be the finding of a round, and
+saying so twice would be this file committing the error it exists to record.)*
 
 Dropping the seven split-model columns from `public.transactions` (8 August 2026, version
 `20260808020632`) also dropped **two CHECK constraints**, because Postgres removes any CHECK that
