@@ -500,8 +500,8 @@ function referralSectionHtml(referralCode: string, qrDataUrl: string | null | un
       <div style="color:#f8fafc;font-size:15px;font-weight:700;">تعرف على سنتر تاني؟</div>
       <div style="color:#0D9488;font-size:15px;font-weight:700;">اكسب كل شهر.</div>
       <div style="color:#64748b;font-size:11px;margin-top:6px;">
-        +13: <strong style="color:#f8fafc;">5% دائمة</strong>
-        &nbsp; شهر 2-12: <strong style="color:#f8fafc;">10%</strong>
+        من شهر 7: <strong style="color:#f8fafc;">5% دائمة</strong>
+        &nbsp; شهور 2 إلى 6: <strong style="color:#f8fafc;">10%</strong>
         &nbsp; شهر 1: <strong style="color:#f8fafc;">25%</strong>
       </div>
     </div>

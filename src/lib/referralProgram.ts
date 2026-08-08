@@ -5,17 +5,25 @@ import { cairoDateKey, startOfUtcInstantForCairoCalendarDay } from '@/lib/cairo/
  * `Merged-Admin-Accounts` §04 — the referral programme block and the ranked
  * top-referrers list.
  *
- * ## The ladder is the live one, not the drawn one
+ * ## The ladder — ONE source, and this is it
  *
- * `/api/referrals/process-commission` is the only thing that sets
- * `referral_commissions.commission_rate`, and it computes:
+ *   month 1 → 25% · months 2 to 6 → 10% · month 7 onward → 5%
  *
- *   month 1 → 25% · months 2–12 → 10% · month 13 onward → 5%
+ * Month 6 is 10%. Month 7 is 5%. The bands touch and do not overlap.
  *
- * The design draws "months 2 to 6" and "month 7 onward". That is design
- * correction **D2 — live wins, 10% for twelve months**. These constants mirror
- * the live rule so the screen cannot drift from what actually gets paid; if the
- * rule ever changes, both move together or the test below fails.
+ * `design/NEW-MODEL.md` and `design/NEW-FEATURES.md` both state this ladder, and
+ * all four drawings that render it agree ("Months 2 to 6" / "الأشهر ٢ إلى ٦").
+ *
+ * It previously ran 10% through month 12, under design correction D2 ("live
+ * wins, 10% for twelve months"). D2 was right when it was written on 29 July
+ * and went stale on 6 August, when NEW-MODEL restated the 2-to-6 ladder. Ruled
+ * back to the model by Eyad on 8 August. See `design/CHANGE-LOG.md` D2.
+ *
+ * **Read the rate from `rateForMonth()`. Do not re-derive it.** The old
+ * `process-commission` route carried its own hardcoded copy of the ladder, so
+ * the boundary existed in two places and only one of them was ever corrected —
+ * which is exactly how a single month ends up paying the wrong rate on every
+ * referral.
  *
  * ## What is NOT here
  *
@@ -38,9 +46,39 @@ export interface CommissionTier {
 
 export const COMMISSION_TIERS: CommissionTier[] = [
   { ratePct: 25, fromMonth: 1, toMonth: 1 },
-  { ratePct: 10, fromMonth: 2, toMonth: 12 },
-  { ratePct: 5, fromMonth: 13, toMonth: null },
+  { ratePct: 10, fromMonth: 2, toMonth: 6 },
+  { ratePct: 5, fromMonth: 7, toMonth: null },
 ];
+
+/**
+ * The commission rate for a given month of a referral's life, as a fraction
+ * (0.25 / 0.10 / 0.05). `monthsSinceActivation` is 1-based: the first paid month
+ * is 1.
+ *
+ * Derived from COMMISSION_TIERS so the band boundaries exist in exactly one
+ * place. Anything that needs a rate calls this; nothing re-implements the
+ * ladder.
+ *
+ * Months at or beyond the last tier's `fromMonth` take that tier's rate, so the
+ * open-ended tail needs no special case. A month below 1 is not a real referral
+ * month and throws rather than silently paying the top rate.
+ */
+export function rateForMonth(monthsSinceActivation: number): number {
+  if (!Number.isFinite(monthsSinceActivation) || monthsSinceActivation < 1) {
+    throw new Error(`rateForMonth: months must be >= 1, got ${monthsSinceActivation}`);
+  }
+  for (const tier of COMMISSION_TIERS) {
+    if (
+      monthsSinceActivation >= tier.fromMonth &&
+      (tier.toMonth === null || monthsSinceActivation <= tier.toMonth)
+    ) {
+      return tier.ratePct / 100;
+    }
+  }
+  // Unreachable while the last tier is open-ended, and a loud failure rather
+  // than a quiet default if someone ever closes it.
+  throw new Error(`rateForMonth: no tier covers month ${monthsSinceActivation}`);
+}
 
 export interface ProgramSummary {
   paidThisMonth: number;

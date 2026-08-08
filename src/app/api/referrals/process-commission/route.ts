@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { netReferralBaseFromAllInPrice } from '@/lib/referralNetBase';
+import { rateForMonth } from '@/lib/referralProgram';
 import { sendReferralCommission } from '@/lib/centerNotify';
 import { ownerContactByCenterId, resolveOwnerWaPhone } from '@/lib/ownerPhone';
 import { supabaseAdmin } from '@/lib/supabase-admin';
@@ -102,10 +103,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid period_month' }, { status: 400 });
     }
 
-    let rate: number;
-    if (months === 1) rate = 0.25;
-    else if (months <= 12) rate = 0.1;
-    else rate = 0.05;
+    // Read from the one ladder (referralProgram.ts). This route used to carry
+    // its own hardcoded copy — 25 / 10 through month 12 / 5 — which is how the
+    // band boundary came to be written in two places and corrected in one.
+    const rate = rateForMonth(months);
 
     const commission = Math.round(referred_plan_fee * rate);
 

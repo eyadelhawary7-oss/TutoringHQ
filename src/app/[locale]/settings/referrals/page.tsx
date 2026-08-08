@@ -374,10 +374,10 @@ export default function SettingsReferralsPage() {
                 <span className="text-[var(--color-text-primary)] font-medium">{tRef('commissionTierMonth1', referralPct)}</span>
               </li>
               <li className="border-s-4 border-teal-600/50 ps-3">
-                <span className="text-[var(--color-text-primary)] font-medium">{tRef('commissionTierMonths2to12', referralPct)}</span>
+                <span className="text-[var(--color-text-primary)] font-medium">{tRef('commissionTierMonths2to6', referralPct)}</span>
               </li>
               <li className="border-s-4 border-teal-600/30 ps-3">
-                <span className="text-[var(--color-text-primary)] font-medium">{tRef('commissionTierMonth13Plus', referralPct)}</span>
+                <span className="text-[var(--color-text-primary)] font-medium">{tRef('commissionTierMonth7Plus', referralPct)}</span>
               </li>
             </ul>
           </div>

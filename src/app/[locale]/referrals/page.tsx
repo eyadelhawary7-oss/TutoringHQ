@@ -14,8 +14,8 @@ import { centerStatusPresentation } from '@/lib/referralCommissionStatus';
 
 // Tone per tier, matching Merged-Center-Insight §03's .s25/.s10/.s5 step chips
 // (teal → gold → neutral, in that order). COMMISSION_TIERS is the single
-// live source of truth for the ladder itself (D2: live wins, 10% runs
-// months 2-12, not the design's months 2-6).
+// source of truth for the ladder itself: 25% month 1, 10% months 2 to 6,
+// 5% month 7 onward.
 const TIER_TONE_CLASS = ['badge-success', 'badge-gold', 'badge-neutral'] as const;
 const TIER_LABEL_KEY = ['tier1Label', 'tier2Label', 'tier3Label'] as const;
 
@@ -196,8 +196,8 @@ export default function ReferralsPage() {
               and the basis is stated once, here, above the ladder. */}
           <p className="text-xs text-[var(--color-text-secondary)] mb-4 leading-snug">{t('commissionBasis')}</p>
           {/* Merged-Center-Insight §03's rate-decay step chips. The ladder itself
-              comes from COMMISSION_TIERS (referralProgram.ts), the live rule per
-              D2 — the design's own "months 2-6" is the corrected-away number. */}
+              comes from COMMISSION_TIERS (referralProgram.ts), which matches
+              NEW-MODEL: 25% month 1, 10% months 2 to 6, 5% month 7 onward. */}
           <div className="flex items-stretch gap-1.5">
             {COMMISSION_TIERS.map((tier, i) => (
               <div key={tier.fromMonth} className="flex items-stretch gap-1.5 flex-1">
