@@ -1645,37 +1645,30 @@ COLUMN transactions.group_id ord=6 type=uuid notnull=false default=∅
 COLUMN transactions.teacher_id ord=7 type=uuid notnull=false default=∅
 COLUMN transactions.center_id ord=8 type=uuid notnull=false default=∅
 COLUMN transactions.lesson_fee ord=9 type=numeric notnull=true default=0
-COLUMN transactions.customer_commission_amt ord=10 type=numeric notnull=true default=0
-COLUMN transactions.processing_fee_amt ord=11 type=numeric notnull=true default=0
-COLUMN transactions.amount_billed ord=12 type=numeric notnull=true default=0
-COLUMN transactions.teacher_commission_amt ord=13 type=numeric notnull=true default=0
-COLUMN transactions.teacher_net ord=14 type=numeric notnull=true default=0
-COLUMN transactions.platform_gross ord=15 type=numeric notnull=true default=0
-COLUMN transactions.platform_net ord=16 type=numeric notnull=true default=0
-COLUMN transactions.snap_vat_amount ord=17 type=numeric notnull=true default=0
-COLUMN transactions.snap_customer_pct ord=18 type=numeric notnull=true default=0
-COLUMN transactions.snap_teacher_pct ord=19 type=numeric notnull=true default=0
-COLUMN transactions.snap_processing_flat ord=20 type=numeric notnull=true default=0
-COLUMN transactions.payer_type ord=21 type=text notnull=false default=∅
-COLUMN transactions.payer_phone ord=22 type=text notnull=false default=∅
-COLUMN transactions.method ord=23 type=text notnull=false default=∅
-COLUMN transactions.status ord=24 type=text notnull=true default='pending'::text
-COLUMN transactions.settlement_status ord=25 type=text notnull=true default='not_applicable'::text
-COLUMN transactions.expected_settlement_at ord=26 type=timestamp with time zone notnull=false default=∅
-COLUMN transactions.settled_at ord=27 type=timestamp with time zone notnull=false default=∅
-COLUMN transactions.settlement_retry_count ord=28 type=integer notnull=true default=0
-COLUMN transactions.e_receipt_ref ord=29 type=text notnull=false default=∅
-COLUMN transactions.e_receipt_status ord=30 type=text notnull=true default='pending'::text
-COLUMN transactions.is_test ord=31 type=boolean notnull=true default=false
-COLUMN transactions.paymob_order_ref ord=32 type=text notnull=false default=∅
-COLUMN transactions.paymob_split_ref ord=33 type=text notnull=false default=∅
-COLUMN transactions.marked_paid_by ord=34 type=uuid notnull=false default=∅
-COLUMN transactions.idempotency_key ord=35 type=text notnull=true default=∅
-COLUMN transactions.paid_at ord=36 type=timestamp with time zone notnull=false default=∅
-COLUMN transactions.created_by ord=37 type=uuid notnull=false default=∅
-COLUMN transactions.created_at ord=38 type=timestamp with time zone notnull=true default=now()
-COLUMN transactions.fee_reminder_count ord=39 type=integer notnull=true default=0
-COLUMN transactions.fee_reminder_last_at ord=40 type=timestamp with time zone notnull=false default=∅
+COLUMN transactions.processing_fee_amt ord=10 type=numeric notnull=true default=0
+COLUMN transactions.amount_billed ord=11 type=numeric notnull=true default=0
+COLUMN transactions.snap_vat_amount ord=12 type=numeric notnull=true default=0
+COLUMN transactions.snap_processing_flat ord=13 type=numeric notnull=true default=0
+COLUMN transactions.payer_type ord=14 type=text notnull=false default=∅
+COLUMN transactions.payer_phone ord=15 type=text notnull=false default=∅
+COLUMN transactions.method ord=16 type=text notnull=false default=∅
+COLUMN transactions.status ord=17 type=text notnull=true default='pending'::text
+COLUMN transactions.settlement_status ord=18 type=text notnull=true default='not_applicable'::text
+COLUMN transactions.expected_settlement_at ord=19 type=timestamp with time zone notnull=false default=∅
+COLUMN transactions.settled_at ord=20 type=timestamp with time zone notnull=false default=∅
+COLUMN transactions.settlement_retry_count ord=21 type=integer notnull=true default=0
+COLUMN transactions.e_receipt_ref ord=22 type=text notnull=false default=∅
+COLUMN transactions.e_receipt_status ord=23 type=text notnull=true default='pending'::text
+COLUMN transactions.is_test ord=24 type=boolean notnull=true default=false
+COLUMN transactions.paymob_order_ref ord=25 type=text notnull=false default=∅
+COLUMN transactions.paymob_split_ref ord=26 type=text notnull=false default=∅
+COLUMN transactions.marked_paid_by ord=27 type=uuid notnull=false default=∅
+COLUMN transactions.idempotency_key ord=28 type=text notnull=true default=∅
+COLUMN transactions.paid_at ord=29 type=timestamp with time zone notnull=false default=∅
+COLUMN transactions.created_by ord=30 type=uuid notnull=false default=∅
+COLUMN transactions.created_at ord=31 type=timestamp with time zone notnull=true default=now()
+COLUMN transactions.fee_reminder_count ord=32 type=integer notnull=true default=0
+COLUMN transactions.fee_reminder_last_at ord=33 type=timestamp with time zone notnull=false default=∅
 COLUMN trial_claims.id ord=1 type=uuid notnull=true default=gen_random_uuid()
 COLUMN trial_claims.phone ord=2 type=text notnull=true default=∅
 COLUMN trial_claims.center_id ord=3 type=uuid notnull=false default=∅
@@ -2555,7 +2548,7 @@ CONSTRAINT teacher_subscriptions.teacher_subscriptions_teacher_id_fkey type=f de
 CONSTRAINT teacher_subscriptions.teacher_subscriptions_teacher_id_key type=u def=UNIQUE (teacher_id)
 CONSTRAINT transactions.transactions_center_id_fkey type=f def=FOREIGN KEY (center_id) REFERENCES centers(id) ON DELETE RESTRICT
 CONSTRAINT transactions.transactions_created_by_fkey type=f def=FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
-CONSTRAINT transactions.transactions_customer_sum_chk type=c def=CHECK (((kind <> 'lesson'::text) OR (((lesson_fee + customer_commission_amt) + processing_fee_amt) = amount_billed)))
+CONSTRAINT transactions.transactions_customer_sum_chk type=c def=CHECK (((kind <> 'lesson'::text) OR ((lesson_fee + processing_fee_amt) = amount_billed)))
 CONSTRAINT transactions.transactions_enrollment_id_fkey type=f def=FOREIGN KEY (enrollment_id) REFERENCES enrollments(id) ON DELETE SET NULL
 CONSTRAINT transactions.transactions_ereceipt_status_chk type=c def=CHECK ((e_receipt_status = ANY (ARRAY['pending'::text, 'issued'::text, 'failed'::text])))
 CONSTRAINT transactions.transactions_fee_reminder_count_chk type=c def=CHECK ((fee_reminder_count >= 0))
@@ -2564,7 +2557,7 @@ CONSTRAINT transactions.transactions_idempotency_key_key type=u def=UNIQUE (idem
 CONSTRAINT transactions.transactions_kind_chk type=c def=CHECK ((kind = ANY (ARRAY['lesson'::text, 'center_fee'::text])))
 CONSTRAINT transactions.transactions_marked_paid_by_fkey type=f def=FOREIGN KEY (marked_paid_by) REFERENCES users(id) ON DELETE SET NULL
 CONSTRAINT transactions.transactions_method_chk type=c def=CHECK ((((status = 'pending'::text) AND ((method IS NULL) OR (method = ANY (ARRAY['cash'::text, 'instapay'::text])))) OR ((status <> 'pending'::text) AND (method = ANY (ARRAY['cash'::text, 'instapay'::text])))))
-CONSTRAINT transactions.transactions_nonneg_chk type=c def=CHECK (((lesson_fee >= (0)::numeric) AND (customer_commission_amt >= (0)::numeric) AND (processing_fee_amt >= (0)::numeric) AND (amount_billed >= (0)::numeric) AND (teacher_commission_amt >= (0)::numeric) AND (teacher_net >= (0)::numeric) AND (platform_gross >= (0)::numeric) AND (platform_net >= (0)::numeric) AND (snap_vat_amount >= (0)::numeric) AND (settlement_retry_count >= 0)))
+CONSTRAINT transactions.transactions_nonneg_chk type=c def=CHECK (((lesson_fee >= (0)::numeric) AND (processing_fee_amt >= (0)::numeric) AND (amount_billed >= (0)::numeric) AND (snap_vat_amount >= (0)::numeric) AND (settlement_retry_count >= 0)))
 CONSTRAINT transactions.transactions_payer_type_chk type=c def=CHECK (((payer_type IS NULL) OR (payer_type = ANY (ARRAY['student'::text, 'parent'::text]))))
 CONSTRAINT transactions.transactions_pkey type=p def=PRIMARY KEY (id)
 CONSTRAINT transactions.transactions_session_id_fkey type=f def=FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE SET NULL
