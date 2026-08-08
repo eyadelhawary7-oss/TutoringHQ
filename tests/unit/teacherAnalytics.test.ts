@@ -87,7 +87,7 @@ describe('projectNextMonthIncome (#1)', () => {
 });
 
 // ---------------------------------------------------------------------------
-// #2 / #3 Revenue (teacher_net)
+// #2 / #3 Revenue (amount_billed)
 // ---------------------------------------------------------------------------
 
 describe('computeRevenue (#2 best/worst, #3 by group + trend)', () => {
@@ -96,12 +96,12 @@ describe('computeRevenue (#2 best/worst, #3 by group + trend)', () => {
     { id: 'g2', name: 'B' },
   ];
   const paid: PaidLessonRow[] = [
-    { group_id: 'g1', teacher_net: 100, paid_at: '2026-06-10T08:00:00Z' }, // June
-    { group_id: 'g1', teacher_net: 50, paid_at: '2026-06-12T08:00:00Z' }, // June
-    { group_id: 'g1', teacher_net: 200, paid_at: '2026-05-10T08:00:00Z' }, // May (trend only)
+    { group_id: 'g1', amount_billed: 100, paid_at: '2026-06-10T08:00:00Z' }, // June
+    { group_id: 'g1', amount_billed: 50, paid_at: '2026-06-12T08:00:00Z' }, // June
+    { group_id: 'g1', amount_billed: 200, paid_at: '2026-05-10T08:00:00Z' }, // May (trend only)
   ];
 
-  it('sums teacher_net per group for the current Cairo month, zero-filling idle groups', () => {
+  it('sums amount_billed per group for the current Cairo month, zero-filling idle groups', () => {
     const r = computeRevenue(paid, groups, NOW);
     const byId = new Map(r.byGroupThisMonth.map((g) => [g.groupId, g.revenue]));
     expect(byId.get('g1')).toBe(150);
@@ -116,7 +116,7 @@ describe('computeRevenue (#2 best/worst, #3 by group + trend)', () => {
     expect(r.worst?.revenue).toBe(0);
   });
 
-  it('trend buckets teacher_net by Cairo paid_at month (June=150, May=200)', () => {
+  it('trend buckets amount_billed by Cairo paid_at month (June=150, May=200)', () => {
     const r = computeRevenue(paid, groups, NOW);
     const june = r.trend.find((m) => m.year === 2026 && m.month === 6);
     const may = r.trend.find((m) => m.year === 2026 && m.month === 5);
@@ -395,12 +395,12 @@ describe('buildTeacherAnalytics (orchestrator)', () => {
     expect(res.attendanceByGroup).toEqual([]);
     expect(res.notSeen).toEqual([]);
     expect(res.paymentRisk).toEqual([]);
-    // Revenue uses teacher_net + groups use fee_per_class + risk reads ar_by_student.
+    // Revenue uses amount_billed + groups use fee_per_class + risk reads ar_by_student.
     expect(selectCalls.find((c) => c.table === 'student_groups')?.cols).toContain('fee_per_class');
     expect(selectCalls.some((c) => c.table === 'ar_by_student')).toBe(true);
   });
 
-  it('seeded fixture: revenue=teacher_net, fee=fee_per_class, projection subtracts a cancelled exception', async () => {
+  it('seeded fixture: revenue=amount_billed, fee=fee_per_class, projection subtracts a cancelled exception', async () => {
     const dow = cairoYmdToJsWeekday('2026-07-06');
     const admin = makeAdmin(
       {
@@ -421,7 +421,7 @@ describe('buildTeacherAnalytics (orchestrator)', () => {
           },
         ],
         transactions: [
-          { data: [{ group_id: 'g1', teacher_net: 150, paid_at: '2026-06-10T08:00:00Z' }], error: null },
+          { data: [{ group_id: 'g1', amount_billed: 150, paid_at: '2026-06-10T08:00:00Z' }], error: null },
         ],
         sessions: [
           {
@@ -451,7 +451,7 @@ describe('buildTeacherAnalytics (orchestrator)', () => {
     expect(res.projection.groups[0].scheduledSessions).toBe(expectedSessions);
     expect(res.projection.total).toBe(100 * expectedSessions);
 
-    // Revenue is teacher_net, current Cairo month.
+    // Revenue is amount_billed, current Cairo month.
     expect(res.revenue.byGroupThisMonth.find((g) => g.groupId === 'g1')?.revenue).toBe(150);
     expect(res.revenue.best?.revenue).toBe(150);
 
@@ -468,6 +468,6 @@ describe('buildTeacherAnalytics (orchestrator)', () => {
     ]);
     expect(res.hasAnyActivity).toBe(true);
 
-    expect(selectCalls.find((c) => c.table === 'transactions')?.cols).toContain('teacher_net');
+    expect(selectCalls.find((c) => c.table === 'transactions')?.cols).toContain('amount_billed');
   });
 });

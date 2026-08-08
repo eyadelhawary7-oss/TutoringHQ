@@ -13,13 +13,13 @@
  * OMITTED, and why — the design draws two more figures this cannot honestly show:
  *
  *   "Fee revenue" (the §01 KPI quad's second tile, and the teachers segment's
- *   third row). The platform's fee on teacher-run classes lives in
- *   `transactions.teacher_net` / `teacher_commission_amt`, which no write path
- *   ever populates — `compute_lesson_money` has zero call sites and
- *   `finish_center_class_and_bill` is unreachable. Every value would read
- *   EGP 0 for every teacher, always. That is D19 (private lessons) and D16
- *   (center classes), both open. Rendering a 0 here would ship exactly the
- *   live-wrong-number those entries exist to prevent.
+ *   third row). This was the platform's percentage of teacher-run classes.
+ *   There is no such percentage: the platform takes NO share of tuition
+ *   (design/NEW-MODEL.md). The columns that modelled it — `teacher_net`,
+ *   `teacher_commission_amt` and the rest of the 90/10 split — were dropped
+ *   from `transactions` on 8 Aug 2026. The platform's revenue from a tuition
+ *   payment is the flat 10 EGP service fee billed to the PARENT, and it is not
+ *   recorded on that table, so this tile still has no source.
  *
  * Nothing on this screen writes. Every figure is a count or a sum of rows that
  * already exist; the arithmetic is in `src/lib/ceoBoard.ts` with its sources.

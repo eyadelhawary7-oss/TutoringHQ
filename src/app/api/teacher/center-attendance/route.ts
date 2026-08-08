@@ -10,11 +10,9 @@ import {
 const ROUTE_TAG = 'api/teacher/center-attendance';
 const SESSION_LIMIT = 20;
 
-// The teacher's cut of center work lives in transactions.kind='center_fee'.
+// The teacher's earnings from center work live in transactions.kind='center_fee'.
 type CutRow = {
   session_id: string | null;
-  teacher_net: number | string | null;
-  snap_teacher_pct: number | string | null;
   amount_billed: number | string | null;
 };
 
@@ -23,19 +21,13 @@ function round2(n: number): number {
 }
 
 /**
- * The teacher's net cut of a center-fee transaction. teacher_net is
- * authoritative when set; otherwise fall back to snap_teacher_pct *
- * amount_billed, then 0. (Same rule as /api/teacher/center-cuts.)
+ * What a center-fee transaction is worth to the teacher: the whole amount
+ * billed. There is no percentage to apply — see `design/NEW-MODEL.md`.
+ * (Same rule as /api/teacher/center-cuts.)
  */
-function teacherCut(row: CutRow): number {
-  const net = row.teacher_net == null ? null : Number(row.teacher_net);
-  if (net != null && Number.isFinite(net)) return net;
-  const pct = row.snap_teacher_pct == null ? null : Number(row.snap_teacher_pct);
+function teacherTake(row: CutRow): number {
   const billed = row.amount_billed == null ? null : Number(row.amount_billed);
-  if (pct != null && Number.isFinite(pct) && billed != null && Number.isFinite(billed)) {
-    return (pct / 100) * billed;
-  }
-  return 0;
+  return billed != null && Number.isFinite(billed) ? billed : 0;
 }
 
 function startOfCurrentCairoMonthIso(): string {
@@ -75,7 +67,7 @@ export async function GET(request: NextRequest) {
   // Cairo month. CORE - an error here is a 500 (Rule 151).
   const { data: paidRows, error: paidErr } = await auth.supabaseAdmin
     .from('transactions')
-    .select('session_id, teacher_net, snap_teacher_pct, amount_billed, paid_at')
+    .select('session_id, amount_billed, paid_at')
     .eq('teacher_id', auth.userId)
     .eq('kind', 'center_fee')
     .eq('status', 'paid')
@@ -88,7 +80,7 @@ export async function GET(request: NextRequest) {
   let earnedThisMonth = 0;
   let earnedAllTime = 0;
   for (const r of (paidRows ?? []) as (CutRow & { paid_at: string | null })[]) {
-    const cut = teacherCut(r);
+    const cut = teacherTake(r);
     earnedAllTime += cut;
     if (r.paid_at && r.paid_at >= monthStartIso) earnedThisMonth += cut;
   }
@@ -151,7 +143,7 @@ export async function GET(request: NextRequest) {
 
   const { data: cutRows, error: cutErr } = await auth.supabaseAdmin
     .from('transactions')
-    .select('session_id, teacher_net, snap_teacher_pct, amount_billed')
+    .select('session_id, amount_billed')
     .eq('teacher_id', auth.userId)
     .eq('kind', 'center_fee')
     .in('session_id', sessionIds);
@@ -161,7 +153,7 @@ export async function GET(request: NextRequest) {
   const earnedBySession = new Map<string, number>();
   for (const r of (cutRows ?? []) as CutRow[]) {
     if (!r.session_id) continue;
-    earnedBySession.set(r.session_id, (earnedBySession.get(r.session_id) ?? 0) + teacherCut(r));
+    earnedBySession.set(r.session_id, (earnedBySession.get(r.session_id) ?? 0) + teacherTake(r));
   }
 
   return NextResponse.json({

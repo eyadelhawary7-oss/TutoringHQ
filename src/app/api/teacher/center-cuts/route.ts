@@ -9,13 +9,11 @@ import {
 
 const ROUTE_TAG = 'api/teacher/center-cuts';
 
-// Center-fee charges (the teacher's cut of center-group work) live in
-// transactions with kind='center_fee' (verified CHECK: lesson | center_fee).
+// Center-fee charges for center-group work live in transactions with
+// kind='center_fee' (verified CHECK: lesson | center_fee).
 type CutRow = {
   center_id: string | null;
   group_id: string | null;
-  teacher_net: number | string | null;
-  snap_teacher_pct: number | string | null;
   amount_billed: number | string | null;
   created_at: string;
 };
@@ -25,7 +23,6 @@ type GroupCut = {
   name: string | null;
   collectedThisMonth: number;
   outstanding: number;
-  snapTeacherPct: number | null;
 };
 
 function round2(n: number): number {
@@ -33,61 +30,24 @@ function round2(n: number): number {
 }
 
 /**
- * The teacher's cut of a center-fee transaction. teacher_net is authoritative
- * when set; otherwise fall back to snap_teacher_pct * amount_billed, then 0.
- * When a write path lands that populates teacher_net, this picks it up
- * automatically without a code change.
+ * What a center-fee transaction is worth to the teacher: the whole amount
+ * billed.
  *
- * WHAT THIS RETURNS TODAY, verified against the live catalog on
- * `lczmjpnbuhnsislcvzar` (4 Aug 2026) — read this before trusting the number:
+ * There is no percentage to apply. The platform takes no share of tuition and
+ * a centre's arrangement with its teacher is not modelled on this table — see
+ * `design/NEW-MODEL.md`, "What died": *"The 90/10 split — the platform does not
+ * take a percentage of tuition."*
  *
- *  - `transactions.teacher_net` and `.snap_teacher_pct` are **NOT NULL DEFAULT
- *    0**, not nullable. The "both null -> 0" tail below is therefore dead for
- *    rows that come from the database; the live behaviour is the FIRST branch
- *    returning a literal 0, because `Number(0)` is finite.
- *  - The only writer of `kind='center_fee'` is `finish_center_class_and_bill`
- *    (pg_proc; `finish_class_and_bill` does not mention center_fee, teacher_net
- *    or snap_teacher_pct at all — that is D19). Its center_fee INSERT column
- *    list is `kind, session_id, enrollment_id, student_id, group_id,
- *    teacher_id, center_id, lesson_fee, amount_billed, status,
- *    idempotency_key, created_by` — it never sets teacher_net or
- *    snap_teacher_pct, so both land on the 0 default.
- *  - That function has **no caller in `src/`** (0 hits for
- *    `rpc('finish_center_class_and_bill')`), and `select count(*) from
- *    transactions where kind='center_fee'` returns 0.
- *
- * So the sums built out of this are structurally 0 on two independent counts:
- * no rows, and no cut basis on the rows the one writer would produce. That is
- * why the route also returns `cutBasisRows` — a caller must be able to tell an
- * unmeasured 0 from a measured one, and must never present the former as
- * settlement.
+ * This replaced a `teacherCut()` fallback chain reading `teacher_net`, then
+ * `snap_teacher_pct * amount_billed`, then 0. Both columns were NOT NULL
+ * DEFAULT 0 with no writer anywhere — neither `finish_class_and_bill` nor
+ * `finish_center_class_and_bill` ever set them — so the first branch returned a
+ * literal 0 for every database row. The arithmetic had only ever produced 0,
+ * which is why deleting it removes no number anyone has seen.
  */
-function teacherCut(row: CutRow): number {
-  const net = row.teacher_net == null ? null : Number(row.teacher_net);
-  if (net != null && Number.isFinite(net)) return net;
-  const pct = row.snap_teacher_pct == null ? null : Number(row.snap_teacher_pct);
+function teacherTake(row: CutRow): number {
   const billed = row.amount_billed == null ? null : Number(row.amount_billed);
-  if (pct != null && Number.isFinite(pct) && billed != null && Number.isFinite(billed)) {
-    return (pct / 100) * billed;
-  }
-  return 0;
-}
-
-/**
- * Does this row carry anything a cut could actually be computed FROM?
- *
- * `teacherCut` answers "how much", and answers 0 both when the cut is genuinely
- * zero and when nothing was ever recorded. This answers the different question
- * the UI needs: was there a basis at all. A row with teacher_net = 0 AND
- * snap_teacher_pct = 0 — which is every row `finish_center_class_and_bill`
- * writes — has none.
- */
-function hasCutBasis(row: CutRow): boolean {
-  const net = Number(row.teacher_net);
-  if (Number.isFinite(net) && net > 0) return true;
-  const pct = Number(row.snap_teacher_pct);
-  const billed = Number(row.amount_billed);
-  return Number.isFinite(pct) && pct > 0 && Number.isFinite(billed) && billed > 0;
+  return billed != null && Number.isFinite(billed) ? billed : 0;
 }
 
 /** First UTC instant of the current Cairo calendar month (Cairo-anchored windows). */
@@ -110,19 +70,23 @@ function startOfCurrentCairoMonthIso(): string {
  * (empty/null + Sentry warning) so a display hiccup never blanks the numbers.
  * Money is summed server-side and rounded to 2 decimals; the UI only formats.
  *
- * `cutBasisRows` is the count of center_fee rows this request read that carry
- * a basis a cut could be computed from (see `hasCutBasis`). It exists so a
- * caller can distinguish the two very different zeros:
+ * `ledgerRows` is the count of center_fee rows this request read. It exists so
+ * a caller can distinguish the two very different zeros:
  *
- *   cutBasisRows > 0, totalOutstanding = 0  -> measured. Nothing is owed.
- *   cutBasisRows = 0, totalOutstanding = 0  -> NOT measured. Nothing has ever
- *                                              been recorded, so the 0 means
- *                                              "no ledger", not "settled".
+ *   ledgerRows > 0, totalOutstanding = 0  -> measured. Nothing is owed.
+ *   ledgerRows = 0, totalOutstanding = 0  -> NOT measured. Nothing has ever
+ *                                            been recorded, so the 0 means
+ *                                            "no ledger", not "settled".
  *
- * Today the second case is the only one that occurs for every teacher — see
- * the evidence block on `teacherCut`. Rendering it as settlement would be a
- * fabrication even though the number is technically 0, which is exactly what
- * this field exists to stop.
+ * Today the second case is the only one that occurs for every teacher:
+ * `finish_center_class_and_bill` is the only writer of kind='center_fee' and it
+ * has no `rpc()` caller in `src/`, so the table holds no center_fee row.
+ * Rendering that as settlement would be a fabrication even though the number is
+ * technically 0, which is exactly what this field exists to stop.
+ *
+ * It replaced `cutBasisRows`, which asked whether a row carried a *cut basis* —
+ * a question that stopped meaning anything when the percentage columns went.
+ * The honest-zero distinction it protected is deliberate and is kept.
  */
 export async function GET(request: NextRequest) {
   const auth = await requireTeacherAuth(request);
@@ -136,7 +100,7 @@ export async function GET(request: NextRequest) {
       centers: [],
       totalCollectedThisMonth: 0,
       totalOutstanding: 0,
-      cutBasisRows: 0,
+      ledgerRows: 0,
     });
   }
 
@@ -152,7 +116,7 @@ export async function GET(request: NextRequest) {
     );
   };
 
-  const cutColumns = 'center_id, group_id, teacher_net, snap_teacher_pct, amount_billed, created_at';
+  const cutColumns = 'center_id, group_id, amount_billed, created_at';
 
   // CORE: teacher cut paid this Cairo month, per centre.
   const monthStartIso = startOfCurrentCairoMonthIso();
@@ -243,19 +207,18 @@ export async function GET(request: NextRequest) {
   type Acc = { collected: number; outstanding: number };
   const centerAcc = new Map<string, Acc>();
   const groupAcc = new Map<string, Acc>();
-  const groupSnapPct = new Map<string, { pct: number; at: string }>();
 
   for (const id of auth.centerIds) centerAcc.set(id, { collected: 0, outstanding: 0 });
 
   // Counted over exactly the rows the two CORE queries returned, so it is a
   // property of the same read the sums come from, never a separate claim.
-  let cutBasisRows = 0;
+  let ledgerRows = 0;
 
   const accumulate = (rows: CutRow[], bucket: 'collected' | 'outstanding') => {
     for (const r of rows) {
       if (!r.center_id) continue;
-      if (hasCutBasis(r)) cutBasisRows += 1;
-      const cut = teacherCut(r);
+      ledgerRows += 1;
+      const cut = teacherTake(r);
       const ca = centerAcc.get(r.center_id) ?? { collected: 0, outstanding: 0 };
       ca[bucket] += cut;
       centerAcc.set(r.center_id, ca);
@@ -263,14 +226,6 @@ export async function GET(request: NextRequest) {
         const ga = groupAcc.get(r.group_id) ?? { collected: 0, outstanding: 0 };
         ga[bucket] += cut;
         groupAcc.set(r.group_id, ga);
-        // Most recent snap_teacher_pct wins (by created_at).
-        const pct = r.snap_teacher_pct == null ? null : Number(r.snap_teacher_pct);
-        if (pct != null && Number.isFinite(pct)) {
-          const prev = groupSnapPct.get(r.group_id);
-          if (!prev || r.created_at > prev.at) {
-            groupSnapPct.set(r.group_id, { pct, at: r.created_at });
-          }
-        }
       }
     }
   };
@@ -292,7 +247,6 @@ export async function GET(request: NextRequest) {
         name: groupNameById.get(gid) ?? null,
         collectedThisMonth: round2(ga.collected),
         outstanding: round2(ga.outstanding),
-        snapTeacherPct: groupSnapPct.get(gid)?.pct ?? null,
       });
     }
     return out;
@@ -319,6 +273,6 @@ export async function GET(request: NextRequest) {
     centers,
     totalCollectedThisMonth: round2(totalCollected),
     totalOutstanding: round2(totalOutstanding),
-    cutBasisRows,
+    ledgerRows,
   });
 }

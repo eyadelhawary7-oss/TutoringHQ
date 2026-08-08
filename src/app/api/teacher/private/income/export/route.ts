@@ -26,22 +26,6 @@ function serverError(step: string, err: { message: string }): NextResponse {
   return NextResponse.json({ error: 'Server error', code: 'server_error' }, { status: 500 });
 }
 
-/** Same teacher-take fallback chain as /api/teacher/center-cuts. */
-function teacherCut(row: {
-  teacher_net: number | string | null;
-  snap_teacher_pct: number | string | null;
-  amount_billed: number | string | null;
-}): number {
-  const net = row.teacher_net == null ? null : Number(row.teacher_net);
-  if (net != null && Number.isFinite(net)) return net;
-  const pct = row.snap_teacher_pct == null ? null : Number(row.snap_teacher_pct);
-  const billed = row.amount_billed == null ? null : Number(row.amount_billed);
-  if (pct != null && Number.isFinite(pct) && billed != null && Number.isFinite(billed)) {
-    return (pct / 100) * billed;
-  }
-  return 0;
-}
-
 // CSV copy lives here (server route - next-intl message catalogs are a client
 // concern). en mirrors messages/en.json tone, ar mirrors ar.json.
 const CSV_TEXT = {
@@ -73,8 +57,6 @@ type ExportTxnRow = {
   kind: string;
   status: string | null;
   amount_billed: number | string | null;
-  teacher_net: number | string | null;
-  snap_teacher_pct: number | string | null;
   group_id: string | null;
   student_id: string | null;
 };
@@ -164,7 +146,7 @@ export async function GET(request: NextRequest) {
     let query = auth.supabaseAdmin
       .from('transactions')
       .select(
-        'id, created_at, kind, status, amount_billed, teacher_net, snap_teacher_pct, group_id, student_id',
+        'id, created_at, kind, status, amount_billed, group_id, student_id',
       )
       .eq('teacher_id', auth.userId)
       .eq('is_test', false)
@@ -225,8 +207,10 @@ export async function GET(request: NextRequest) {
 
   const lines: string[] = [text.headers.map(csvField).join(',')];
   for (const r of rows) {
-    const amount =
-      r.kind === 'center_fee' ? round2(teacherCut(r)) : round2(Number(r.amount_billed) || 0);
+    // Both kinds export the same figure: a lesson charge and a center_fee
+    // charge are each worth their full amount_billed to the teacher. The
+    // center_fee branch used to apply a percentage cut — see NEW-MODEL.md.
+    const amount = round2(Number(r.amount_billed) || 0);
     const type = r.kind === 'center_fee' ? text.typeCenterFee : text.typeLesson;
     const status =
       r.status === 'paid'
