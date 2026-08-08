@@ -112,23 +112,13 @@ function serverError(step: string, err: { message: string }): NextResponse {
 }
 
 /**
- * The teacher's take of a center_fee transaction: teacher_net when written,
- * else snap_teacher_pct * amount_billed, else 0. Same fallback chain as
+ * The teacher's take of a center_fee transaction: the whole amount billed.
+ * There is no percentage to apply — see `design/NEW-MODEL.md`. Same rule as
  * /api/teacher/center-cuts so the two surfaces always agree.
  */
-function teacherCut(row: {
-  teacher_net: number | string | null;
-  snap_teacher_pct: number | string | null;
-  amount_billed: number | string | null;
-}): number {
-  const net = row.teacher_net == null ? null : Number(row.teacher_net);
-  if (net != null && Number.isFinite(net)) return net;
-  const pct = row.snap_teacher_pct == null ? null : Number(row.snap_teacher_pct);
+function teacherTake(row: { amount_billed: number | string | null }): number {
   const billed = row.amount_billed == null ? null : Number(row.amount_billed);
-  if (pct != null && Number.isFinite(pct) && billed != null && Number.isFinite(billed)) {
-    return (pct / 100) * billed;
-  }
-  return 0;
+  return billed != null && Number.isFinite(billed) ? billed : 0;
 }
 
 const PAGE_SIZE = 1000;
@@ -170,7 +160,7 @@ async function fetchPaged<T>(
  * the teacher's join month (users.created_at, Cairo calendar) to the current
  * month. private_collected = paid lesson charges on the teacher's private
  * groups; center_collected = the teacher's take of paid center_fee charges
- * (teacherCut, same math as /api/teacher/center-cuts); outstanding = pending
+ * (teacherTake, same rule as /api/teacher/center-cuts); outstanding = pending
  * lesson charges bucketed by creation month. Collected amounts bucket by
  * paid_at so the series always agrees with mode 1's month windows.
  *
@@ -464,15 +454,13 @@ async function allTimeResponse(admin: SupabaseClient, userId: string): Promise<N
   }
 
   type PaidCutRow = {
-    teacher_net: number | string | null;
-    snap_teacher_pct: number | string | null;
     amount_billed: number | string | null;
     paid_at: string | null;
   };
   const paidCuts = await fetchPaged<PaidCutRow>((from, to) =>
     admin
       .from('transactions')
-      .select('teacher_net, snap_teacher_pct, amount_billed, paid_at')
+      .select('amount_billed, paid_at')
       .eq('teacher_id', userId)
       .eq('kind', 'center_fee')
       .eq('status', 'paid')
@@ -541,7 +529,7 @@ async function allTimeResponse(admin: SupabaseClient, userId: string): Promise<N
     const ym = cairoMonthOfIso(r.paid_at);
     noteMonth(ym);
     const k = key(ym.y, ym.m);
-    centerByMonth.set(k, (centerByMonth.get(k) ?? 0) + teacherCut(r));
+    centerByMonth.set(k, (centerByMonth.get(k) ?? 0) + teacherTake(r));
   }
   for (const r of pendingLessons.rows) {
     if (!r.group_id || !privateGroupIds.has(r.group_id)) continue;

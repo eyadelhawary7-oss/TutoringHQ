@@ -9224,7 +9224,6 @@
       "collectedThisMonth": "Collected this month: {amount}",
       "collectedShort": "Collected this month:",
       "owedShort": "Owed:",
-      "cutLabel": "your share {pct}",
       "unknownCenter": "Center",
       "fromCentersCaption": "From {count} centers · settled monthly",
       "statThisMonth": "This month",

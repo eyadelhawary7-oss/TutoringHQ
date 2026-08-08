@@ -341,10 +341,11 @@ export async function getCeoTeacherData(
  *   (internal sales staff, not teachers). Nothing records money paid out to a
  *   teacher, so the figure has no source at all.
  *
- *   "Teacher fee revenue" hero and the "Top earners" list — both are the
- *   platform's cut of teacher classes, which lives in `transactions.teacher_net`
- *   / `teacher_commission_amt`. No write path populates either column, so both
- *   would read 0 for every teacher forever. D19 and D16, both open.
+ *   "Teacher fee revenue" hero and the "Top earners" list — both were the
+ *   platform's percentage of teacher classes. There is no such percentage: the
+ *   platform takes NO share of tuition (design/NEW-MODEL.md), and the columns
+ *   that modelled it (`teacher_net`, `teacher_commission_amt`) were dropped
+ *   from `transactions` on 8 Aug 2026. Neither figure has a source.
  *
  * Read-only. Test teachers are excluded throughout.
  */
