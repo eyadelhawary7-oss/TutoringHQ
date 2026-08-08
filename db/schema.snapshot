@@ -3364,6 +3364,7 @@ FUNCTION payout_request_create(p_center_id uuid, p_requested_gross_minor bigint,
 FUNCTION payout_transition(p_payout_id uuid, p_to_status text, p_actor_admin_user_id uuid, p_idempotency_key text) returns=TABLE(payout_id uuid, status text) lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public, pg_temp bodymd5=886ee63c27c695b8482991fd9aca969d
 FUNCTION process_due_subscriptions(p_as_of timestamp with time zone) returns=TABLE(action_taken text, subscription_id uuid) lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=ff528d8763ed878854cd4179fba8e70e
 FUNCTION process_payment_rpc(p_center_id uuid, p_invoice_id uuid, p_amount numeric, p_payment_method text, p_recorded_by uuid) returns=jsonb lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public, pg_temp bodymd5=16a88f099f5af175d83da7df4fc22411
+FUNCTION process_withdrawal_request(p_withdrawal_id uuid, p_action text, p_actor_id uuid, p_notes text) returns=jsonb lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public, pg_temp bodymd5=f978f02a1cc60d1a3629080da60d3c4c
 FUNCTION propose_group_slot(p_group_id uuid, p_actor_user_id uuid, p_day_of_week smallint, p_start_time time without time zone, p_end_time time without time zone, p_room_id uuid, p_note text) returns=group_slot_proposals lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=3bdc198d1a7766b49eeccdc43ae909e4
 FUNCTION provision_teacher_subscription_on_first_private_group() returns=trigger lang=plpgsql kind=f volatility=v strict=false secdef=false cfg=search_path=public, pg_temp bodymd5=39cba70e38e848830170d52fab99214f
 FUNCTION recalc_all_lifecycle_status() returns=void lang=plpgsql kind=f volatility=v strict=false secdef=true cfg=search_path=public bodymd5=e7c79684847e5216a49a9d2b51089c18
@@ -6388,6 +6389,7 @@ ROUTINE_GRANT payout_request_create grantee=service_role priv=EXECUTE grantable=
 ROUTINE_GRANT payout_transition grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT process_due_subscriptions grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT process_payment_rpc grantee=service_role priv=EXECUTE grantable=NO
+ROUTINE_GRANT process_withdrawal_request grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT propose_group_slot grantee=service_role priv=EXECUTE grantable=NO
 ROUTINE_GRANT provision_teacher_subscription_on_first_private_group grantee=PUBLIC priv=EXECUTE grantable=NO
 ROUTINE_GRANT provision_teacher_subscription_on_first_private_group grantee=anon priv=EXECUTE grantable=NO
